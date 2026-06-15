@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<html
+        xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>  
+
+    <meta charset="UTF-8">
+<div class="alert alert-primary">
+
+    Bienvenido:
+
+    <strong sec:authentication="name"></strong>
+
+</div>
+    <title>Sistema Inventario</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+
+        body{
+            min-height:100vh;
+            background:
+                #020617
+                url('/img/index-background.png')
+                center center / cover
+                fixed
+                no-repeat;
+            position:relative;
+        }
+
+        body::before{
+            content:"";
+            position:fixed;
+            inset:0;
+            background:rgba(2,6,23,0.42);
+            pointer-events:none;
+            z-index:-1;
+        }
+
+        .card{
+            border:none;
+            border-radius:15px;
+            background:rgba(255,255,255,0.86);
+            border:1px solid rgba(255,255,255,0.38);
+            box-shadow:0 18px 45px rgba(2,6,23,0.28);
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+        }
+
+        .titulo{
+            font-weight:bold;
+        
+            color:white;
+            text-shadow:0 2px 8px rgba(0,0,0,0.45);
+        }
+
+        .seccion{
+            border-left:5px solid #0d6efd;
+            padding-left:10px;
+        }
+
+        .table-container{
+            max-height:500px;
+            overflow-y:auto;
+        }
+
+        .seriales-lote-error{
+            border-color:#dc3545;
+            box-shadow:0 0 0 .25rem rgba(220,53,69,.25);
+        }
+
+        .seriales-alerta{
+            display:none;
+        }
+
+        .campo-obligatorio{
+            color:#dc3545;
+            font-weight:bold;
+            margin-left:3px;
+        }
+
+        .btn-success{
+            background:#0052d4;
+            border-color:#0052d4;
+        }
+
+        .btn-success:hover,
+        .btn-success:focus{
+            background:#003c9e;
+            border-color:#003c9e;
+        }
+
+        .tipo-buscador{
+            position:relative;
+        }
+
+        .tipo-buscador::after{
+            content:"";
+            position:absolute;
+            right:14px;
+            top:50%;
+            width:0;
+            height:0;
+            border-left:5px solid transparent;
+            border-right:5px solid transparent;
+            border-top:6px solid #6b7280;
+            transform:translateY(-50%);
+            pointer-events:none;
+        }
+
+        .tipo-buscador .form-control{
+            padding-right:38px;
+        }
+
+        .tipo-opciones{
+            display:none;
+            position:absolute;
+            top:100%;
+            left:0;
+            right:0;
+            z-index:20;
+            max-height:230px;
+            overflow-y:auto;
+            background:white;
+            border:1px solid #ced4da;
+            border-radius:0 0 12px 12px;
+            box-shadow:0 12px 28px rgba(15,23,42,0.18);
+        }
+
+        .tipo-opciones.visible{
+            display:block;
+        }
+
+        .tipo-opcion{
+            padding:10px 14px;
+            cursor:pointer;
+            font-size:16px;
+        }
+
+        .tipo-opcion:hover{
+            background:#eef4ff;
+            color:#003c9e;
+        }
+
+        .tipo-opcion-vacia{
+            padding:10px 14px;
+            color:#6b7280;
+            font-size:15px;
+        }
+
+        @media(max-width:900px){
+
+            body{
+                background-attachment:scroll;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container mt-4 mb-5">
+
+   <div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h1 class="titulo">
+        Sistema de Registro de Garantia
+    </h1>
+
+    <form action="/logout" method="post">
+
+        
+        <div sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')">
+
+    <a href="/configuracion"
+       class="btn btn-dark me-2">
+
+        Configuración
+ </a>
+    </a>
+    </a>
+    
+
+</div>
+        
+        <button class="btn btn-danger">
+
+            Cerrar sesión
+
+        </button>
+
+    </form>
+
+</div>
+
+
+
+    <!-- BUSCAR -->
+    <div class="card shadow p-4 mb-4">
+
+        <div class="seccion mb-3">
+            <h3>Buscar Equipo</h3>
+        </div>
+
+        <div class="row">
+
+            <div class="col-md-10">
+
+                <input
+                    type="text"
+                    id="serialBuscar"
+                    class="form-control"
+                    placeholder="Ingrese serial">
+
+            </div>
+
+            <div class="col-md-2">
+
+                <button
+                    class="btn btn-primary w-100"
+                    onclick="buscarEquipo()">
+
+                    Buscar
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="resultadoBusqueda" class="mt-4"></div>
+
+    </div>
+
+
+
+    <!-- REGISTRAR -->
+    <div class="card shadow p-4 mb-4">
+
+        <div class="seccion mb-3">
+            <h3>Registrar Equipo</h3>
+        </div>
+
+        <div class="row">
+
+
+            <!-- PRODUCTO -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Producto
+                    <span class="campo-obligatorio">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="producto"
+                    class="form-control">
+
+            </div>
+
+            <!-- TIPO -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Tipo / Marca
+                    <span class="campo-obligatorio">*</span>
+                </label>
+
+                <div class="tipo-buscador">
+
+                    <input
+                        type="text"
+                        id="tipo"
+                        class="form-control"
+                        autocomplete="off"
+                        placeholder="Buscar o seleccionar marca">
+
+                    <div
+                        id="listaTipos"
+                        class="tipo-opciones">
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- PROVEEDOR -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Proveedor
+                    <span class="campo-obligatorio">*</span>
+                </label>
+
+                <select
+                    id="proveedor"
+                    class="form-select">
+
+                    <option value="">
+                        Seleccione proveedor
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- FECHA -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Fecha ingreso
+                    <span class="campo-obligatorio">*</span>
+                </label>
+
+                <input
+                    type="date"
+                    id="fecha"
+                    class="form-control">
+
+            </div>
+
+            <!-- FACTURA -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Factura
+                    <span class="campo-obligatorio">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="factura"
+                    class="form-control">
+
+            </div>
+
+            <!-- MODO REGISTRO -->
+
+<div class="col-md-12 mb-3">
+
+  <label 
+    class="form-label fw-bold"
+    style="font-size:20px;">
+
+    Modo de registro
+
+</label>
+    <select
+        id="modoRegistro"
+        class="form-select"
+        onchange="cambiarModoRegistro()">
+
+        <option value="individual">
+            Individual
+        </option>
+
+        <option value="lote">
+            Lote
+        </option>
+
+    </select>
+
+</div>
+
+
+<!-- SERIAL INDIVIDUAL -->
+
+<div
+    class="col-md-12 mb-3"
+    id="contenedorSerial">
+
+    <label class="form-label">
+        Serial
+        <span class="campo-obligatorio">*</span>
+    </label>
+
+    <input
+        type="text"
+        id="serial"
+        class="form-control">
+
+</div>
+
+
+<!-- SERIAL LOTE -->
+
+<div
+    class="col-md-12 mb-3"
+    id="contenedorLote"
+    style="display:none;">
+
+    <label class="form-label">
+        Seriales (uno por línea)
+    </label>
+
+    <textarea
+        id="serialesLote"
+        class="form-control"
+        rows="8"
+        placeholder="Serial numero 1 &#10;Serial numero 2 &#10;.....">
+
+    </textarea>
+
+    <div
+        id="contadorSerialesLote"
+        class="form-text fw-bold mt-2">
+        Seriales ingresados: 0
+    </div>
+
+    <div
+        id="alertaSerialesLote"
+        class="alert alert-danger mt-2 seriales-alerta">
+    </div>
+
+</div>
+
+        </div>
+
+        <button
+            class="btn btn-success w-100"
+            onclick="guardarEquipo()">
+
+            Guardar Equipo
+
+        </button>
+
+    </div>
+
+
+    <!-- INVENTARIO -->
+    <div class="card shadow p-4">
+
+        <div class="row align-items-center mb-3">
+
+            <div class="col-md-4">
+
+                <div class="seccion">
+                    <h3>Inventario Registrado</h3>
+                </div>
+
+            </div>
+
+            <div class="col-md-8">
+
+                <div class="d-flex justify-content-end">
+
+                    <input
+                        type="text"
+                        id="filtroTabla"
+                        class="form-control me-2"
+                        placeholder="Buscar serial...">
+
+                    <button
+                        class="btn btn-primary me-2"
+                        onclick="filtrarTabla()">
+
+                        Buscar
+
+                    </button>
+
+                    <button
+                        class="btn btn-secondary"
+                        onclick="listarEquipos()">
+
+                        Actualizar
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="table-container">
+
+            <table class="table table-hover table-bordered">
+<thead class="table-dark">
+
+<tr>
+
+<th>Serial</th>
+<th>Producto</th>
+<th>Tipo</th>
+<th>Proveedor</th>
+<th>Factura</th>
+<th>Fecha</th>
+<th>Sede</th>
+<th>Acciones</th>
+
+</tr>
+
+</thead>
+
+                <tbody id="tablaEquipos">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let tiposDisponibles = [];
+
+window.onload = function(){
+
+    cargarTipos();
+    cargarProveedores();
+    listarEquipos();
+    marcarCampoLoteObligatorio();
+    activarLimpiezaCamposObligatorios();
+    configurarBuscadorTipos();
+
+    document
+        .getElementById("serialesLote")
+        .addEventListener("input", () => {
+            actualizarContadorSerialesLote();
+            validarSerialesLote();
+        });
+
+    actualizarContadorSerialesLote();
+
+};
+
+function marcarCampoLoteObligatorio(){
+
+    let label =
+        document.querySelector("#contenedorLote label");
+
+    if(label && !label.querySelector(".campo-obligatorio")){
+
+        label.innerHTML +=
+            ' <span class="campo-obligatorio">*</span>';
+
+    }
+
+}
+
+function activarLimpiezaCamposObligatorios(){
+
+    [
+        "producto",
+        "tipo",
+        "proveedor",
+        "fecha",
+        "factura",
+        "serial",
+        "serialesLote"
+    ].forEach(id => {
+
+        let campo =
+            document.getElementById(id);
+
+        if(campo){
+
+            campo.addEventListener("input", () => {
+                campo.classList.remove("is-invalid");
+            });
+
+            campo.addEventListener("change", () => {
+                campo.classList.remove("is-invalid");
+            });
+
+        }
+
+    });
+
+}
+
+function cambiarModoRegistro(){
+
+    
+    
+    let modo =
+        document.getElementById("modoRegistro").value;
+
+    if(modo === "individual"){
+
+        document.getElementById("contenedorSerial")
+            .style.display = "block";
+
+        document.getElementById("contenedorLote")
+            .style.display = "none";
+
+    }else{
+
+        document.getElementById("contenedorSerial")
+            .style.display = "none";
+
+        document.getElementById("contenedorLote")
+            .style.display = "block";
+
+    }
+
+}
+
+function limpiarFormulario(){
+
+    document.getElementById("serial").value = "";
+
+    document.getElementById("producto").value = "";
+
+    document.getElementById("tipo").value = "";
+
+    document.getElementById("proveedor").value = "";
+
+    document.getElementById("fecha").value = "";
+
+    document.getElementById("factura").value = "";
+
+    document.getElementById("serialesLote").value = "";
+
+    limpiarAlertaSerialesLote();
+    limpiarCamposObligatorios();
+    actualizarContadorSerialesLote();
+
+}
+
+function limpiarCamposObligatorios(){
+
+    document
+        .querySelectorAll(".is-invalid")
+        .forEach(campo => campo.classList.remove("is-invalid"));
+
+}
+
+function limpiarAlertaSerialesLote(){
+
+    let campo =
+        document.getElementById("serialesLote");
+
+    let alerta =
+        document.getElementById("alertaSerialesLote");
+
+    campo.classList.remove("seriales-lote-error");
+    alerta.style.display = "none";
+    alerta.innerHTML = "";
+
+}
+
+function mostrarAlertaSerialesLote(titulo, seriales){
+
+    let campo =
+        document.getElementById("serialesLote");
+
+    let alerta =
+        document.getElementById("alertaSerialesLote");
+
+    let serialesUnicos =
+        [...new Set(seriales.filter(s => s && s.trim() !== ""))];
+
+    campo.classList.add("seriales-lote-error");
+
+    alerta.innerHTML = `
+        <strong>${titulo}</strong>
+        <ul class="mb-0 mt-2">
+            ${serialesUnicos.map(s => `<li>${s}</li>`).join("")}
+        </ul>
+    `;
+
+    alerta.style.display = "block";
+
+}
+
+function obtenerSerialesLote(){
+
+    return document
+        .getElementById("serialesLote")
+        .value
+        .split("\n")
+        .map(serial => serial.trim())
+        .filter(serial => serial !== "");
+
+}
+
+function actualizarContadorSerialesLote(){
+
+    let total =
+        obtenerSerialesLote().length;
+
+    document
+        .getElementById("contadorSerialesLote")
+        .innerHTML = `Seriales ingresados: ${total}`;
+
+}
+
+function validarSerialesLote(){
+
+    let seriales =
+        obtenerSerialesLote();
+
+    let vistos =
+        new Set();
+
+    let repetidos =
+        [];
+
+    seriales.forEach(serial => {
+
+        if(vistos.has(serial)){
+            repetidos.push(serial);
+        }
+
+        vistos.add(serial);
+
+    });
+
+    if(repetidos.length > 0){
+
+        mostrarAlertaSerialesLote(
+            "Seriales repetidos dentro del lote:",
+            repetidos
+        );
+
+        return false;
+
+    }
+
+    limpiarAlertaSerialesLote();
+
+    return true;
+
+}
+
+function extraerSerialesDesdeMensaje(mensaje){
+
+    return mensaje
+        .split("\n")
+        .map(linea => linea.trim())
+        .filter(linea =>
+            linea !== "" &&
+            !linea.toLowerCase().includes("seriales") &&
+            !linea.toLowerCase().includes("existen") &&
+            !linea.toLowerCase().includes("lote")
+        );
+
+}
+
+function validarCamposObligatorios(ids){
+
+    let faltantes =
+        [];
+
+    ids.forEach(id => {
+
+        let campo =
+            document.getElementById(id);
+
+        if(!campo){
+            return;
+        }
+
+        if(campo.value.trim() === ""){
+
+            campo.classList.add("is-invalid");
+            faltantes.push(campo);
+
+        }else{
+
+            campo.classList.remove("is-invalid");
+
+        }
+
+    });
+
+    if(faltantes.length > 0){
+
+        faltantes[0].focus();
+
+        return false;
+
+    }
+
+    return true;
+
+}
+
+// TIPOS
+function cargarTipos(){
+
+    fetch("/equipos/tipos")
+    .then(res => res.json())
+    .then(data => {
+
+        tiposDisponibles =
+            data.map(t => t.nombre);
+
+        renderizarOpcionesTipo(
+            document.getElementById("tipo").value
+        );
+
+    });
+
+}
+
+function configurarBuscadorTipos(){
+
+    let input =
+        document.getElementById("tipo");
+
+    input.addEventListener("focus", () => {
+        mostrarOpcionesTipo();
+    });
+
+    input.addEventListener("click", () => {
+        mostrarOpcionesTipo();
+    });
+
+    input.addEventListener("input", () => {
+        renderizarOpcionesTipo(input.value);
+        mostrarOpcionesTipo();
+    });
+
+    document.addEventListener("click", event => {
+
+        if(!event.target.closest(".tipo-buscador")){
+            ocultarOpcionesTipo();
+        }
+
+    });
+
+}
+
+function mostrarOpcionesTipo(){
+
+    renderizarOpcionesTipo(
+        document.getElementById("tipo").value
+    );
+
+    document
+        .getElementById("listaTipos")
+        .classList
+        .add("visible");
+
+}
+
+function ocultarOpcionesTipo(){
+
+    document
+        .getElementById("listaTipos")
+        .classList
+        .remove("visible");
+
+}
+
+function renderizarOpcionesTipo(filtro){
+
+    let lista =
+        document.getElementById("listaTipos");
+
+    let texto =
+        (filtro || "").toLowerCase();
+
+    let opciones =
+        tiposDisponibles.filter(nombre =>
+            nombre.toLowerCase().includes(texto)
+        );
+
+    if(opciones.length === 0){
+
+        lista.innerHTML = `
+            <div class="tipo-opcion-vacia">
+                No hay coincidencias
+            </div>
+        `;
+
+        return;
+
+    }
+
+    lista.innerHTML =
+        opciones.map(nombre => `
+            <div
+                class="tipo-opcion"
+                onclick="seleccionarTipo('${nombre.replace(/'/g, "\\'")}')">
+                ${nombre}
+            </div>
+        `).join("");
+
+}
+
+function seleccionarTipo(nombre){
+
+    document.getElementById("tipo").value = nombre;
+    document.getElementById("tipo").classList.remove("is-invalid");
+    ocultarOpcionesTipo();
+
+}
+
+
+// PROVEEDORES
+function cargarProveedores(){
+
+    fetch("/equipos/proveedores")
+    .then(res => res.json())
+    .then(data => {
+
+        let select = document.getElementById("proveedor");
+
+        data.forEach(p => {
+
+            select.innerHTML += `
+                <option value="${p.nombre}">
+                    ${p.nombre}
+                </option>
+            `;
+
+        });
+
+    });
+
+}
+
+
+// GUARDAR
+function guardarEquipo(){
+
+    let modo =
+        document.getElementById("modoRegistro").value;
+
+
+// VALIDACIONES
+
+let producto =
+    document.getElementById("producto").value;
+
+let proveedor =
+    document.getElementById("proveedor").value;
+
+let fecha =
+    document.getElementById("fecha").value;
+
+let factura =
+    document.getElementById("factura").value;
+
+
+// VALIDAR CAMPOS GENERALES
+if(!validarCamposObligatorios([
+    "producto",
+    "tipo",
+    "proveedor",
+    "fecha",
+    "factura"
+])){
+
+    alert("⚠️ Complete todos los campos obligatorios");
+
+    return;
+
+}
+
+    // INDIVIDUAL
+    if(modo === "individual"){
+
+        // VALIDAR SERIAL
+let serial =
+    document.getElementById("serial").value;
+
+if(!validarCamposObligatorios(["serial"])){
+
+    alert("⚠️ El serial es obligatorio");
+
+    return;
+
+}
+
+
+
+        let data = {
+
+
+
+            serial:
+                document.getElementById("serial").value,
+
+            producto:
+                document.getElementById("producto").value,
+
+            tipo:
+                document.getElementById("tipo").value,
+
+            proveedor:
+                document.getElementById("proveedor").value,
+
+            fecha:
+                document.getElementById("fecha").value,
+
+            factura:
+                document.getElementById("factura").value
+
+        };
+
+        fetch("/equipos/completo", {
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify(data) 
+
+        })
+
+        .then(async response => {
+
+     if(!response.ok){
+
+        const mensaje =
+            await response.text();
+
+        alert("ERROR" + mensaje);
+
+        throw new Error(mensaje);
+
+    }
+
+    return response.text();
+
+})
+
+        .then(() => {
+
+            alert("Equipo registrado");
+            limpiarFormulario();
+
+            listarEquipos();
+
+        })
+
+       .catch(async error => {
+
+    try{
+
+        let mensaje =
+            await error.response?.text();
+
+        //alert(mensaje);
+
+    }catch{
+
+        alert(
+            "⚠️ Error al guardar el equipo."
+        );
+
+    }
+
+});
+
+    }
+
+
+    // LOTE
+    else{
+// VALIDAR LOTE
+let serialesTexto =
+    document.getElementById("serialesLote").value;
+
+if(!validarCamposObligatorios(["serialesLote"])){
+
+    alert("⚠️ Debe ingresar seriales");
+
+    return;
+
+}
+
+        if(!validarSerialesLote()){
+
+            alert("Corrija los seriales repetidos antes de guardar.");
+
+            return;
+
+        }
+
+        let seriales =
+            obtenerSerialesLote();
+
+        let data = {
+
+            seriales: seriales,
+
+            producto:
+                document.getElementById("producto").value,
+
+            tipo:
+                document.getElementById("tipo").value,
+
+            proveedor:
+                document.getElementById("proveedor").value,
+
+            fecha:
+                document.getElementById("fecha").value,
+
+            factura:
+                document.getElementById("factura").value
+
+        };
+
+        fetch("/equipos/lote", {
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify(data)
+
+        })
+
+        .then(async response => {
+
+            if(!response.ok){
+
+                const mensaje =
+                    await response.text();
+
+                const serialesError =
+                    extraerSerialesDesdeMensaje(mensaje);
+
+                mostrarAlertaSerialesLote(
+                    "No se puede guardar el lote. Revise estos seriales:",
+                    serialesError
+                );
+
+                alert(mensaje);
+
+                throw new Error(mensaje);
+
+            }
+
+            return response.text();
+
+        })
+
+        .then(() => {
+
+    alert("Lote registrado correctamente");
+
+    limpiarFormulario();
+
+    document.getElementById(
+        "serialesLote"
+    ).value = "";
+
+    listarEquipos();
+
+})
+
+        .catch(error => {
+
+            console.error(error);
+
+        });
+
+    }
+
+}
+
+
+// LISTAR
+function listarEquipos(){
+
+    fetch("/equipos")
+    .then(res => res.json())
+    .then(data => {
+
+        let tabla = "";
+
+        data.forEach(e => {
+
+            tabla += `
+
+                <tr>
+
+                    <td>${e.serial || ''}</td>
+
+                    <td>${e.producto?.nombre || ''}</td>
+
+                    <td>${e.tipoProducto?.nombre || ''}</td>
+
+                    <td>${e.proveedor?.nombre || ''}</td>
+
+                    <td>${e.factura || ''}</td>
+
+                    <td>${e.fecha || ''}</td>
+
+                    <td>${e.sede?.nombre || ''}</td>
+
+                    <td>
+
+                        <button
+                            class="btn btn-warning btn-sm me-2"
+                            onclick="window.location.href='/editar?id=${e.id_equipo}'">
+
+                            Editar
+
+                        </button>
+
+                        <button
+                            class="btn btn-danger btn-sm"
+                            onclick="eliminarEquipo(${e.id_equipo})">
+
+                            Eliminar
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        });
+
+        document.getElementById("tablaEquipos").innerHTML = tabla;
+
+    });
+
+}
+
+
+// FILTRAR
+function filtrarTabla(){
+
+    let filtro = document
+        .getElementById("filtroTabla")
+        .value
+        .toLowerCase();
+
+    let filas = document.querySelectorAll("#tablaEquipos tr");
+
+    filas.forEach(fila => {
+
+        let serial = fila.cells[0].innerText.toLowerCase();
+
+        if(serial.includes(filtro)){
+
+            fila.style.display = "";
+
+        }else{
+
+            fila.style.display = "none";
+
+        }
+
+    });
+
+}
+
+
+// ELIMINAR
+function eliminarEquipo(id){
+
+    fetch("/equipos/" + id, {
+
+        method:"DELETE"
+
+    })
+
+    .then(() => {
+
+        listarEquipos();
+
+    });
+
+}
+
+
+// BUSCAR
+function mostrarSerialNoEncontrado(){
+
+    document.getElementById(
+        "resultadoBusqueda"
+    ).innerHTML = `
+
+        <div class="alert alert-warning">
+
+            <h5 class="fw-bold">
+                ⚠️ Serial no encontrado
+            </h5>
+
+            <p>
+                El serial consultado no se encuentra registrado en la base de datos de SMD.
+            </p>
+
+            <p>
+                Verifique que el serial haya sido digitado correctamente. Si el equipo pertenece a SMD, es posible que no haya sido registrado al momento de su ingreso.
+            </p>
+
+            <p class="mb-0">
+                Para gestionar la garantía, se recomienda consultar la factura de compra o contactar directamente al proveedor del equipo.
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+function buscarEquipo(){
+
+    let serial = document
+        .getElementById("serialBuscar")
+        .value;
+
+    if(serial.trim() === ""){
+
+        alert("Ingrese un serial");
+
+        return;
+
+    }
+
+    fetch("/equipos/" + serial)
+
+    .then(res => {
+
+        if(!res.ok){
+
+            throw new Error("Equipo no encontrado");
+
+        }
+
+        return res.text();
+
+    })
+
+    .then(texto => {
+
+        if(!texto){
+
+            throw new Error("Equipo no encontrado");
+
+        }
+
+        return JSON.parse(texto);
+
+    })
+
+    .then(data => {
+
+        if(!data || !data.serial){
+
+            throw new Error("Equipo no encontrado");
+
+        }
+
+        // FECHA DE INGRESO
+
+        let fechaIngreso = new Date(data.fecha);
+
+        let hoy = new Date();
+
+        let diferencia = hoy - fechaIngreso;
+
+        let dias = diferencia / (1000 * 60 * 60 * 24);
+
+        let garantia = "";
+
+        let diasGarantia = 365;
+
+        let diasRestantes = Math.floor(
+            diasGarantia - dias
+        );
+
+        let diasVencido = Math.floor(
+            dias - diasGarantia
+        );
+
+
+        // ESTADO GARANTÍA
+
+        if(dias <= diasGarantia){
+
+            garantia = `
+
+                <span class="badge bg-success fs-6">
+
+                    ✅ En garantía
+
+                    (${diasRestantes} días restantes)
+
+                </span>
+
+            `;
+
+        }else{
+
+            garantia = `
+
+                <span class="badge bg-danger fs-6">
+
+                    ❌ Garantía vencida
+
+                    hace ${diasVencido} días
+
+                </span>
+
+            `;
+
+        }
+
+
+        // MOSTRAR RESULTADO
+
+        document.getElementById(
+            "resultadoBusqueda"
+        ).innerHTML = `
+
+            <div class="alert alert-success">
+
+                <strong>Serial:</strong>
+
+                ${data.serial || ''}
+                <br>
+                <strong>Producto:</strong>
+                ${data.producto?.nombre || ''}
+
+                <br>
+
+                <strong>Marca / Tipo:</strong>
+
+                ${data.tipoProducto?.nombre || ''}
+
+                <br>
+
+                <strong>Proveedor:</strong>
+
+                ${data.proveedor?.nombre || ''}
+
+                <br>
+
+                <strong>Factura:</strong>
+
+                ${data.factura || ''}
+
+                <br>
+
+                <strong>Fecha:</strong>
+
+                ${data.fecha || ''}
+
+                <br>
+
+                <strong>Sede:</strong>
+
+                ${data.sede?.nombre || ''}
+
+                <br>
+
+                <strong>Registrado por:</strong>
+
+                ${data.usuarioRegistro || 'Sin información'}
+
+                <br><br>
+
+                <strong>Garantía:</strong>
+
+                ${garantia}
+
+            </div>
+
+        `;
+
+    })
+
+    .catch(error => {
+console.log(error);
+
+    mostrarSerialNoEncontrado();
+
+});
+
+}
+
+</script>
+
+</body>
+</html>

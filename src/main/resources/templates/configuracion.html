@@ -1,0 +1,1247 @@
+﻿<!DOCTYPE html>
+
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Configuracion</title>
+
+    <!-- Bootstrap -->
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+
+    <style>
+
+        body{
+
+            background:#f4f6f9;
+
+        }
+
+        .titulo{
+
+            font-size:40px;
+
+            font-weight:bold;
+
+            color:#003c9e;
+
+        }
+
+        .card{
+
+            border:none;
+
+            border-radius:18px;
+
+        }
+
+        .btn{
+
+            border-radius:10px;
+
+        }
+
+        .alert{
+
+            border-radius:10px;
+
+        }
+
+        .table td,
+        .table th{
+
+            vertical-align:middle;
+
+        }
+
+        .btn-success{
+
+            background:#0052d4;
+            border-color:#0052d4;
+
+        }
+
+        .btn-success:hover,
+        .btn-success:focus{
+
+            background:#003c9e;
+            border-color:#003c9e;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="container mt-5 mb-5">
+
+    <div
+        id="permisoSuperAdmin"
+        sec:authorize="hasRole('SUPER_ADMIN')"
+        style="display:none;">
+    </div>
+
+
+    <!-- HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h1 class="titulo">
+
+            Panel Configuracion
+
+        </h1>
+
+
+        <a href="/"
+           class="btn btn-primary">
+
+            Volver
+
+        </a>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- USUARIOS -->
+    <!-- ================================= -->
+
+    <div
+        class="card shadow p-4"
+        sec:authorize="hasRole('SUPER_ADMIN')">
+
+        <h3 class="mb-4">
+
+            Registrar usuario
+
+        </h3>
+
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Usuario
+                </label>
+
+                <input
+                        type="text"
+                        id="usernameUsuario"
+                        class="form-control"
+                        placeholder="Nombre de usuario">
+
+            </div>
+
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Contraseña
+                </label>
+
+                <input
+                        type="password"
+                        id="passwordUsuario"
+                        class="form-control"
+                        placeholder="Contraseña">
+
+            </div>
+
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Rol
+                </label>
+
+                <select
+                        id="rolUsuario"
+                        class="form-select">
+
+                    <option value="">
+                        Seleccione rol
+                    </option>
+
+                    <option value="SUPER_ADMIN">
+                        Super administrador
+                    </option>
+
+                    <option value="ADMIN">
+                        Administrador
+                    </option>
+
+                    <option value="USUARIO">
+                        Usuario
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Sede
+                </label>
+
+                <select
+                        id="sedeUsuario"
+                        class="form-select">
+
+                    <option value="">
+                        Sin sede
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+        <button
+                onclick="guardarUsuario()"
+                class="btn btn-success">
+
+            Guardar usuario
+
+        </button>
+
+    </div>
+
+
+
+    <!-- LISTA USUARIOS -->
+
+    <div
+        class="card shadow p-4 mt-4"
+        sec:authorize="hasRole('SUPER_ADMIN')">
+
+        <h3 class="mb-4">
+
+            Usuarios registrados
+
+        </h3>
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered table-hover">
+
+                <thead class="table-dark">
+
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Sede</th>
+                        <th>Contraseña</th>
+                        <th>Acciones</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaUsuarios">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- SEDES -->
+    <!-- ================================= -->
+
+    <div
+        class="card shadow p-4 mt-4"
+        sec:authorize="hasRole('SUPER_ADMIN')">
+
+        <h3 class="mb-4">
+
+            Registrar sede
+
+        </h3>
+
+
+        <div class="mb-3">
+
+            <input
+                    type="text"
+
+                    id="nombreSede"
+
+                    class="form-control"
+
+                    placeholder="Nombre sede">
+
+        </div>
+
+
+        <button
+                onclick="guardarSede()"
+
+                class="btn btn-success">
+
+            Guardar sede
+
+        </button>
+
+    </div>
+
+
+
+    <!-- LISTA SEDES -->
+
+    <div
+        class="card shadow p-4 mt-4"
+        sec:authorize="hasRole('SUPER_ADMIN')">
+
+        <h3 class="mb-4">
+
+            Sedes registradas
+
+        </h3>
+
+        <div id="listaSedes">
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- PROVEEDORES -->
+    <!-- ================================= -->
+
+    <div class="card shadow p-4 mt-4">
+
+        <h3 class="mb-4">
+
+            Registrar proveedor
+
+        </h3>
+
+
+        <div class="mb-3">
+
+            <input
+                    type="text"
+
+                    id="nombreProveedor"
+
+                    class="form-control"
+
+                    placeholder="Nombre proveedor">
+
+        </div>
+
+
+        <button
+                onclick="guardarProveedor()"
+
+                class="btn btn-success">
+
+            Guardar proveedor
+
+        </button>
+
+    </div>
+
+
+
+    <!-- LISTA PROVEEDORES -->
+
+    <div class="card shadow p-4 mt-4">
+
+        <h3 class="mb-4">
+
+            Proveedores registrados
+
+        </h3>
+
+        <div id="listaProveedores">
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- TIPOS / MARCAS -->
+    <!-- ================================= -->
+
+    <div class="card shadow p-4 mt-4">
+
+        <h3 class="mb-4">
+
+            Registrar tipo / marca
+
+        </h3>
+
+
+        <div class="mb-3">
+
+            <input
+                    type="text"
+
+                    id="nombreTipo"
+
+                    class="form-control"
+
+                    placeholder="Nombre tipo o marca">
+
+        </div>
+
+
+        <button
+                onclick="guardarTipo()"
+
+                class="btn btn-success">
+
+            Guardar tipo
+
+        </button>
+
+    </div>
+
+
+
+    <!-- LISTA TIPOS -->
+
+    <div class="card shadow p-4 mt-4">
+
+        <h3 class="mb-4">
+
+            Tipos registrados
+
+        </h3>
+
+        <div id="listaTipos">
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+    function esSuperAdmin(){
+
+        return document
+            .getElementById("permisoSuperAdmin") !== null;
+
+    }
+
+
+    // =================================
+    // GUARDAR SEDE
+    // =================================
+
+    function guardarSede(){
+
+        let nombre =
+            document.getElementById(
+                "nombreSede"
+            ).value;
+
+
+        if(nombre.trim() === ""){
+
+            alert("Ingrese nombre sede");
+
+            return;
+
+        }
+
+
+        fetch("/sedes",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+
+                nombre:nombre
+
+            })
+
+        })
+
+        .then(() => {
+
+            alert("Sede registrada");
+
+            document.getElementById(
+                "nombreSede"
+            ).value = "";
+
+            listarSedes();
+
+        });
+
+    }
+
+
+
+    // =================================
+    // LISTAR SEDES
+    // =================================
+
+    function listarSedes(){
+
+        if(!document.getElementById("listaSedes")){
+
+            return;
+
+        }
+
+        fetch("/sedes")
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            let html = "";
+
+            data.forEach(s => {
+
+                html += `
+
+                    <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+
+                        <span>${s.nombre}</span>
+
+                        <div>
+                            <button
+                                class="btn btn-outline-primary btn-sm me-2"
+                                onclick="editarSede(${s.id}, '${s.nombre.replace(/'/g, "\\'")}')">
+                                Editar
+                            </button>
+
+                            <button
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="eliminarSede(${s.id})">
+                                Eliminar
+                            </button>
+                        </div>
+
+                    </div>
+
+                `;
+
+            });
+
+            document.getElementById(
+                "listaSedes"
+            ).innerHTML = html;
+
+            cargarSedesUsuarios(data);
+
+        });
+
+    }
+
+
+    function editarSede(id, nombreActual){
+
+        let nuevoNombre =
+            prompt("Editar sede:", nombreActual);
+
+        if(nuevoNombre === null){
+            return;
+        }
+
+        if(nuevoNombre.trim() === ""){
+            alert("Ingrese nombre sede");
+            return;
+        }
+
+        fetch("/sedes/" + id, {
+
+            method:"PUT",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+                nombre:nuevoNombre
+            })
+
+        })
+
+        .then(() => {
+            alert("Sede actualizada");
+            listarSedes();
+        });
+
+    }
+
+
+    function eliminarSede(id){
+
+        if(!confirm("¿Eliminar esta sede?")){
+            return;
+        }
+
+        fetch("/sedes/" + id, {
+            method:"DELETE"
+        })
+        .then(() => {
+            alert("Sede eliminada");
+            listarSedes();
+        });
+
+    }
+
+
+    // =================================
+    // CARGAR SEDES EN USUARIOS
+    // =================================
+
+    function cargarSedesUsuarios(data){
+
+        let select =
+            document.getElementById("sedeUsuario");
+
+        if(!select){
+
+            return;
+
+        }
+
+        let sedeSeleccionada =
+            select.value;
+
+        select.innerHTML = `
+
+            <option value="">
+                Sin sede
+            </option>
+
+        `;
+
+        data.forEach(s => {
+
+            select.innerHTML += `
+
+                <option value="${s.id}">
+                    ${s.nombre}
+                </option>
+
+            `;
+
+        });
+
+        select.value = sedeSeleccionada;
+
+    }
+
+
+    // =================================
+    // GUARDAR USUARIO
+    // =================================
+
+    function guardarUsuario(){
+
+        let username =
+            document.getElementById("usernameUsuario").value;
+
+        let password =
+            document.getElementById("passwordUsuario").value;
+
+        let rol =
+            document.getElementById("rolUsuario").value;
+
+        let sedeId =
+            document.getElementById("sedeUsuario").value;
+
+        if(
+            username.trim() === "" ||
+            password.trim() === "" ||
+            rol.trim() === ""
+        ){
+
+            alert("Complete usuario, contraseÃ±a y rol.");
+
+            return;
+
+        }
+
+        fetch("/usuarios", {
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+                username:username,
+                password:password,
+                rol:rol,
+                sedeId:sedeId === "" ? null : Number(sedeId)
+            })
+
+        })
+
+        .then(async response => {
+
+            if(!response.ok){
+
+                let mensaje =
+                    await response.text();
+
+                throw new Error(mensaje);
+
+            }
+
+            return response.json();
+
+        })
+
+        .then(() => {
+
+            alert("Usuario registrado");
+
+            document.getElementById("usernameUsuario").value = "";
+            document.getElementById("passwordUsuario").value = "";
+            document.getElementById("rolUsuario").value = "";
+            document.getElementById("sedeUsuario").value = "";
+
+            listarUsuarios();
+
+        })
+
+        .catch(error => {
+
+            alert(error.message || "Error al registrar usuario.");
+
+        });
+
+    }
+
+
+    // =================================
+    // LISTAR USUARIOS
+    // =================================
+
+    function listarUsuarios(){
+
+        if(!document.getElementById("listaUsuarios")){
+
+            return;
+
+        }
+
+        fetch("/usuarios")
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            let html = "";
+
+            data.forEach(u => {
+
+                html += `
+
+                    <tr>
+                        <td>${u.username || ""}</td>
+                        <td>${u.rol || ""}</td>
+                        <td>${u.sede || ""}</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                ${u.passwordEstado || "Protegida"}
+                            </span>
+                        </td>
+                        <td>
+                            <button
+                                class="btn btn-outline-primary btn-sm me-2"
+                                onclick="cambiarPasswordUsuario(${u.id})">
+
+                                Cambiar contraseÃ±a
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="eliminarUsuario(${u.id})">
+
+                                Eliminar
+
+                            </button>
+                        </td>
+                    </tr>
+
+                `;
+
+            });
+
+            document.getElementById(
+                "listaUsuarios"
+            ).innerHTML = html;
+
+        });
+
+    }
+
+
+    function eliminarUsuario(id){
+
+        if(!confirm("¿Eliminar este usuario?")){
+
+            return;
+
+        }
+
+        fetch("/usuarios/" + id, {
+
+            method:"DELETE"
+
+        })
+
+        .then(() => {
+
+            alert("Usuario eliminado");
+            listarUsuarios();
+
+        });
+
+    }
+
+
+    // =================================
+    // CAMBIAR CONTRASEÃ‘A
+    // =================================
+
+    function cambiarPasswordUsuario(id){
+
+        let password =
+            prompt("Ingrese la nueva contraseÃ±a:");
+
+        if(password === null){
+
+            return;
+
+        }
+
+        if(password.trim() === ""){
+
+            alert("Ingrese una contraseÃ±a vÃ¡lida.");
+
+            return;
+
+        }
+
+        fetch("/usuarios/" + id + "/password", {
+
+            method:"PUT",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+                password:password
+            })
+
+        })
+
+        .then(async response => {
+
+            if(!response.ok){
+
+                let mensaje =
+                    await response.text();
+
+                throw new Error(mensaje);
+
+            }
+
+            return response.json();
+
+        })
+
+        .then(() => {
+
+            alert("ContraseÃ±a actualizada");
+            listarUsuarios();
+
+        })
+
+        .catch(error => {
+
+            alert(error.message || "Error al cambiar contraseÃ±a.");
+
+        });
+
+    }
+
+
+
+
+    // =================================
+    // GUARDAR PROVEEDOR
+    // =================================
+
+    function guardarProveedor(){
+
+        let nombre =
+            document.getElementById(
+                "nombreProveedor"
+            ).value;
+
+
+        if(nombre.trim() === ""){
+
+            alert("Ingrese proveedor");
+
+            return;
+
+        }
+
+
+        fetch("/proveedores",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+
+                nombre:nombre
+
+            })
+
+        })
+
+        .then(() => {
+
+            alert("Proveedor registrado");
+
+            document.getElementById(
+                "nombreProveedor"
+            ).value = "";
+
+            listarProveedores();
+
+        });
+
+    }
+
+
+
+
+    // =================================
+    // LISTAR PROVEEDORES
+    // =================================
+
+    function listarProveedores(){
+
+        fetch("/proveedores")
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            let html = "";
+
+            data.forEach(p => {
+
+                html += `
+
+                    <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+
+                        <span>${p.nombre}</span>
+
+                        ${esSuperAdmin() ? `
+                            <div>
+                                <button
+                                    class="btn btn-outline-primary btn-sm me-2"
+                                    onclick="editarProveedor(${p.id_proveedor}, '${p.nombre.replace(/'/g, "\\'")}')">
+                                    Editar
+                                </button>
+
+                                <button
+                                    class="btn btn-outline-danger btn-sm"
+                                    onclick="eliminarProveedor(${p.id_proveedor})">
+                                    Eliminar
+                                </button>
+                            </div>
+                        ` : ""}
+
+                    </div>
+
+                `;
+
+            });
+
+            document.getElementById(
+                "listaProveedores"
+            ).innerHTML = html;
+
+        });
+
+    }
+
+
+    function editarProveedor(id, nombreActual){
+
+        let nuevoNombre =
+            prompt("Editar proveedor:", nombreActual);
+
+        if(nuevoNombre === null){
+            return;
+        }
+
+        if(nuevoNombre.trim() === ""){
+            alert("Ingrese proveedor");
+            return;
+        }
+
+        fetch("/proveedores/" + id, {
+
+            method:"PUT",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+                nombre:nuevoNombre
+            })
+
+        })
+
+        .then(() => {
+            alert("Proveedor actualizado");
+            listarProveedores();
+        });
+
+    }
+
+
+    function eliminarProveedor(id){
+
+        if(!confirm("¿Eliminar este proveedor?")){
+            return;
+        }
+
+        fetch("/proveedores/" + id, {
+            method:"DELETE"
+        })
+        .then(() => {
+            alert("Proveedor eliminado");
+            listarProveedores();
+        });
+
+    }
+
+
+
+
+    // =================================
+    // GUARDAR TIPO
+    // =================================
+
+    function guardarTipo(){
+
+        let nombre =
+            document.getElementById(
+                "nombreTipo"
+            ).value;
+
+
+        if(nombre.trim() === ""){
+
+            alert("Ingrese tipo");
+
+            return;
+
+        }
+
+
+        fetch("/tipos",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+
+                nombre:nombre
+
+            })
+
+        })
+
+        .then(() => {
+
+            alert("Tipo registrado");
+
+            document.getElementById(
+                "nombreTipo"
+            ).value = "";
+
+            listarTipos();
+
+        });
+
+    }
+
+
+
+
+    // =================================
+    // LISTAR TIPOS
+    // =================================
+
+    function listarTipos(){
+
+        fetch("/tipos")
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            let html = "";
+
+            data.forEach(t => {
+
+                html += `
+
+                    <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+
+                        <span>${t.nombre}</span>
+
+                        ${esSuperAdmin() ? `
+                            <div>
+                                <button
+                                    class="btn btn-outline-primary btn-sm me-2"
+                                    onclick="editarTipo(${t.id_tipo}, '${t.nombre.replace(/'/g, "\\'")}')">
+                                    Editar
+                                </button>
+
+                                <button
+                                    class="btn btn-outline-danger btn-sm"
+                                    onclick="eliminarTipo(${t.id_tipo})">
+                                    Eliminar
+                                </button>
+                            </div>
+                        ` : ""}
+
+                    </div>
+
+                `;
+
+            });
+
+            document.getElementById(
+                "listaTipos"
+            ).innerHTML = html;
+
+        });
+
+    }
+
+
+    function editarTipo(id, nombreActual){
+
+        let nuevoNombre =
+            prompt("Editar tipo / marca:", nombreActual);
+
+        if(nuevoNombre === null){
+            return;
+        }
+
+        if(nuevoNombre.trim() === ""){
+            alert("Ingrese tipo o marca");
+            return;
+        }
+
+        fetch("/tipos/" + id, {
+
+            method:"PUT",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify({
+                nombre:nuevoNombre
+            })
+
+        })
+
+        .then(() => {
+            alert("Tipo / marca actualizado");
+            listarTipos();
+        });
+
+    }
+
+
+    function eliminarTipo(id){
+
+        if(!confirm("¿Eliminar este tipo / marca?")){
+            return;
+        }
+
+        fetch("/tipos/" + id, {
+            method:"DELETE"
+        })
+        .then(() => {
+            alert("Tipo / marca eliminado");
+            listarTipos();
+        });
+
+    }
+
+
+
+    // =================================
+    // INICIAR LISTADOS
+    // =================================
+
+    listarSedes();
+
+    listarUsuarios();
+
+    listarProveedores();
+
+    listarTipos();
+
+
+</script>
+
+</body>
+
+</html>
+

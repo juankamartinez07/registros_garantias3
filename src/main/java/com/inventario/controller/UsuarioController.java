@@ -1,0 +1,245 @@
+package com.inventario.controller;
+
+import com.inventario.model.Sede;
+import com.inventario.model.Usuario;
+import com.inventario.repository.SedeRepository;
+import com.inventario.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/usuarios")
+public class UsuarioController {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private SedeRepository sedeRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @GetMapping
+    public List<UsuarioRespuesta> listar() {
+
+        return usuarioRepository
+                .findAll()
+                .stream()
+                .map(UsuarioRespuesta::new)
+                .toList();
+
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UsuarioRespuesta guardar(
+            @RequestBody UsuarioSolicitud solicitud) {
+
+        validarSolicitud(solicitud, true);
+
+        if (usuarioRepository
+                .findByUsername(solicitud.getUsername().trim())
+                .isPresent()) {
+
+            throw new RuntimeException(
+                    "El usuario ya existe.");
+
+        }
+
+        Usuario usuario = new Usuario();
+
+        usuario.setUsername(
+                solicitud.getUsername().trim());
+
+        usuario.setPassword(
+                passwordEncoder.encode(
+                        solicitud.getPassword()));
+
+        usuario.setRol(
+                solicitud.getRol().trim());
+
+        usuario.setSede(
+                obtenerSede(solicitud.getSedeId()));
+
+        return new UsuarioRespuesta(
+                usuarioRepository.save(usuario));
+
+    }
+
+    @PutMapping("/{id}/password")
+    public UsuarioRespuesta cambiarPassword(
+            @PathVariable Long id,
+            @RequestBody UsuarioSolicitud solicitud) {
+
+        if (solicitud.getPassword() == null ||
+                solicitud.getPassword().isBlank()) {
+
+            throw new RuntimeException(
+                    "Ingrese la nueva contraseña.");
+
+        }
+
+        Usuario usuario = usuarioRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException(
+                        "Usuario no encontrado."));
+
+        usuario.setPassword(
+                passwordEncoder.encode(
+                        solicitud.getPassword()));
+
+        return new UsuarioRespuesta(
+                usuarioRepository.save(usuario));
+
+    }
+
+    @DeleteMapping("/{id}")
+    public void eliminar(
+            @PathVariable Long id) {
+
+        usuarioRepository.deleteById(id);
+
+    }
+
+    private void validarSolicitud(
+            UsuarioSolicitud solicitud,
+            boolean validarPassword) {
+
+        if (solicitud.getUsername() == null ||
+                solicitud.getUsername().isBlank()) {
+
+            throw new RuntimeException(
+                    "Ingrese el nombre de usuario.");
+
+        }
+
+        if (validarPassword &&
+                (solicitud.getPassword() == null ||
+                        solicitud.getPassword().isBlank())) {
+
+            throw new RuntimeException(
+                    "Ingrese la contraseña.");
+
+        }
+
+        if (solicitud.getRol() == null ||
+                solicitud.getRol().isBlank()) {
+
+            throw new RuntimeException(
+                    "Seleccione el rol del usuario.");
+
+        }
+
+    }
+
+    private Sede obtenerSede(Long sedeId) {
+
+        if (sedeId == null) {
+
+            return null;
+
+        }
+
+        return sedeRepository
+                .findById(sedeId)
+                .orElse(null);
+
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String manejarError(RuntimeException ex) {
+
+        return ex.getMessage();
+
+    }
+
+    public static class UsuarioSolicitud {
+
+        private String username;
+        private String password;
+        private String rol;
+        private Long sedeId;
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getRol() {
+            return rol;
+        }
+
+        public void setRol(String rol) {
+            this.rol = rol;
+        }
+
+        public Long getSedeId() {
+            return sedeId;
+        }
+
+        public void setSedeId(Long sedeId) {
+            this.sedeId = sedeId;
+        }
+
+    }
+
+    public static class UsuarioRespuesta {
+
+        private Long id;
+        private String username;
+        private String rol;
+        private String sede;
+        private String passwordEstado;
+
+        public UsuarioRespuesta(Usuario usuario) {
+
+            this.id = usuario.getId();
+            this.username = usuario.getUsername();
+            this.rol = usuario.getRol();
+            this.sede = usuario.getSede() == null
+                    ? ""
+                    : usuario.getSede().getNombre();
+            this.passwordEstado = "Protegida";
+
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getRol() {
+            return rol;
+        }
+
+        public String getSede() {
+            return sede;
+        }
+
+        public String getPasswordEstado() {
+            return passwordEstado;
+        }
+
+    }
+
+}
