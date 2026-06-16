@@ -18,6 +18,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
+    private static final boolean LOGIN_TEMPORALMENTE_DESACTIVADO =
+            true;
+
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
@@ -111,6 +114,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
+
+        if (LOGIN_TEMPORALMENTE_DESACTIVADO) {
+
+            http
+
+                // TEMPORAL: login desactivado para probar el sistema.
+                .csrf(csrf -> csrf.disable())
+
+                .authorizeHttpRequests(auth -> auth
+
+                    .anyRequest()
+
+                    .permitAll()
+
+                );
+
+            return http.build();
+
+        }
 
         http
 
