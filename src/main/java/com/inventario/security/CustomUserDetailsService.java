@@ -12,8 +12,6 @@ import org.springframework.security.core.userdetails.*;
 
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-
 @Service
 public class CustomUserDetailsService
         implements UserDetailsService {
@@ -26,14 +24,29 @@ public class CustomUserDetailsService
             String username)
             throws UsernameNotFoundException {
 
+        String usernameLimpio =
+                username == null
+                        ? ""
+                        : username.trim();
+
         Usuario usuario =
                 repository
-                .findByUsername(username)
+                .findByUsername(usernameLimpio)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "Usuario no encontrado"
                         )
                 );
+
+        String rol =
+                usuario.getRol() == null
+                        ? ""
+                        : usuario.getRol().trim();
+
+        String autoridad =
+                rol.startsWith("ROLE_")
+                        ? rol
+                        : "ROLE_" + rol;
 
         return new User(
 
@@ -44,7 +57,7 @@ public class CustomUserDetailsService
                 List.of(
 
     new SimpleGrantedAuthority(
-            "ROLE_" + usuario.getRol()
+            autoridad
     )
 
 )
