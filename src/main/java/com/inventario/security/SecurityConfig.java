@@ -46,24 +46,56 @@ public class SecurityConfig {
                     CharSequence rawPassword,
                     String encodedPassword) {
 
-                if (encodedPassword == null) {
+                if (rawPassword == null ||
+                        encodedPassword == null) {
 
                     return false;
 
                 }
 
-                if (encodedPassword.startsWith("$2a$") ||
-                        encodedPassword.startsWith("$2b$") ||
-                        encodedPassword.startsWith("$2y$")) {
+                String passwordGuardado =
+                        encodedPassword.trim();
 
-                    return bcrypt.matches(
-                            rawPassword,
-                            encodedPassword);
+                if (passwordGuardado.startsWith("{bcrypt}")) {
+
+                    passwordGuardado =
+                            passwordGuardado.substring(
+                                    "{bcrypt}".length());
 
                 }
 
-                return encodedPassword.equals(
-                        rawPassword.toString());
+                if (passwordGuardado.startsWith("{noop}")) {
+
+                    passwordGuardado =
+                            passwordGuardado.substring(
+                                    "{noop}".length());
+
+                }
+
+                if (passwordGuardado.startsWith("$2a$") ||
+                        passwordGuardado.startsWith("$2b$") ||
+                        passwordGuardado.startsWith("$2y$")) {
+
+                    try {
+
+                        return bcrypt.matches(
+                                rawPassword,
+                                passwordGuardado);
+
+                    } catch (IllegalArgumentException ex) {
+
+                        return false;
+
+                    }
+
+                }
+
+                String passwordIngresado =
+                        rawPassword.toString();
+
+                return passwordGuardado.equals(passwordIngresado) ||
+                        passwordGuardado.equals(
+                                passwordIngresado.trim());
 
             }
 
