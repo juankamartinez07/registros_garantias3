@@ -10,11 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.security.core.userdetails.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class CustomUserDetailsService
         implements UserDetailsService {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(
+                    CustomUserDetailsService.class);
 
     @Autowired
     private UsuarioRepository repository;
@@ -31,12 +38,17 @@ public class CustomUserDetailsService
 
         Usuario usuario =
                 repository
-                .findByUsername(usernameLimpio)
+                .findByUsernameForLogin(usernameLimpio)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "Usuario no encontrado"
                         )
                 );
+
+        logger.info(
+                "Login: usuario encontrado '{}', rol '{}'",
+                usuario.getUsername(),
+                usuario.getRol());
 
         String rol =
                 usuario.getRol() == null
