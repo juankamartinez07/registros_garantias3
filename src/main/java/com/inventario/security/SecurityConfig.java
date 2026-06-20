@@ -9,8 +9,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 import org.springframework.http.HttpMethod;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,77 +27,7 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder(){
 
-        BCryptPasswordEncoder bcrypt =
-                new BCryptPasswordEncoder();
-
-        return new PasswordEncoder() {
-
-            @Override
-            public String encode(CharSequence rawPassword) {
-
-                return bcrypt.encode(rawPassword);
-
-            }
-
-            @Override
-            public boolean matches(
-                    CharSequence rawPassword,
-                    String encodedPassword) {
-
-                if (rawPassword == null ||
-                        encodedPassword == null) {
-
-                    return false;
-
-                }
-
-                String passwordGuardado =
-                        encodedPassword.trim();
-
-                if (passwordGuardado.startsWith("{bcrypt}")) {
-
-                    passwordGuardado =
-                            passwordGuardado.substring(
-                                    "{bcrypt}".length());
-
-                }
-
-                if (passwordGuardado.startsWith("{noop}")) {
-
-                    passwordGuardado =
-                            passwordGuardado.substring(
-                                    "{noop}".length());
-
-                }
-
-                if (passwordGuardado.startsWith("$2a$") ||
-                        passwordGuardado.startsWith("$2b$") ||
-                        passwordGuardado.startsWith("$2y$")) {
-
-                    try {
-
-                        return bcrypt.matches(
-                                rawPassword,
-                                passwordGuardado);
-
-                    } catch (IllegalArgumentException ex) {
-
-                        return false;
-
-                    }
-
-                }
-
-                String passwordIngresado =
-                        rawPassword.toString();
-
-                return passwordGuardado.equals(passwordIngresado) ||
-                        passwordGuardado.equals(
-                                passwordIngresado.trim());
-
-            }
-
-        };
+        return new CompatibleBcryptPasswordEncoder();
 
     }
 
@@ -207,3 +135,4 @@ public class SecurityConfig {
     }
 
 }
+
