@@ -52,7 +52,7 @@ public class TestAdminInitializer
         }
 
         Usuario usuario = repository
-                .findByUsernameForLogin("testadmin")
+                .findByUsername("testadmin")
                 .orElseGet(Usuario::new);
 
         boolean nuevo = usuario.getId() == null;
