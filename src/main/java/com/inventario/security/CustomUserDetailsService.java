@@ -1,5 +1,7 @@
 package com.inventario.security;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -19,6 +21,9 @@ import org.springframework.stereotype.Service;
 public class CustomUserDetailsService
         implements UserDetailsService {
 
+    private static final Set<String> ROLES_VALIDOS =
+            Set.of("SUPER_ADMIN", "ADMIN", "USER");
+
     private static final Logger logger =
             LoggerFactory.getLogger(
                     CustomUserDetailsService.class);
@@ -36,46 +41,61 @@ public class CustomUserDetailsService
                         ? ""
                         : username.trim();
 
-        Usuario usuario =
-                repository
+        Usuario usuario = repository
                 .findByUsernameForLogin(usernameLimpio)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "Usuario no encontrado"
-                        )
-                );
+                .orElseThrow(() -> {
 
-        logger.info(
-                "Login: usuario encontrado '{}', rol '{}'",
-                usuario.getUsername(),
-                usuario.getRol());
+                    logger.warn(
+                            "Login: usuario no encontrado '{}'",
+                            usernameLimpio);
+
+                    return new UsernameNotFoundException(
+                            "Usuario no encontrado");
+
+                });
 
         String rol =
                 usuario.getRol() == null
                         ? ""
-                        : usuario.getRol().trim();
+                        : usuario.getRol()
+                                .trim()
+                                .toUpperCase(Locale.ROOT);
 
-        String autoridad =
-                rol.startsWith("ROLE_")
-                        ? rol
-                        : "ROLE_" + rol;
+        if (rol.startsWith("ROLE_")) {
 
-        return new User(
+            rol = rol.substring("ROLE_".length());
 
+        }
+
+        if (!ROLES_VALIDOS.contains(rol)) {
+
+            logger.warn(
+                    "Login: usuario '{}' tiene rol no reconocido '{}'",
+                    usuario.getUsername(),
+                    rol);
+
+        }
+
+        String autoridad = "ROLE_" + rol;
+        boolean activo = true;
+
+        logger.info(
+                "Login: usuario encontrado='{}', activo={}, rol='{}', authority='{}'",
                 usuario.getUsername(),
+                activo,
+                rol,
+                autoridad);
 
-                usuario.getPassword(),
-
-                List.of(
-
-    new SimpleGrantedAuthority(
-            autoridad
-    )
-
-)
-
-        );
+        return User
+                .withUsername(usuario.getUsername())
+                .password(usuario.getPassword())
+                .authorities(List.of(
+                        new SimpleGrantedAuthority(
+                                autoridad)))
+                .disabled(!activo)
+                .build();
 
     }
 
 }
+
