@@ -1,134 +1,99 @@
 package com.inventario.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-
 import org.springframework.http.HttpMethod;
-
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-
-    // =====================================
-    // PASSWORD ENCODER
-    // =====================================
-
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
 
-        return new CompatibleBcryptPasswordEncoder();
+        return new BCryptPasswordEncoder();
 
     }
 
+    @Bean
+    public AuthenticationProvider authenticationProvider(
+            CustomUserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
 
-    // =====================================
-    // SECURITY FILTER
-    // =====================================
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider(userDetailsService);
+
+        provider.setPasswordEncoder(passwordEncoder);
+
+        return provider;
+
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http,
+            AuthenticationProvider authenticationProvider)
+            throws Exception {
 
         http
-
-            // CSRF
             .csrf(csrf -> csrf.disable())
 
-            // RUTAS
+            .authenticationProvider(authenticationProvider)
+
             .authorizeHttpRequests(auth -> auth
-
                 .requestMatchers(
-
                         "/login",
-
                         "/css/**",
-
                         "/js/**",
-
-                        "/img/**"
-
-                ).permitAll()
+                        "/img/**")
+                .permitAll()
 
                 .requestMatchers(
                         "/usuarios/**",
-                        "/sedes/**"
-                )
+                        "/sedes/**")
                 .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         HttpMethod.PUT,
                         "/proveedores/**",
-                        "/tipos/**"
-                )
+                        "/tipos/**")
                 .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         HttpMethod.DELETE,
                         "/proveedores/**",
-                        "/tipos/**"
-                )
+                        "/tipos/**")
                 .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         "/configuracion/**",
                         "/proveedores/**",
-                        "/tipos/**"
-                )
+                        "/tipos/**")
                 .hasAnyRole("SUPER_ADMIN", "ADMIN")
 
                 .anyRequest()
+                .authenticated())
 
-                .authenticated()
-
-            )
-
-            // LOGIN
             .formLogin(form -> form
-
                 .loginPage("/login")
-
                 .loginProcessingUrl("/login")
-
                 .usernameParameter("username")
-
                 .passwordParameter("password")
-
                 .defaultSuccessUrl("/", true)
-
                 .failureUrl("/login?error")
+                .permitAll())
 
-                .permitAll()
-
-            )
-
-            // LOGOUT
             .logout(logout -> logout
-
                 .logoutUrl("/logout")
-
                 .logoutSuccessUrl("/login?logout")
-
                 .invalidateHttpSession(true)
-
                 .deleteCookies("JSESSIONID")
-
-                .permitAll()
-
-            )
-
-            // USER DETAILS SERVICE
-            .userDetailsService(userDetailsService);
+                .permitAll());
 
         return http.build();
 
