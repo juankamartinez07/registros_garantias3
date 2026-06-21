@@ -32,7 +32,3 @@ build/
 ### VS Code ###
 .vscode/
 
-### Local secrets ###
-.env
-.env.*
-src/main/resources/application-local-secret.properties
