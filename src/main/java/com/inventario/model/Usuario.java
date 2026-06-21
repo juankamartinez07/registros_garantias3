@@ -1,38 +1,36 @@
 package com.inventario.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
-
-
 @Table(name = "usuarios")
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
+    @Column(name = "username", nullable = false)
     private String username;
 
+    @Column(name = "password", nullable = false)
     private String password;
 
+    @Column(name = "rol", nullable = false)
     private String rol;
-    @ManyToOne
 
-@JoinColumn(name = "sede_id")
-
-private Sede sede;
-
-
-    // GETTERS Y SETTERS
-
-    public Sede getSede() {
-    return sede;
-}
-
-public void setSede(Sede sede) {
-    this.sede = sede;
-}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sede_id")
+    private Sede sede;
 
     public Long getId() {
         return id;
@@ -66,4 +64,13 @@ public void setSede(Sede sede) {
         this.rol = rol;
     }
 
+    public Sede getSede() {
+        return sede;
+    }
+
+    public void setSede(Sede sede) {
+        this.sede = sede;
+    }
+
 }
+

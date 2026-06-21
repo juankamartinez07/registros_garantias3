@@ -1,35 +1,40 @@
 package com.inventario.security;
-import java.util.List;
+
 import java.util.Locale;
 import java.util.Set;
-
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.inventario.model.Usuario;
 import com.inventario.repository.UsuarioRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
-import org.springframework.security.core.userdetails.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CustomUserDetailsService
         implements UserDetailsService {
 
-    private static final Set<String> ROLES_VALIDOS =
-            Set.of("SUPER_ADMIN", "ADMIN", "USER");
-
     private static final Logger logger =
             LoggerFactory.getLogger(
                     CustomUserDetailsService.class);
 
-    @Autowired
-    private UsuarioRepository repository;
+    private static final Set<String> ROLES_VALIDOS =
+            Set.of("SUPER_ADMIN", "ADMIN", "USER");
+
+    private static final String BCRYPT_PREFIX = "{bcrypt}";
+
+    private final UsuarioRepository repository;
+
+    public CustomUserDetailsService(
+            UsuarioRepository repository) {
+
+        this.repository = repository;
+
+    }
 
     @Override
     public UserDetails loadUserByUsername(
@@ -37,12 +42,10 @@ public class CustomUserDetailsService
             throws UsernameNotFoundException {
 
         String usernameLimpio =
-                username == null
-                        ? ""
-                        : username.trim();
+                username == null ? "" : username.trim();
 
         Usuario usuario = repository
-                .findByUsernameForLogin(usernameLimpio)
+                .findByUsername(usernameLimpio)
                 .orElseThrow(() -> {
 
                     logger.warn(
@@ -54,46 +57,70 @@ public class CustomUserDetailsService
 
                 });
 
-        String rol =
-                usuario.getRol() == null
-                        ? ""
-                        : usuario.getRol()
-                                .trim()
-                                .toUpperCase(Locale.ROOT);
-
-        if (rol.startsWith("ROLE_")) {
-
-            rol = rol.substring("ROLE_".length());
-
-        }
+        String rol = normalizarRol(usuario.getRol());
 
         if (!ROLES_VALIDOS.contains(rol)) {
 
             logger.warn(
-                    "Login: usuario '{}' tiene rol no reconocido '{}'",
+                    "Login: usuario '{}' tiene rol invÃ¡lido '{}'",
                     usuario.getUsername(),
                     rol);
 
+            throw new UsernameNotFoundException(
+                    "Usuario con rol invÃ¡lido");
+
         }
 
-        String autoridad = "ROLE_" + rol;
-        boolean activo = true;
+        String authority = "ROLE_" + rol;
 
         logger.info(
-                "Login: usuario encontrado='{}', activo={}, rol='{}', authority='{}'",
+                "Login: usuario encontrado='{}', activo=true, rol='{}', authority='{}'",
                 usuario.getUsername(),
-                activo,
                 rol,
-                autoridad);
+                authority);
 
         return User
                 .withUsername(usuario.getUsername())
-                .password(usuario.getPassword())
-                .authorities(List.of(
-                        new SimpleGrantedAuthority(
-                                autoridad)))
-                .disabled(!activo)
+                .password(normalizarPassword(usuario.getPassword()))
+                .authorities(authority)
                 .build();
+
+    }
+
+    static String normalizarPassword(String password) {
+
+        if (password == null) {
+
+            return "";
+
+        }
+
+        String passwordLimpio = password.trim();
+
+        if (passwordLimpio.startsWith(BCRYPT_PREFIX)) {
+
+            return passwordLimpio.substring(
+                    BCRYPT_PREFIX.length());
+
+        }
+
+        return passwordLimpio;
+
+    }
+
+    private static String normalizarRol(String rol) {
+
+        String rolLimpio = rol == null
+                ? ""
+                : rol.trim().toUpperCase(Locale.ROOT);
+
+        if (rolLimpio.startsWith("ROLE_")) {
+
+            return rolLimpio.substring("ROLE_".length());
+
+        }
+
+        return rolLimpio;
 
     }
 
