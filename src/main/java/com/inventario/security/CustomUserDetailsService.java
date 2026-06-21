@@ -6,8 +6,6 @@ import java.util.Set;
 import com.inventario.model.Usuario;
 import com.inventario.repository.UsuarioRepository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,10 +15,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomUserDetailsService
         implements UserDetailsService {
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(
-                    CustomUserDetailsService.class);
 
     private static final Set<String> ROLES_VALIDOS =
             Set.of("SUPER_ADMIN", "ADMIN", "USER");
@@ -46,25 +40,13 @@ public class CustomUserDetailsService
 
         Usuario usuario = repository
                 .findByUsername(usernameLimpio)
-                .orElseThrow(() -> {
-
-                    logger.warn(
-                            "Login: usuario no encontrado '{}'",
-                            usernameLimpio);
-
-                    return new UsernameNotFoundException(
-                            "Usuario no encontrado");
-
-                });
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "Usuario no encontrado"));
 
         String rol = normalizarRol(usuario.getRol());
 
         if (!ROLES_VALIDOS.contains(rol)) {
-
-            logger.warn(
-                    "Login: usuario '{}' tiene rol invÃ¡lido '{}'",
-                    usuario.getUsername(),
-                    rol);
 
             throw new UsernameNotFoundException(
                     "Usuario con rol invÃ¡lido");
@@ -72,12 +54,6 @@ public class CustomUserDetailsService
         }
 
         String authority = "ROLE_" + rol;
-
-        logger.info(
-                "Login: usuario encontrado='{}', activo=true, rol='{}', authority='{}'",
-                usuario.getUsername(),
-                rol,
-                authority);
 
         return User
                 .withUsername(usuario.getUsername())
