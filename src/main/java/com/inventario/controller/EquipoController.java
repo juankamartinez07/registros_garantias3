@@ -10,6 +10,7 @@ import com.inventario.repository.ProveedorRepository;
 import com.inventario.repository.TipoProductoRepository;
 import com.inventario.service.EquipoService;
 import com.inventario.service.EquipoService.ResultadoImportacionExcel;
+import com.inventario.service.EquipoService.SedeExcel;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -56,8 +57,10 @@ public class EquipoController {
     }
 
     @GetMapping("/excel")
-    public ResponseEntity<byte[]> exportarExcel() {
-        byte[] archivo = equipoService.exportarExcel();
+    public ResponseEntity<byte[]> exportarExcel(
+            @RequestParam(required = false) Long sedeId) {
+
+        byte[] archivo = equipoService.exportarExcel(sedeId);
 
         return ResponseEntity.ok()
                 .header(
@@ -66,6 +69,11 @@ public class EquipoController {
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(archivo);
+    }
+
+    @GetMapping("/sedes-excel")
+    public List<SedeExcel> listarSedesExcel() {
+        return equipoService.listarSedesExcel();
     }
 
     @PostMapping("/excel")

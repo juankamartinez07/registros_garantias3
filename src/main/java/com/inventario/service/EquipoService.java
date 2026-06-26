@@ -4,11 +4,13 @@ import com.inventario.dto.EquipoDTO;
 import com.inventario.model.Equipo;
 import com.inventario.model.Producto;
 import com.inventario.model.Proveedor;
+import com.inventario.model.Sede;
 import com.inventario.model.TipoProducto;
 import com.inventario.model.Usuario;
 import com.inventario.repository.EquipoRepository;
 import com.inventario.repository.ProductoRepository;
 import com.inventario.repository.ProveedorRepository;
+import com.inventario.repository.SedeRepository;
 import com.inventario.repository.TipoProductoRepository;
 import com.inventario.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
@@ -58,19 +60,22 @@ public class EquipoService {
     private final ProveedorRepository proveedorRepository;
     private final TipoProductoRepository tipoProductoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final SedeRepository sedeRepository;
 
     public EquipoService(
             EquipoRepository equipoRepository,
             ProductoRepository productoRepository,
             ProveedorRepository proveedorRepository,
             TipoProductoRepository tipoProductoRepository,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            SedeRepository sedeRepository
     ) {
         this.equipoRepository = equipoRepository;
         this.productoRepository = productoRepository;
         this.proveedorRepository = proveedorRepository;
         this.tipoProductoRepository = tipoProductoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.sedeRepository = sedeRepository;
     }
 
     public List<Equipo> listar() {
@@ -206,7 +211,7 @@ public class EquipoService {
         equipoRepository.deleteById(id);
     }
 
-    public byte[] exportarExcel() {
+    public byte[] exportarExcel(Long sedeId) {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
 
@@ -223,7 +228,7 @@ public class EquipoService {
                 celda.setCellStyle(estiloEncabezado);
             }
 
-            List<Equipo> equipos = equipoRepository.findAll();
+            List<Equipo> equipos = equiposParaExportar(sedeId);
             int filaActual = 1;
 
             for (Equipo equipo : equipos) {
@@ -248,6 +253,29 @@ public class EquipoService {
         } catch (IOException exception) {
             throw new RuntimeException("No se pudo generar el archivo Excel");
         }
+    }
+
+    public List<SedeExcel> listarSedesExcel() {
+        return sedeRepository.findAll()
+                .stream()
+                .map(sede -> new SedeExcel(
+                        sede.getId(),
+                        valor(sede.getNombre())))
+                .toList();
+    }
+
+    private List<Equipo> equiposParaExportar(Long sedeId) {
+        List<Equipo> equipos = equipoRepository.findAll();
+
+        if (sedeId == null) {
+            return equipos;
+        }
+
+        return equipos
+                .stream()
+                .filter(equipo -> equipo.getSede() != null)
+                .filter(equipo -> sedeId.equals(equipo.getSede().getId()))
+                .toList();
     }
 
     @Transactional
@@ -463,5 +491,8 @@ public class EquipoService {
     }
 
     public record ResultadoImportacionExcel(int total, int registrados) {
+    }
+
+    public record SedeExcel(Long id, String nombre) {
     }
 }

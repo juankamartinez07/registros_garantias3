@@ -483,7 +483,7 @@
 
                     <button
                         class="btn btn-success"
-                        onclick="descargarExcel()">
+                        onclick="preguntarDescargaExcel()">
 
                         Descargar Excel
 
@@ -493,12 +493,14 @@
                         type="file"
                         id="archivoExcel"
                         accept=".xlsx"
+                        disabled
                         style="display:none;"
                         onchange="subirExcel()">
 
                     <button
                         class="btn btn-outline-success"
-                        onclick="document.getElementById('archivoExcel').click()">
+                        disabled
+                        title="Carga de Excel temporalmente deshabilitada">
 
                         Subir Excel
 
@@ -507,6 +509,7 @@
                 </div>
 
             </div>
+
 
         </div>
 
@@ -1346,13 +1349,71 @@ function eliminarEquipo(id){
 
 
 // EXCEL
-function descargarExcel(){
+function preguntarDescargaExcel(){
 
-    window.location.href = "/equipos/excel";
+    fetch("/equipos/sedes-excel")
+    .then(response => response.json())
+    .then(sedes => {
+
+        let opciones =
+            "Seleccione que registros desea descargar:\\n\\n0. Todos los registros";
+
+        sedes.forEach((sede, indice) => {
+            opciones += `\\n${indice + 1}. ${sede.nombre}`;
+        });
+
+        let seleccion =
+            prompt(opciones, "0");
+
+        if(seleccion === null){
+            return;
+        }
+
+        seleccion =
+            seleccion.trim();
+
+        if(seleccion === "0"){
+            descargarExcel(null);
+            return;
+        }
+
+        let indice =
+            Number(seleccion) - 1;
+
+        if(Number.isNaN(indice) || !sedes[indice]){
+            alert("Seleccione una opcion valida.");
+            return;
+        }
+
+        descargarExcel(sedes[indice].id);
+
+    })
+    .catch(() => {
+
+        if(confirm("No se pudieron cargar las sedes. ¿Desea descargar todos los registros?")){
+            descargarExcel(null);
+        }
+
+    });
+
+}
+
+function descargarExcel(sedeId){
+
+    let url = "/equipos/excel";
+
+    if(sedeId !== null && sedeId !== undefined){
+        url += "?sedeId=" + encodeURIComponent(sedeId);
+    }
+
+    window.location.href = url;
 
 }
 
 function subirExcel(){
+
+    alert("La carga de Excel esta temporalmente deshabilitada.");
+    return;
 
     let input =
         document.getElementById("archivoExcel");
@@ -1399,6 +1460,7 @@ function subirExcel(){
     });
 
 }
+
 
 
 // BUSCAR
