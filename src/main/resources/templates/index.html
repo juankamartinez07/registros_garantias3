@@ -152,6 +152,132 @@
             font-size:15px;
         }
 
+        .modal-excel{
+            display:none;
+            position:fixed;
+            inset:0;
+            z-index:1000;
+            align-items:center;
+            justify-content:center;
+            padding:22px;
+            background:rgba(2,6,23,0.64);
+        }
+
+        .modal-excel.visible{
+            display:flex;
+        }
+
+        .modal-excel-contenido{
+            width:min(640px, 100%);
+            max-height:88vh;
+            overflow:auto;
+            background:#ffffff;
+            border-radius:14px;
+            box-shadow:0 24px 70px rgba(0,0,0,0.34);
+        }
+
+        .modal-excel-cabecera{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:16px;
+            padding:22px 24px 12px;
+            border-bottom:1px solid #e5e7eb;
+        }
+
+        .modal-excel-cabecera h4{
+            margin:0;
+            font-size:22px;
+            font-weight:700;
+            color:#0f172a;
+        }
+
+        .modal-excel-cabecera p{
+            margin:6px 0 0;
+            color:#64748b;
+        }
+
+        .modal-excel-cerrar{
+            border:0;
+            background:#f1f5f9;
+            color:#0f172a;
+            width:34px;
+            height:34px;
+            border-radius:50%;
+            font-size:22px;
+            line-height:1;
+        }
+
+        .modal-excel-cuerpo{
+            padding:20px 24px 8px;
+        }
+
+        .excel-opciones{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+            gap:12px;
+        }
+
+        .excel-opcion{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            width:100%;
+            min-height:74px;
+            border:1px solid #dbe3ef;
+            background:#ffffff;
+            border-radius:12px;
+            padding:14px;
+            text-align:left;
+            transition:all .18s ease;
+        }
+
+        .excel-opcion:hover{
+            border-color:#0d6efd;
+            box-shadow:0 10px 24px rgba(13,110,253,0.14);
+            transform:translateY(-1px);
+        }
+
+        .excel-opcion.activa{
+            border-color:#0d6efd;
+            background:#eef6ff;
+            box-shadow:0 0 0 3px rgba(13,110,253,0.16);
+        }
+
+        .excel-opcion-icono{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            width:42px;
+            height:42px;
+            border-radius:10px;
+            background:#e0f2fe;
+            color:#075985;
+            font-weight:800;
+            flex:0 0 auto;
+        }
+
+        .excel-opcion strong{
+            display:block;
+            color:#0f172a;
+            line-height:1.2;
+        }
+
+        .excel-opcion span{
+            display:block;
+            margin-top:4px;
+            color:#64748b;
+            font-size:13px;
+        }
+
+        .modal-excel-pie{
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+            padding:16px 24px 22px;
+            border-top:1px solid #e5e7eb;
+        }
+
         @media(max-width:900px){
 
             body{
@@ -545,10 +671,71 @@
 
 </div>
 
+<div
+    id="modalDescargaExcel"
+    class="modal-excel">
+
+    <div class="modal-excel-contenido">
+
+        <div class="modal-excel-cabecera">
+
+            <div>
+                <h4>Descargar inventario</h4>
+                <p>Seleccione el alcance del archivo Excel.</p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-excel-cerrar"
+                onclick="cerrarModalDescargaExcel()">
+                &times;
+            </button>
+
+        </div>
+
+        <div class="modal-excel-cuerpo">
+
+            <div
+                id="estadoSedesExcel"
+                class="alert alert-info mb-3">
+                Cargando sedes...
+            </div>
+
+            <div
+                id="opcionesSedesExcel"
+                class="excel-opciones">
+            </div>
+
+        </div>
+
+        <div class="modal-excel-pie">
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                onclick="cerrarModalDescargaExcel()">
+                Cancelar
+            </button>
+
+            <button
+                type="button"
+                id="botonConfirmarDescargaExcel"
+                class="btn btn-success"
+                onclick="confirmarDescargaExcel()">
+                Descargar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 <script>
 
 let tiposDisponibles = [];
+let sedeExcelSeleccionada = null;
 
 function puedeEliminarEquipos(){
 
@@ -1351,50 +1538,133 @@ function eliminarEquipo(id){
 // EXCEL
 function preguntarDescargaExcel(){
 
+    sedeExcelSeleccionada = null;
+
+    document
+        .getElementById("modalDescargaExcel")
+        .classList
+        .add("visible");
+
+    document
+        .getElementById("botonConfirmarDescargaExcel")
+        .disabled = true;
+
+    document
+        .getElementById("estadoSedesExcel")
+        .className = "alert alert-info mb-3";
+
+    document
+        .getElementById("estadoSedesExcel")
+        .innerHTML = "Cargando sedes...";
+
+    document
+        .getElementById("opcionesSedesExcel")
+        .innerHTML = "";
+
     fetch("/equipos/sedes-excel")
     .then(response => response.json())
     .then(sedes => {
 
-        let opciones =
-            "Seleccione que registros desea descargar:\\n\\n0. Todos los registros";
-
-        sedes.forEach((sede, indice) => {
-            opciones += `\\n${indice + 1}. ${sede.nombre}`;
-        });
-
-        let seleccion =
-            prompt(opciones, "0");
-
-        if(seleccion === null){
-            return;
-        }
-
-        seleccion =
-            seleccion.trim();
-
-        if(seleccion === "0"){
-            descargarExcel(null);
-            return;
-        }
-
-        let indice =
-            Number(seleccion) - 1;
-
-        if(Number.isNaN(indice) || !sedes[indice]){
-            alert("Seleccione una opcion valida.");
-            return;
-        }
-
-        descargarExcel(sedes[indice].id);
+        renderizarOpcionesDescargaExcel(sedes);
 
     })
     .catch(() => {
 
-        if(confirm("No se pudieron cargar las sedes. ¿Desea descargar todos los registros?")){
-            descargarExcel(null);
-        }
+        document
+            .getElementById("estadoSedesExcel")
+            .className = "alert alert-warning mb-3";
+
+        document
+            .getElementById("estadoSedesExcel")
+            .innerHTML = "No se pudieron cargar las sedes. Puede descargar todos los registros.";
+
+        renderizarOpcionesDescargaExcel([]);
 
     });
+
+}
+
+function renderizarOpcionesDescargaExcel(sedes){
+
+    let opciones =
+        document.getElementById("opcionesSedesExcel");
+
+    document
+        .getElementById("estadoSedesExcel")
+        .className = "alert alert-light border mb-3";
+
+    document
+        .getElementById("estadoSedesExcel")
+        .innerHTML = "Elija una sede o descargue toda la base.";
+
+    let html = `
+        <button
+            type="button"
+            class="excel-opcion activa"
+            data-sede-id=""
+            onclick="seleccionarSedeExcel(null, this)">
+            <div class="excel-opcion-icono">All</div>
+            <div>
+                <strong>Todos los registros</strong>
+                <span>Incluye todas las sedes de la base de datos.</span>
+            </div>
+        </button>
+    `;
+
+    sedes.forEach(sede => {
+
+        html += `
+            <button
+                type="button"
+                class="excel-opcion"
+                data-sede-id="${sede.id}"
+                onclick="seleccionarSedeExcel(${sede.id}, this)">
+                <div class="excel-opcion-icono">
+                    ${inicialesSede(sede.nombre)}
+                </div>
+                <div>
+                    <strong>${escaparHtml(sede.nombre)}</strong>
+                    <span>Solo registros de esta sede.</span>
+                </div>
+            </button>
+        `;
+
+    });
+
+    opciones.innerHTML = html;
+    sedeExcelSeleccionada = null;
+
+    document
+        .getElementById("botonConfirmarDescargaExcel")
+        .disabled = false;
+
+}
+
+function seleccionarSedeExcel(sedeId, boton){
+
+    sedeExcelSeleccionada = sedeId;
+
+    document
+        .querySelectorAll(".excel-opcion")
+        .forEach(opcion => opcion.classList.remove("activa"));
+
+    boton.classList.add("activa");
+
+}
+
+function confirmarDescargaExcel(){
+
+    descargarExcel(sedeExcelSeleccionada);
+    cerrarModalDescargaExcel();
+
+}
+
+function cerrarModalDescargaExcel(){
+
+    document
+        .getElementById("modalDescargaExcel")
+        .classList
+        .remove("visible");
 
 }
 
@@ -1407,6 +1677,32 @@ function descargarExcel(sedeId){
     }
 
     window.location.href = url;
+
+}
+
+function inicialesSede(nombre){
+
+    let partes =
+        (nombre || "Sede")
+        .trim()
+        .split(/\s+/)
+        .filter(parte => parte !== "");
+
+    return partes
+        .slice(0, 2)
+        .map(parte => parte.charAt(0).toUpperCase())
+        .join("");
+
+}
+
+function escaparHtml(valor){
+
+    return String(valor || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
 }
 
