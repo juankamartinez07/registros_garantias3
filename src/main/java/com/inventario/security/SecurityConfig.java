@@ -66,6 +66,11 @@ public class SecurityConfig {
 
                 .requestMatchers(
                         HttpMethod.DELETE,
+                        "/equipos/**")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN")
+
+                .requestMatchers(
+                        HttpMethod.DELETE,
                         "/proveedores/**",
                         "/tipos/**")
                 .hasRole("SUPER_ADMIN")
@@ -100,4 +105,3 @@ public class SecurityConfig {
     }
 
 }
-

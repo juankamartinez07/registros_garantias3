@@ -168,6 +168,12 @@
 
 <div class="container mt-4 mb-5">
 
+    <div
+        id="permisoEliminarEquipos"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')"
+        style="display:none;">
+    </div>
+
    <div class="d-flex justify-content-between align-items-center mb-4">
 
     <h1 class="titulo">
@@ -450,16 +456,17 @@
 
             <div class="col-md-8">
 
-                <div class="d-flex justify-content-end">
+                <div class="d-flex justify-content-end flex-wrap gap-2">
 
                     <input
                         type="text"
                         id="filtroTabla"
-                        class="form-control me-2"
+                        class="form-control"
+                        style="max-width:220px;"
                         placeholder="Buscar serial...">
 
                     <button
-                        class="btn btn-primary me-2"
+                        class="btn btn-primary"
                         onclick="filtrarTabla()">
 
                         Buscar
@@ -471,6 +478,29 @@
                         onclick="listarEquipos()">
 
                         Actualizar
+
+                    </button>
+
+                    <button
+                        class="btn btn-success"
+                        onclick="descargarExcel()">
+
+                        Descargar Excel
+
+                    </button>
+
+                    <input
+                        type="file"
+                        id="archivoExcel"
+                        accept=".xlsx"
+                        style="display:none;"
+                        onchange="subirExcel()">
+
+                    <button
+                        class="btn btn-outline-success"
+                        onclick="document.getElementById('archivoExcel').click()">
+
+                        Subir Excel
 
                     </button>
 
@@ -516,6 +546,13 @@
 <script>
 
 let tiposDisponibles = [];
+
+function puedeEliminarEquipos(){
+
+    return document
+        .getElementById("permisoEliminarEquipos") !== null;
+
+}
 
 window.onload = function(){
 
@@ -1184,6 +1221,30 @@ function listarEquipos(){
 
         data.forEach(e => {
 
+            let acciones = `
+                <button
+                    class="btn btn-warning btn-sm me-2"
+                    onclick="window.location.href='/editar?id=${e.id_equipo}'">
+
+                    Editar
+
+                </button>
+            `;
+
+            if(puedeEliminarEquipos()){
+
+                acciones += `
+                    <button
+                        class="btn btn-danger btn-sm"
+                        onclick="eliminarEquipo(${e.id_equipo})">
+
+                        Eliminar
+
+                    </button>
+                `;
+
+            }
+
             tabla += `
 
                 <tr>
@@ -1204,21 +1265,7 @@ function listarEquipos(){
 
                     <td>
 
-                        <button
-                            class="btn btn-warning btn-sm me-2"
-                            onclick="window.location.href='/editar?id=${e.id_equipo}'">
-
-                            Editar
-
-                        </button>
-
-                        <button
-                            class="btn btn-danger btn-sm"
-                            onclick="eliminarEquipo(${e.id_equipo})">
-
-                            Eliminar
-
-                        </button>
+                        ${acciones}
 
                     </td>
 
@@ -1267,15 +1314,87 @@ function filtrarTabla(){
 // ELIMINAR
 function eliminarEquipo(id){
 
+    if(!confirm("¿Eliminar este equipo?")){
+        return;
+    }
+
     fetch("/equipos/" + id, {
 
         method:"DELETE"
 
     })
 
-    .then(() => {
+    .then(async response => {
+
+        if(!response.ok){
+
+            let mensaje =
+                await response.text();
+
+            throw new Error(mensaje || "No tiene permisos para eliminar.");
+
+        }
 
         listarEquipos();
+
+    })
+    .catch(error => {
+        alert(error.message || "No se pudo eliminar el equipo.");
+    });
+
+}
+
+
+// EXCEL
+function descargarExcel(){
+
+    window.location.href = "/equipos/excel";
+
+}
+
+function subirExcel(){
+
+    let input =
+        document.getElementById("archivoExcel");
+
+    if(!input.files || input.files.length === 0){
+        return;
+    }
+
+    let formData =
+        new FormData();
+
+    formData.append("archivo", input.files[0]);
+
+    fetch("/equipos/excel", {
+        method:"POST",
+        body:formData
+    })
+    .then(async response => {
+
+        if(!response.ok){
+
+            let mensaje =
+                await response.text();
+
+            throw new Error(mensaje || "No se pudo importar el archivo.");
+
+        }
+
+        return response.json();
+
+    })
+    .then(resultado => {
+
+        alert(`Excel importado correctamente. Registros cargados: ${resultado.registrados}`);
+        input.value = "";
+        listarEquipos();
+
+    })
+    .catch(error => {
+
+        alert(error.message || "No se pudo importar el archivo.");
+        input.value = "";
 
     });
 

@@ -49,7 +49,7 @@ public class CustomUserDetailsService
         if (!ROLES_VALIDOS.contains(rol)) {
 
             throw new UsernameNotFoundException(
-                    "Usuario con rol invÃ¡lido");
+                    "Usuario con rol inválido");
 
         }
 
@@ -92,7 +92,13 @@ public class CustomUserDetailsService
 
         if (rolLimpio.startsWith("ROLE_")) {
 
-            return rolLimpio.substring("ROLE_".length());
+            rolLimpio = rolLimpio.substring("ROLE_".length());
+
+        }
+
+        if ("USUARIO".equals(rolLimpio)) {
+
+            return "USER";
 
         }
 
@@ -101,4 +107,3 @@ public class CustomUserDetailsService
     }
 
 }
-

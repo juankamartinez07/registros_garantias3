@@ -9,7 +9,11 @@ import com.inventario.repository.ProductoRepository;
 import com.inventario.repository.ProveedorRepository;
 import com.inventario.repository.TipoProductoRepository;
 import com.inventario.service.EquipoService;
+import com.inventario.service.EquipoService.ResultadoImportacionExcel;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,8 +22,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -47,6 +53,27 @@ public class EquipoController {
     @GetMapping
     public List<Equipo> listar() {
         return equipoService.listar();
+    }
+
+    @GetMapping("/excel")
+    public ResponseEntity<byte[]> exportarExcel() {
+        byte[] archivo = equipoService.exportarExcel();
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=inventario.xlsx")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo);
+    }
+
+    @PostMapping("/excel")
+    public ResultadoImportacionExcel importarExcel(
+            @RequestParam("archivo") MultipartFile archivo) {
+
+        return equipoService.importarExcel(archivo);
+
     }
 
     @GetMapping("/id/{id}")

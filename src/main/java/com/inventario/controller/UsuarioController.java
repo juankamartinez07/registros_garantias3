@@ -10,10 +10,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
+
+    private static final Set<String> ROLES_VALIDOS =
+            Set.of("SUPER_ADMIN", "ADMIN", "USER");
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -60,8 +65,7 @@ public class UsuarioController {
                 passwordEncoder.encode(
                         solicitud.getPassword()));
 
-        usuario.setRol(
-                solicitud.getRol().trim());
+        usuario.setRol(normalizarRol(solicitud.getRol()));
 
         usuario.setSede(
                 obtenerSede(solicitud.getSedeId()));
@@ -134,6 +138,35 @@ public class UsuarioController {
                     "Seleccione el rol del usuario.");
 
         }
+
+        if (!ROLES_VALIDOS.contains(normalizarRol(solicitud.getRol()))) {
+
+            throw new RuntimeException(
+                    "Seleccione un rol valido.");
+
+        }
+
+    }
+
+    private String normalizarRol(String rol) {
+
+        String rolLimpio = rol == null
+                ? ""
+                : rol.trim().toUpperCase(Locale.ROOT);
+
+        if (rolLimpio.startsWith("ROLE_")) {
+
+            rolLimpio = rolLimpio.substring("ROLE_".length());
+
+        }
+
+        if ("USUARIO".equals(rolLimpio)) {
+
+            return "USER";
+
+        }
+
+        return rolLimpio;
 
     }
 

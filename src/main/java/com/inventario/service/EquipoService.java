@@ -12,16 +12,46 @@ import com.inventario.repository.ProveedorRepository;
 import com.inventario.repository.TipoProductoRepository;
 import com.inventario.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
 public class EquipoService {
+
+    private static final String[] COLUMNAS_EXCEL = {
+            "Serial",
+            "Producto",
+            "Tipo / Marca",
+            "Proveedor",
+            "Factura",
+            "Fecha",
+            "Estado",
+            "Sede",
+            "Registrado por"
+    };
 
     private final EquipoRepository equipoRepository;
     private final ProductoRepository productoRepository;
@@ -176,6 +206,189 @@ public class EquipoService {
         equipoRepository.deleteById(id);
     }
 
+    public byte[] exportarExcel() {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Inventario");
+            CellStyle estiloEncabezado = workbook.createCellStyle();
+            Font fuenteEncabezado = workbook.createFont();
+            fuenteEncabezado.setBold(true);
+            estiloEncabezado.setFont(fuenteEncabezado);
+
+            Row encabezado = sheet.createRow(0);
+            for (int i = 0; i < COLUMNAS_EXCEL.length; i++) {
+                Cell celda = encabezado.createCell(i);
+                celda.setCellValue(COLUMNAS_EXCEL[i]);
+                celda.setCellStyle(estiloEncabezado);
+            }
+
+            List<Equipo> equipos = equipoRepository.findAll();
+            int filaActual = 1;
+
+            for (Equipo equipo : equipos) {
+                Row fila = sheet.createRow(filaActual++);
+                fila.createCell(0).setCellValue(valor(equipo.getSerial()));
+                fila.createCell(1).setCellValue(equipo.getProducto() == null ? "" : valor(equipo.getProducto().getNombre()));
+                fila.createCell(2).setCellValue(equipo.getTipoProducto() == null ? "" : valor(equipo.getTipoProducto().getNombre()));
+                fila.createCell(3).setCellValue(equipo.getProveedor() == null ? "" : valor(equipo.getProveedor().getNombre()));
+                fila.createCell(4).setCellValue(valor(equipo.getFactura()));
+                fila.createCell(5).setCellValue(valor(equipo.getFecha()));
+                fila.createCell(6).setCellValue(valor(equipo.getEstado()));
+                fila.createCell(7).setCellValue(equipo.getSede() == null ? "" : valor(equipo.getSede().getNombre()));
+                fila.createCell(8).setCellValue(valor(equipo.getUsuarioRegistro()));
+            }
+
+            for (int i = 0; i < COLUMNAS_EXCEL.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(salida);
+            return salida.toByteArray();
+        } catch (IOException exception) {
+            throw new RuntimeException("No se pudo generar el archivo Excel");
+        }
+    }
+
+    @Transactional
+    public ResultadoImportacionExcel importarExcel(MultipartFile archivo) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new RuntimeException("Seleccione un archivo Excel.");
+        }
+
+        String nombreArchivo = archivo.getOriginalFilename();
+        if (nombreArchivo == null || !nombreArchivo.toLowerCase().endsWith(".xlsx")) {
+            throw new RuntimeException("El archivo debe tener formato .xlsx");
+        }
+
+        List<FilaExcel> filas = leerFilasExcel(archivo);
+        if (filas.isEmpty()) {
+            throw new RuntimeException("El archivo no contiene registros para importar.");
+        }
+
+        validarSerialesExcel(filas);
+
+        int registrados = 0;
+        for (FilaExcel fila : filas) {
+            try {
+                guardarCompleto(fila.dto());
+                registrados++;
+            } catch (RuntimeException exception) {
+                throw new RuntimeException("Fila " + fila.numero() + ": " + exception.getMessage());
+            }
+        }
+
+        return new ResultadoImportacionExcel(filas.size(), registrados);
+    }
+
+    private List<FilaExcel> leerFilasExcel(MultipartFile archivo) {
+        try (Workbook workbook = WorkbookFactory.create(archivo.getInputStream())) {
+            Sheet sheet = workbook.getNumberOfSheets() == 0 ? null : workbook.getSheetAt(0);
+            if (sheet == null) {
+                return List.of();
+            }
+
+            DataFormatter formatter = new DataFormatter();
+            List<FilaExcel> filas = new ArrayList<>();
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (filaVacia(row, formatter)) {
+                    continue;
+                }
+
+                EquipoDTO dto = new EquipoDTO();
+                dto.setSerial(textoCelda(row, 0, formatter));
+                dto.setProducto(textoCelda(row, 1, formatter));
+                dto.setTipo(textoCelda(row, 2, formatter));
+                dto.setProveedor(textoCelda(row, 3, formatter));
+                dto.setFactura(textoCelda(row, 4, formatter));
+                dto.setFecha(fechaCelda(row, 5, formatter));
+                dto.setEstado(textoCelda(row, 6, formatter));
+
+                filas.add(new FilaExcel(i + 1, dto));
+            }
+
+            return filas;
+        } catch (IOException exception) {
+            throw new RuntimeException("No se pudo leer el archivo Excel.");
+        }
+    }
+
+    private void validarSerialesExcel(List<FilaExcel> filas) {
+        Map<String, Integer> serialesArchivo = new HashMap<>();
+        List<String> errores = new ArrayList<>();
+
+        for (FilaExcel fila : filas) {
+            String serial = limpiar(fila.dto().getSerial());
+            if (serial == null) {
+                errores.add("Fila " + fila.numero() + ": el serial es obligatorio");
+                continue;
+            }
+
+            Integer filaRepetida = serialesArchivo.putIfAbsent(serial, fila.numero());
+            if (filaRepetida != null) {
+                errores.add("Fila " + fila.numero() + ": serial repetido en el archivo. Ya existe en la fila " + filaRepetida);
+            }
+
+            if (equipoRepository.findBySerial(serial).isPresent()) {
+                errores.add("Fila " + fila.numero() + ": el serial " + serial + " ya se encuentra registrado");
+            }
+        }
+
+        if (!errores.isEmpty()) {
+            throw new RuntimeException(String.join("\n", errores));
+        }
+    }
+
+    private boolean filaVacia(Row row, DataFormatter formatter) {
+        if (row == null) {
+            return true;
+        }
+
+        for (int i = 0; i <= 6; i++) {
+            if (limpiar(textoCelda(row, i, formatter)) != null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private String textoCelda(Row row, int indice, DataFormatter formatter) {
+        if (row == null) {
+            return null;
+        }
+
+        Cell cell = row.getCell(indice);
+        if (cell == null) {
+            return null;
+        }
+
+        return limpiar(formatter.formatCellValue(cell));
+    }
+
+    private String fechaCelda(Row row, int indice, DataFormatter formatter) {
+        if (row == null) {
+            return null;
+        }
+
+        Cell cell = row.getCell(indice);
+        if (cell == null) {
+            return null;
+        }
+
+        if (DateUtil.isCellDateFormatted(cell)) {
+            LocalDate fecha = cell.getDateCellValue()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+            return fecha.toString();
+        }
+
+        return textoCelda(row, indice, formatter);
+    }
+
     private TipoProducto obtenerTipo(String nombre) {
         String valor = limpiar(nombre);
         if (valor == null) {
@@ -240,5 +453,15 @@ public class EquipoService {
         }
         String limpio = valor.trim();
         return limpio.isEmpty() ? null : limpio;
+    }
+
+    private String valor(String valor) {
+        return valor == null ? "" : valor;
+    }
+
+    private record FilaExcel(int numero, EquipoDTO dto) {
+    }
+
+    public record ResultadoImportacionExcel(int total, int registrados) {
     }
 }
