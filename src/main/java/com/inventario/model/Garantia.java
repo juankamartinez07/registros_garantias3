@@ -26,6 +26,9 @@ public class Garantia {
     @JoinColumn(name = "equipo_id")
     private Equipo equipo;
 
+    @Column(name = "numero_ticket", unique = true)
+    private String numeroTicket;
+
     private String sede;
 
     @Column(name = "referencia_producto")
@@ -87,6 +90,14 @@ public class Garantia {
 
     public void setEquipo(Equipo equipo) {
         this.equipo = equipo;
+    }
+
+    public String getNumeroTicket() {
+        return numeroTicket;
+    }
+
+    public void setNumeroTicket(String numeroTicket) {
+        this.numeroTicket = numeroTicket;
     }
 
     public String getSede() {

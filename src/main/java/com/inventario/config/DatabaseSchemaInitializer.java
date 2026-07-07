@@ -39,6 +39,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                 create table if not exists garantias (
                     id bigint not null auto_increment,
                     equipo_id bigint null,
+                    numero_ticket varchar(32) null,
                     sede varchar(255) null,
                     referencia_producto varchar(255) null,
                     serial varchar(255) not null,
@@ -53,6 +54,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     fecha_creacion datetime null,
                     fecha_actualizacion datetime null,
                     primary key (id),
+                    unique index uk_garantias_numero_ticket (numero_ticket),
                     index idx_garantias_serial (serial),
                     index idx_garantias_estado (estado),
                     constraint fk_garantias_equipo
@@ -61,5 +63,33 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                         on delete set null
                 )
                 """);
+
+        Integer existeNumeroTicket = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.columns
+                where table_schema = database()
+                  and table_name = 'garantias'
+                  and column_name = 'numero_ticket'
+                """,
+                Integer.class);
+
+        if (existeNumeroTicket == null || existeNumeroTicket == 0) {
+            jdbcTemplate.execute("alter table garantias add column numero_ticket varchar(32) null after equipo_id");
+        }
+
+        Integer existeIndiceTicket = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.statistics
+                where table_schema = database()
+                  and table_name = 'garantias'
+                  and index_name = 'uk_garantias_numero_ticket'
+                """,
+                Integer.class);
+
+        if (existeIndiceTicket == null || existeIndiceTicket == 0) {
+            jdbcTemplate.execute("create unique index uk_garantias_numero_ticket on garantias (numero_ticket)");
+        }
     }
 }

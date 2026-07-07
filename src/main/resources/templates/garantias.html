@@ -94,6 +94,11 @@
 
             <div class="row">
                 <div class="col-md-4 mb-3">
+                    <label class="form-label"># de ticket</label>
+                    <input id="numeroTicket" class="form-control" readonly placeholder="Se genera al guardar">
+                </div>
+
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Serial</label>
                     <div class="input-group">
                         <input id="serial" class="form-control" required>
@@ -170,7 +175,7 @@
             <h2 class="h5 mb-0">Listado de garantias</h2>
 
             <div class="d-flex gap-2 flex-wrap">
-                <input id="filtroSerial" class="form-control" style="max-width:220px;" placeholder="Buscar serial">
+                <input id="filtroSerial" class="form-control" style="max-width:220px;" placeholder="Buscar serial o ticket">
                 <select id="filtroEstado" class="form-select" style="max-width:220px;">
                     <option value="">Todos los estados</option>
                     <option>En tramite</option>
@@ -187,6 +192,7 @@
             <table class="table table-bordered table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
+                        <th># Ticket</th>
                         <th>Serial</th>
                         <th>Producto</th>
                         <th>Proveedor</th>
@@ -300,6 +306,7 @@ function prepararGarantiaDesdeSerial(){
 function llenarFormulario(data){
     document.getElementById("garantiaId").value = data.id || "";
     document.getElementById("equipoId").value = data.equipoId || data.equipo?.id_equipo || "";
+    document.getElementById("numeroTicket").value = data.numeroTicket || "";
     document.getElementById("sede").value = data.sede || "";
     document.getElementById("referenciaProducto").value = data.referenciaProducto || "";
     document.getElementById("serial").value = data.serial || "";
@@ -318,6 +325,7 @@ function datosFormulario(){
     return {
         id: document.getElementById("garantiaId").value || null,
         equipoId: document.getElementById("equipoId").value || null,
+        numeroTicket: document.getElementById("numeroTicket").value || null,
         sede: document.getElementById("sede").value,
         referenciaProducto: document.getElementById("referenciaProducto").value,
         serial: document.getElementById("serial").value,
@@ -366,6 +374,7 @@ function editarGarantia(id){
             const dto = {
                 id: data.id,
                 equipoId: data.equipo?.id_equipo,
+                numeroTicket: data.numeroTicket,
                 sede: data.sede,
                 referenciaProducto: data.referenciaProducto,
                 serial: data.serial,
@@ -409,6 +418,7 @@ function listarGarantias(){
             document.getElementById("tablaGarantias").innerHTML =
                 garantias.map(g => `
                     <tr>
+                        <td class="fw-bold">${escaparHtml(g.numeroTicket || "")}</td>
                         <td>${escaparHtml(g.serial)}</td>
                         <td>${escaparHtml(g.referenciaProducto)}</td>
                         <td>${escaparHtml(g.proveedor)}</td>
@@ -458,6 +468,7 @@ function limpiarFormulario(){
     document.getElementById("formGarantia").reset();
     document.getElementById("garantiaId").value = "";
     document.getElementById("equipoId").value = "";
+    document.getElementById("numeroTicket").value = "";
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
     document.getElementById("estado").value = "En tramite";
     actualizarMotivoNoAplica();

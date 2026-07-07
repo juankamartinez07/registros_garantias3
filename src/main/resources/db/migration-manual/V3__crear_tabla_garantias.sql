@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS garantias (
     id BIGINT NOT NULL AUTO_INCREMENT,
     equipo_id BIGINT NULL,
+    numero_ticket VARCHAR(32) NULL,
     sede VARCHAR(255) NULL,
     referencia_producto VARCHAR(255) NULL,
     serial VARCHAR(255) NOT NULL,
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS garantias (
     fecha_creacion DATETIME NULL,
     fecha_actualizacion DATETIME NULL,
     PRIMARY KEY (id),
+    UNIQUE INDEX uk_garantias_numero_ticket (numero_ticket),
     INDEX idx_garantias_serial (serial),
     INDEX idx_garantias_estado (estado),
     CONSTRAINT fk_garantias_equipo

@@ -11,7 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 
 @Service
@@ -64,6 +66,7 @@ public class GarantiaService {
 
         Garantia garantia = new Garantia();
         garantia.setEquipo(equipo);
+        garantia.setNumeroTicket(generarNumeroTicket());
         aplicarDatos(garantia, dto, equipo);
         garantia.setEstado(ESTADO_EN_TRAMITE);
         return garantiaRepository.save(garantia);
@@ -144,6 +147,7 @@ public class GarantiaService {
     private GarantiaDTO crearDtoBase(Equipo equipo) {
         GarantiaDTO dto = new GarantiaDTO();
         dto.setEquipoId(equipo.getId_equipo());
+        dto.setNumeroTicket("");
         dto.setSede(equipo.getSede() == null ? "" : equipo.getSede().getNombre());
         dto.setReferenciaProducto(equipo.getProducto() == null ? "" : equipo.getProducto().getNombre());
         dto.setSerial(equipo.getSerial());
@@ -153,6 +157,18 @@ public class GarantiaService {
         dto.setFechaIngresoSerial(parseFecha(equipo.getFecha()));
         dto.setFechaIngresoGarantia(LocalDate.now());
         return dto;
+    }
+
+    private String generarNumeroTicket() {
+        String fecha = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        String ticket;
+
+        do {
+            int consecutivo = ThreadLocalRandom.current().nextInt(100000, 1000000);
+            ticket = fecha + consecutivo;
+        } while (garantiaRepository.existsByNumeroTicket(ticket));
+
+        return ticket;
     }
 
     private LocalDate parseFecha(String fecha) {

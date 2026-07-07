@@ -6,6 +6,7 @@ public class GarantiaDTO {
 
     private Long id;
     private Long equipoId;
+    private String numeroTicket;
     private String sede;
     private String referenciaProducto;
     private String serial;
@@ -32,6 +33,14 @@ public class GarantiaDTO {
 
     public void setEquipoId(Long equipoId) {
         this.equipoId = equipoId;
+    }
+
+    public String getNumeroTicket() {
+        return numeroTicket;
+    }
+
+    public void setNumeroTicket(String numeroTicket) {
+        this.numeroTicket = numeroTicket;
     }
 
     public String getSede() {
