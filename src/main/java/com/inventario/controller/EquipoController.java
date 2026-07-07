@@ -61,7 +61,8 @@ public class EquipoController {
     public Page<Equipo> listar(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String serial) {
+            @RequestParam(required = false) String serial,
+            @RequestParam(defaultValue = "false") boolean conObservaciones) {
 
         int pagina = Math.max(page, 0);
         int tamano = Math.min(Math.max(size, 10), 50);
@@ -70,7 +71,7 @@ public class EquipoController {
                 tamano,
                 Sort.by(Sort.Direction.DESC, "idEquipo"));
 
-        return equipoService.listarPaginado(serial, pageable);
+        return equipoService.listarPaginado(serial, conObservaciones, pageable);
     }
 
     @GetMapping("/dashboard")

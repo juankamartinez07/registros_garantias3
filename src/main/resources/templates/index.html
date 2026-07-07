@@ -97,6 +97,18 @@
             box-shadow:0 16px 36px rgba(2,6,23,0.22);
         }
 
+        .dashboard-card[role="button"]{
+            cursor:pointer;
+            transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .dashboard-card[role="button"]:hover,
+        .dashboard-card.activa{
+            transform:translateY(-2px);
+            border-color:#0052d4;
+            box-shadow:0 18px 40px rgba(0,82,212,0.26);
+        }
+
         .dashboard-card span{
             display:block;
             color:#475569;
@@ -403,7 +415,13 @@
             <strong id="dashboardSerialesMes">0</strong>
         </div>
 
-        <div class="dashboard-card">
+        <div
+            id="tarjetaObservaciones"
+            class="dashboard-card"
+            role="button"
+            tabindex="0"
+            onclick="filtrarConObservaciones()"
+            onkeydown="activarTarjetaObservaciones(event)">
             <span>Seriales con observaciones</span>
             <strong id="dashboardObservaciones">0</strong>
         </div>
@@ -705,7 +723,7 @@
 
                     <button
                         class="btn btn-secondary"
-                        onclick="listarEquipos()">
+                        onclick="quitarFiltroObservaciones()">
 
                         Actualizar
 
@@ -774,6 +792,14 @@
             <div id="estadoPaginacion" class="text-muted fw-bold">
                 Cargando registros...
             </div>
+
+            <button
+                id="botonQuitarFiltroObservaciones"
+                class="btn btn-outline-secondary btn-sm"
+                style="display:none;"
+                onclick="quitarFiltroObservaciones()">
+                Ver todos
+            </button>
 
             <div
                 id="botonesPaginacion"
@@ -858,6 +884,7 @@ let sedeExcelSeleccionada = null;
 let paginaActualEquipos = 0;
 let tamanoPaginaEquipos = 10;
 let totalPaginasEquipos = 0;
+let filtroObservacionesActivo = false;
 let temporizadorToast = null;
 
 function puedeEliminarEquipos(){
@@ -2142,6 +2169,10 @@ function listarEquipos(){
         parametros.append("serial", filtro);
     }
 
+    if(filtroObservacionesActivo){
+        parametros.append("conObservaciones", "true");
+    }
+
     fetch("/equipos?" + parametros.toString())
     .then(res => res.json())
     .then(pagina => {
@@ -2191,12 +2222,56 @@ function listarEquipos(){
         });
 
         document.getElementById("tablaEquipos").innerHTML = tabla;
+        actualizarEstadoFiltroObservaciones();
         renderizarPaginacion(pagina);
 
     })
     .catch(() => {
         mostrarToast("No se pudo cargar la tabla de seriales.", "danger");
     });
+
+}
+
+function filtrarConObservaciones(){
+
+    filtroObservacionesActivo = true;
+    paginaActualEquipos = 0;
+    listarEquipos();
+
+}
+
+function activarTarjetaObservaciones(event){
+
+    if(event.key === "Enter" || event.key === " "){
+        event.preventDefault();
+        filtrarConObservaciones();
+    }
+
+}
+
+function quitarFiltroObservaciones(){
+
+    filtroObservacionesActivo = false;
+    paginaActualEquipos = 0;
+    listarEquipos();
+
+}
+
+function actualizarEstadoFiltroObservaciones(){
+
+    let tarjeta =
+        document.getElementById("tarjetaObservaciones");
+
+    let boton =
+        document.getElementById("botonQuitarFiltroObservaciones");
+
+    if(tarjeta){
+        tarjeta.classList.toggle("activa", filtroObservacionesActivo);
+    }
+
+    if(boton){
+        boton.style.display = filtroObservacionesActivo ? "inline-block" : "none";
+    }
 
 }
 
