@@ -10,7 +10,7 @@
     <meta charset="UTF-8">
 <div class="alert alert-primary">
 
-    Bienvenido:
+    Bienvenidos:
 
     <strong sec:authentication="name"></strong>
 
@@ -81,6 +81,63 @@
             color:#dc3545;
             font-weight:bold;
             margin-left:3px;
+        }
+
+        .dashboard-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+            gap:16px;
+        }
+
+        .dashboard-card{
+            padding:22px;
+            border-radius:14px;
+            background:rgba(255,255,255,0.92);
+            border:1px solid rgba(255,255,255,0.42);
+            box-shadow:0 16px 36px rgba(2,6,23,0.22);
+        }
+
+        .dashboard-card span{
+            display:block;
+            color:#475569;
+            font-weight:700;
+            margin-bottom:8px;
+        }
+
+        .dashboard-card strong{
+            display:block;
+            color:#002b73;
+            font-size:38px;
+            line-height:1;
+        }
+
+        .paginacion-tabla{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            flex-wrap:wrap;
+            margin-top:16px;
+        }
+
+        .botones-pagina{
+            display:flex;
+            gap:6px;
+            flex-wrap:wrap;
+        }
+
+        .toast-sistema{
+            position:fixed;
+            right:24px;
+            top:24px;
+            z-index:1100;
+            min-width:280px;
+            max-width:min(460px, calc(100vw - 48px));
+            display:none;
+        }
+
+        .toast-sistema.visible{
+            display:block;
         }
 
         .btn-success{
@@ -333,6 +390,26 @@
 </div>
 
 
+    <!-- DASHBOARD -->
+    <div class="dashboard-grid mb-4">
+
+        <div class="dashboard-card">
+            <span>Total de seriales registrados</span>
+            <strong id="dashboardTotalSeriales">0</strong>
+        </div>
+
+        <div class="dashboard-card">
+            <span>Seriales registrados este mes</span>
+            <strong id="dashboardSerialesMes">0</strong>
+        </div>
+
+        <div class="dashboard-card">
+            <span>Seriales con observaciones</span>
+            <strong id="dashboardObservaciones">0</strong>
+        </div>
+
+    </div>
+
 
     <!-- BUSCAR -->
     <div class="card shadow p-4 mb-4">
@@ -474,6 +551,21 @@
 
             </div>
 
+            <!-- OBSERVACIONES -->
+            <div class="col-md-12 mb-3">
+
+                <label class="form-label">
+                    Observaciones / novedades
+                </label>
+
+                <textarea
+                    id="observaciones"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Caja golpeada, equipo llegó con novedad, serial deteriorado..."></textarea>
+
+            </div>
+
             <!-- MODO REGISTRO -->
 
 <div class="col-md-12 mb-3">
@@ -575,7 +667,7 @@
             <div class="col-md-4">
 
                 <div class="seccion">
-                    <h3>Equipos Registrado</h3>
+                    <h3>Seriales registrados</h3>
                 </div>
 
             </div>
@@ -590,6 +682,18 @@
                         class="form-control"
                         style="max-width:220px;"
                         placeholder="Buscar serial...">
+
+                    <select
+                        id="tamanoPagina"
+                        class="form-select"
+                        style="max-width:110px;"
+                        onchange="cambiarTamanoPagina()">
+
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+
+                    </select>
 
                     <button
                         class="btn btn-primary"
@@ -619,14 +723,12 @@
                         type="file"
                         id="archivoExcel"
                         accept=".xlsx"
-                        disabled
                         style="display:none;"
                         onchange="subirExcel()">
 
                     <button
                         class="btn btn-outline-success"
-                        disabled
-                        title="Carga de Excel temporalmente deshabilitada">
+                        onclick="document.getElementById('archivoExcel').click()">
 
                         Subir Excel
 
@@ -652,6 +754,7 @@
 <th>Proveedor</th>
 <th>Factura</th>
 <th>Fecha</th>
+<th>Observaciones</th>
 <th>Sede</th>
 <th>Acciones</th>
 
@@ -667,8 +770,24 @@
 
         </div>
 
+        <div class="paginacion-tabla">
+            <div id="estadoPaginacion" class="text-muted fw-bold">
+                Cargando registros...
+            </div>
+
+            <div
+                id="botonesPaginacion"
+                class="botones-pagina">
+            </div>
+        </div>
+
     </div>
 
+</div>
+
+<div
+    id="toastSistema"
+    class="toast-sistema alert alert-info shadow">
 </div>
 
 <div
@@ -736,6 +855,10 @@
 
 let tiposDisponibles = [];
 let sedeExcelSeleccionada = null;
+let paginaActualEquipos = 0;
+let tamanoPaginaEquipos = 10;
+let totalPaginasEquipos = 0;
+let temporizadorToast = null;
 
 function puedeEliminarEquipos(){
 
@@ -744,10 +867,52 @@ function puedeEliminarEquipos(){
 
 }
 
+function mostrarToast(mensaje, tipo = "info"){
+
+    let toast =
+        document.getElementById("toastSistema");
+
+    clearTimeout(temporizadorToast);
+
+    toast.className =
+        `toast-sistema alert alert-${tipo} shadow visible`;
+
+    toast.innerHTML =
+        escaparHtml(mensaje).replace(/\n/g, "<br>");
+
+    temporizadorToast = setTimeout(() => {
+        toast.classList.remove("visible");
+    }, 6500);
+
+}
+
+function cargarDashboard(){
+
+    fetch("/equipos/dashboard")
+    .then(response => response.json())
+    .then(data => {
+
+        document.getElementById("dashboardTotalSeriales").innerText =
+            data.totalSeriales || 0;
+
+        document.getElementById("dashboardSerialesMes").innerText =
+            data.serialesMesActual || 0;
+
+        document.getElementById("dashboardObservaciones").innerText =
+            data.serialesConObservaciones || 0;
+
+    })
+    .catch(() => {
+        mostrarToast("No se pudieron cargar los indicadores del dashboard.", "warning");
+    });
+
+}
+
 window.onload = function(){
 
     cargarTipos();
     cargarProveedores();
+    cargarDashboard();
     listarEquipos();
     marcarCampoLoteObligatorio();
     activarLimpiezaCamposObligatorios();
@@ -758,6 +923,14 @@ window.onload = function(){
         .addEventListener("input", () => {
             actualizarContadorSerialesLote();
             validarSerialesLote();
+        });
+
+    document
+        .getElementById("filtroTabla")
+        .addEventListener("keydown", event => {
+            if(event.key === "Enter"){
+                filtrarTabla();
+            }
         });
 
     actualizarContadorSerialesLote();
@@ -787,7 +960,8 @@ function activarLimpiezaCamposObligatorios(){
         "fecha",
         "factura",
         "serial",
-        "serialesLote"
+        "serialesLote",
+        "observaciones"
     ].forEach(id => {
 
         let campo =
@@ -849,6 +1023,8 @@ function limpiarFormulario(){
     document.getElementById("fecha").value = "";
 
     document.getElementById("factura").value = "";
+
+    document.getElementById("observaciones").value = "";
 
     document.getElementById("serialesLote").value = "";
 
@@ -1759,6 +1935,386 @@ function subirExcel(){
 
 
 
+function subirExcel(){
+
+    let input =
+        document.getElementById("archivoExcel");
+
+    if(!input.files || input.files.length === 0){
+        return;
+    }
+
+    let formData =
+        new FormData();
+
+    formData.append("archivo", input.files[0]);
+
+    fetch("/equipos/excel", {
+        method:"POST",
+        body:formData
+    })
+    .then(async response => {
+
+        if(!response.ok){
+            let mensaje = await response.text();
+            throw new Error(mensaje || "No se pudo importar el archivo.");
+        }
+
+        return response.json();
+
+    })
+    .then(resultado => {
+
+        let mensaje =
+            `Excel importado. Registros cargados: ${resultado.registrados}.`;
+
+        if(resultado.duplicados && resultado.duplicados.length > 0){
+            mensaje += ` Duplicados omitidos: ${resultado.duplicados.join(", ")}.`;
+        }
+
+        mostrarToast(
+            mensaje,
+            resultado.duplicados && resultado.duplicados.length > 0 ? "warning" : "success"
+        );
+
+        input.value = "";
+        cargarDashboard();
+        paginaActualEquipos = 0;
+        listarEquipos();
+
+    })
+    .catch(error => {
+        mostrarToast(error.message || "No se pudo importar el archivo.", "danger");
+        input.value = "";
+    });
+
+}
+
+function datosBaseRegistro(){
+
+    return {
+        producto: document.getElementById("producto").value,
+        tipo: document.getElementById("tipo").value,
+        proveedor: document.getElementById("proveedor").value,
+        fecha: document.getElementById("fecha").value,
+        factura: document.getElementById("factura").value,
+        observaciones: document.getElementById("observaciones").value
+    };
+
+}
+
+function guardarEquipo(){
+
+    let modo =
+        document.getElementById("modoRegistro").value;
+
+    if(!validarCamposObligatorios([
+        "producto",
+        "tipo",
+        "proveedor",
+        "fecha",
+        "factura"
+    ])){
+        mostrarToast("Complete todos los campos obligatorios.", "warning");
+        return;
+    }
+
+    if(modo === "individual"){
+
+        if(!validarCamposObligatorios(["serial"])){
+            mostrarToast("El serial es obligatorio.", "warning");
+            return;
+        }
+
+        let data =
+            datosBaseRegistro();
+
+        data.serial =
+            document.getElementById("serial").value;
+
+        fetch("/equipos/completo", {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify(data)
+        })
+        .then(async response => {
+            if(!response.ok){
+                let mensaje = await response.text();
+                mostrarToast(
+                    mensaje || "Este serial ya ha sido registrado, verifique la información.",
+                    "danger"
+                );
+                throw new Error(mensaje);
+            }
+            return response.json();
+        })
+        .then(() => {
+            mostrarToast("Serial registrado correctamente.", "success");
+            limpiarFormulario();
+            cargarDashboard();
+            paginaActualEquipos = 0;
+            listarEquipos();
+        })
+        .catch(error => console.error(error));
+
+        return;
+
+    }
+
+    if(!validarCamposObligatorios(["serialesLote"])){
+        mostrarToast("Debe ingresar seriales.", "warning");
+        return;
+    }
+
+    if(!validarSerialesLote()){
+        mostrarToast("Corrija los seriales repetidos antes de guardar.", "warning");
+        return;
+    }
+
+    let data =
+        datosBaseRegistro();
+
+    data.seriales =
+        obtenerSerialesLote();
+
+    fetch("/equipos/lote", {
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify(data)
+    })
+    .then(async response => {
+        if(!response.ok){
+            let mensaje = await response.text();
+            mostrarToast(mensaje || "No se pudo guardar el lote.", "danger");
+            throw new Error(mensaje);
+        }
+        return response.json();
+    })
+    .then(resultado => {
+
+        if(resultado.duplicados && resultado.duplicados.length > 0){
+
+            mostrarAlertaSerialesLote(
+                "Algunos seriales ya se encuentran registrados. Verifique la información antes de continuar.",
+                resultado.duplicados
+            );
+
+            mostrarToast(
+                `Seriales guardados: ${resultado.registrados}. Duplicados: ${resultado.duplicados.length}.`,
+                resultado.registrados > 0 ? "warning" : "danger"
+            );
+
+        }else{
+
+            mostrarToast("Lote registrado correctamente.", "success");
+            limpiarFormulario();
+
+        }
+
+        cargarDashboard();
+        paginaActualEquipos = 0;
+        listarEquipos();
+
+    })
+    .catch(error => console.error(error));
+
+}
+
+function listarEquipos(){
+
+    let filtro =
+        document.getElementById("filtroTabla").value.trim();
+
+    tamanoPaginaEquipos =
+        Number(document.getElementById("tamanoPagina").value) || 10;
+
+    let parametros =
+        new URLSearchParams({
+            page:paginaActualEquipos,
+            size:tamanoPaginaEquipos
+        });
+
+    if(filtro !== ""){
+        parametros.append("serial", filtro);
+    }
+
+    fetch("/equipos?" + parametros.toString())
+    .then(res => res.json())
+    .then(pagina => {
+
+        let equipos =
+            pagina.content || [];
+
+        totalPaginasEquipos =
+            pagina.totalPages || 0;
+
+        let tabla = "";
+
+        equipos.forEach(e => {
+
+            let acciones = `
+                <button
+                    class="btn btn-warning btn-sm me-2"
+                    onclick="window.location.href='/editar?id=${e.id_equipo}'">
+                    Editar
+                </button>
+            `;
+
+            if(puedeEliminarEquipos()){
+                acciones += `
+                    <button
+                        class="btn btn-danger btn-sm"
+                        onclick="eliminarEquipo(${e.id_equipo})">
+                        Eliminar
+                    </button>
+                `;
+            }
+
+            tabla += `
+                <tr>
+                    <td>${escaparHtml(e.serial || '')}</td>
+                    <td>${escaparHtml(e.producto?.nombre || '')}</td>
+                    <td>${escaparHtml(e.tipoProducto?.nombre || '')}</td>
+                    <td>${escaparHtml(e.proveedor?.nombre || '')}</td>
+                    <td>${escaparHtml(e.factura || '')}</td>
+                    <td>${escaparHtml(e.fecha || '')}</td>
+                    <td>${escaparHtml(e.observaciones || '')}</td>
+                    <td>${escaparHtml(e.sede?.nombre || '')}</td>
+                    <td>${acciones}</td>
+                </tr>
+            `;
+
+        });
+
+        document.getElementById("tablaEquipos").innerHTML = tabla;
+        renderizarPaginacion(pagina);
+
+    })
+    .catch(() => {
+        mostrarToast("No se pudo cargar la tabla de seriales.", "danger");
+    });
+
+}
+
+function filtrarTabla(){
+
+    paginaActualEquipos = 0;
+    listarEquipos();
+
+}
+
+function cambiarTamanoPagina(){
+
+    paginaActualEquipos = 0;
+    listarEquipos();
+
+}
+
+function irPagina(pagina){
+
+    if(pagina < 0 || pagina >= totalPaginasEquipos){
+        return;
+    }
+
+    paginaActualEquipos = pagina;
+    listarEquipos();
+
+}
+
+function renderizarPaginacion(pagina){
+
+    let totalElementos =
+        pagina.totalElements || 0;
+
+    let numeroPagina =
+        (pagina.number || 0) + 1;
+
+    let totalPaginas =
+        pagina.totalPages || 0;
+
+    document.getElementById("estadoPaginacion").innerText =
+        totalElementos === 0
+            ? "No hay seriales para mostrar."
+            : `Página ${numeroPagina} de ${totalPaginas} - ${totalElementos} seriales`;
+
+    let botones =
+        document.getElementById("botonesPaginacion");
+
+    if(totalPaginas <= 1){
+        botones.innerHTML = "";
+        return;
+    }
+
+    let numeroActual =
+        pagina.number || 0;
+
+    let inicio =
+        Math.max(0, numeroActual - 2);
+
+    let fin =
+        Math.min(totalPaginas - 1, numeroActual + 2);
+
+    let html = `
+        <button
+            class="btn btn-outline-primary btn-sm"
+            ${pagina.first ? "disabled" : ""}
+            onclick="irPagina(${numeroActual - 1})">
+            Anterior
+        </button>
+    `;
+
+    for(let i = inicio; i <= fin; i++){
+        html += `
+            <button
+                class="btn ${i === numeroActual ? "btn-primary" : "btn-outline-primary"} btn-sm"
+                onclick="irPagina(${i})">
+                ${i + 1}
+            </button>
+        `;
+    }
+
+    html += `
+        <button
+            class="btn btn-outline-primary btn-sm"
+            ${pagina.last ? "disabled" : ""}
+            onclick="irPagina(${numeroActual + 1})">
+            Siguiente
+        </button>
+    `;
+
+    botones.innerHTML = html;
+
+}
+
+function eliminarEquipo(id){
+
+    if(!confirm("Eliminar este serial?")){
+        return;
+    }
+
+    fetch("/equipos/" + id, {
+        method:"DELETE"
+    })
+    .then(async response => {
+        if(!response.ok){
+            let mensaje = await response.text();
+            throw new Error(mensaje || "No tiene permisos para eliminar.");
+        }
+
+        mostrarToast("Serial eliminado correctamente.", "success");
+        cargarDashboard();
+        listarEquipos();
+    })
+    .catch(error => {
+        mostrarToast(error.message || "No se pudo eliminar el serial.", "danger");
+    });
+
+}
+
 // BUSCAR
 function mostrarSerialNoEncontrado(){
 
@@ -1804,7 +2360,7 @@ function buscarEquipo(){
 
     }
 
-    fetch("/equipos/" + serial)
+    fetch("/equipos/" + encodeURIComponent(serial))
 
     .then(res => {
 
@@ -1863,7 +2419,19 @@ function buscarEquipo(){
 
         // ESTADO GARANTÍA
 
-        if(dias <= diasGarantia){
+        if(Number.isNaN(dias)){
+
+            garantia = `
+
+                <span class="badge bg-secondary fs-6">
+
+                    Sin fecha valida para calcular garantia
+
+                </span>
+
+            `;
+
+        }else if(dias <= diasGarantia){
 
             garantia = `
 
@@ -1932,6 +2500,12 @@ function buscarEquipo(){
                 <strong>Fecha:</strong>
 
                 ${data.fecha || ''}
+
+                <br>
+
+                <strong>Observaciones / novedades:</strong>
+
+                ${data.observaciones || 'Sin observaciones'}
 
                 <br>
 

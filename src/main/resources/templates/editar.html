@@ -175,6 +175,18 @@
 
             </div>
 
+            <div class="col-md-12 mb-3">
+
+                <label>Observaciones / novedades</label>
+
+                <textarea
+                    id="observaciones"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Caja golpeada, equipo llegó con novedad, serial deteriorado..."></textarea>
+
+            </div>
+
         </div>
 
         <div class="d-flex">
@@ -256,6 +268,9 @@ function cargarDatos(){
 
         document.getElementById("fecha").value =
             e.fecha || '';
+
+        document.getElementById("observaciones").value =
+            e.observaciones || '';
 
     });
 
@@ -407,7 +422,8 @@ function actualizarEquipo(){
         tipo: document.getElementById("tipo").value,
         proveedor: document.getElementById("proveedor").value,
         factura: document.getElementById("factura").value,
-        fecha: document.getElementById("fecha").value
+        fecha: document.getElementById("fecha").value,
+        observaciones: document.getElementById("observaciones").value
 
     };
 
@@ -423,12 +439,26 @@ function actualizarEquipo(){
 
     })
 
+    .then(async response => {
+
+        if(!response.ok){
+            let mensaje = await response.text();
+            throw new Error(mensaje || "No se pudo actualizar el equipo.");
+        }
+
+        return response.text();
+
+    })
+
     .then(() => {
 
         alert("Equipo actualizado");
 
         window.location.href = "/";
 
+    })
+    .catch(error => {
+        alert(error.message || "No se pudo actualizar el equipo.");
     });
 
 }

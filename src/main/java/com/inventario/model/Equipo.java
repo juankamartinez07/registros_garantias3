@@ -31,6 +31,9 @@ public class Equipo {
 
     private String estado;
 
+    @Column(columnDefinition = "TEXT")
+    private String observaciones;
+
     @ManyToOne
     @JoinColumn(name = "sede_id")
     private Sede sede;
@@ -100,6 +103,14 @@ public class Equipo {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 
     public Sede getSede() {
