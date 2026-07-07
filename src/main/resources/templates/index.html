@@ -433,6 +433,13 @@
     
 
 </div>
+
+        <a href="/garantias"
+           class="btn btn-primary me-2">
+
+            Garantias en tramite
+
+        </a>
         
         <button class="btn btn-danger">
 
@@ -2689,6 +2696,7 @@ function buscarEquipo(){
         let dias = diferencia / (1000 * 60 * 60 * 24);
 
         let garantia = "";
+        let botonGarantia = "";
 
         let diasGarantia = 365;
 
@@ -2726,6 +2734,18 @@ function buscarEquipo(){
                     (${diasRestantes} días restantes)
 
                 </span>
+
+            `;
+
+            botonGarantia = `
+
+                <br><br>
+
+                <button
+                    class="btn btn-success"
+                    onclick="window.location.href='/garantias?serial=${encodeURIComponent(data.serial || '')}'">
+                    Tramitar garantia
+                </button>
 
             `;
 
@@ -2808,6 +2828,8 @@ function buscarEquipo(){
                 <strong>Garantía:</strong>
 
                 ${garantia}
+
+                ${botonGarantia}
 
             </div>
 
