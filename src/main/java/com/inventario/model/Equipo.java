@@ -8,7 +8,8 @@ public class Equipo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_equipo;
+    @Column(name = "id_equipo")
+    private Long idEquipo;
 
     @Column(unique = true)
     private String serial;
@@ -42,11 +43,11 @@ public class Equipo {
     private String usuarioRegistro;
 
     public Long getId_equipo() {
-        return id_equipo;
+        return idEquipo;
     }
 
     public void setId_equipo(Long id_equipo) {
-        this.id_equipo = id_equipo;
+        this.idEquipo = id_equipo;
     }
 
     public String getSerial() {

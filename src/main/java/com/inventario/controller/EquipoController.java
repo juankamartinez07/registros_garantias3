@@ -68,7 +68,7 @@ public class EquipoController {
         Pageable pageable = PageRequest.of(
                 pagina,
                 tamano,
-                Sort.by(Sort.Direction.DESC, "id_equipo"));
+                Sort.by(Sort.Direction.DESC, "idEquipo"));
 
         return equipoService.listarPaginado(serial, pageable);
     }
