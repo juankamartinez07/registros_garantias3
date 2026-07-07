@@ -1,0 +1,24 @@
+CREATE TABLE IF NOT EXISTS garantias (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    equipo_id BIGINT NULL,
+    sede VARCHAR(255) NULL,
+    referencia_producto VARCHAR(255) NULL,
+    serial VARCHAR(255) NOT NULL,
+    estado VARCHAR(80) NOT NULL,
+    proveedor VARCHAR(255) NULL,
+    factura_proveedor VARCHAR(255) NULL,
+    fecha_ingreso_garantia DATE NULL,
+    fecha_ingreso_serial DATE NULL,
+    motivos_garantia TEXT NULL,
+    numero_caso_proveedor VARCHAR(255) NULL,
+    motivo_no_aplica_garantia TEXT NULL,
+    fecha_creacion DATETIME NULL,
+    fecha_actualizacion DATETIME NULL,
+    PRIMARY KEY (id),
+    INDEX idx_garantias_serial (serial),
+    INDEX idx_garantias_estado (estado),
+    CONSTRAINT fk_garantias_equipo
+        FOREIGN KEY (equipo_id)
+        REFERENCES equipos (id_equipo)
+        ON DELETE SET NULL
+);

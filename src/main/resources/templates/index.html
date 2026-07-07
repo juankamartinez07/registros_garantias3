@@ -97,6 +97,18 @@
             box-shadow:0 16px 36px rgba(2,6,23,0.22);
         }
 
+        .dashboard-card[role="button"]{
+            cursor:pointer;
+            transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .dashboard-card[role="button"]:hover,
+        .dashboard-card.activa{
+            transform:translateY(-2px);
+            border-color:#0052d4;
+            box-shadow:0 18px 40px rgba(0,82,212,0.26);
+        }
+
         .dashboard-card span{
             display:block;
             color:#475569;
@@ -335,6 +347,49 @@
             border-top:1px solid #e5e7eb;
         }
 
+        .modal-observaciones-contenido{
+            max-width:960px;
+        }
+
+        .lista-observaciones{
+            display:grid;
+            gap:12px;
+        }
+
+        .item-observacion{
+            border:1px solid #dbeafe;
+            border-radius:10px;
+            padding:14px;
+            background:#f8fafc;
+        }
+
+        .item-observacion-cabecera{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+            flex-wrap:wrap;
+            margin-bottom:8px;
+        }
+
+        .item-observacion-serial{
+            color:#002b73;
+            font-size:18px;
+            font-weight:800;
+        }
+
+        .item-observacion-meta{
+            color:#475569;
+            font-size:13px;
+            font-weight:700;
+        }
+
+        .item-observacion-texto{
+            color:#0f172a;
+            white-space:pre-wrap;
+            margin:0;
+        }
+
         @media(max-width:900px){
 
             body{
@@ -378,6 +433,13 @@
     
 
 </div>
+
+        <a href="/garantias"
+           class="btn btn-primary me-2">
+
+            Garantias en tramite
+
+        </a>
         
         <button class="btn btn-danger">
 
@@ -403,7 +465,13 @@
             <strong id="dashboardSerialesMes">0</strong>
         </div>
 
-        <div class="dashboard-card">
+        <div
+            id="tarjetaObservaciones"
+            class="dashboard-card"
+            role="button"
+            tabindex="0"
+            onclick="filtrarConObservaciones()"
+            onkeydown="activarTarjetaObservaciones(event)">
             <span>Seriales con observaciones</span>
             <strong id="dashboardObservaciones">0</strong>
         </div>
@@ -850,6 +918,74 @@
 
 </div>
 
+<div
+    id="modalObservaciones"
+    class="modal-excel">
+
+    <div class="modal-excel-contenido modal-observaciones-contenido">
+
+        <div class="modal-excel-cabecera">
+
+            <div>
+                <h4>Seriales con observaciones</h4>
+                <p>Equipos registrados con novedades u observaciones.</p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-excel-cerrar"
+                onclick="cerrarModalObservaciones()">
+                &times;
+            </button>
+
+        </div>
+
+        <div class="modal-excel-cuerpo">
+
+            <div
+                id="estadoObservaciones"
+                class="alert alert-info mb-3">
+                Cargando seriales...
+            </div>
+
+            <div
+                id="listaObservaciones"
+                class="lista-observaciones">
+            </div>
+
+        </div>
+
+        <div class="modal-excel-pie">
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                onclick="cerrarModalObservaciones()">
+                Cerrar
+            </button>
+
+            <button
+                type="button"
+                id="botonObservacionesAnterior"
+                class="btn btn-outline-primary"
+                onclick="cambiarPaginaObservaciones(-1)">
+                Anterior
+            </button>
+
+            <button
+                type="button"
+                id="botonObservacionesSiguiente"
+                class="btn btn-primary"
+                onclick="cambiarPaginaObservaciones(1)">
+                Siguiente
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 <script>
 
@@ -858,6 +994,8 @@ let sedeExcelSeleccionada = null;
 let paginaActualEquipos = 0;
 let tamanoPaginaEquipos = 10;
 let totalPaginasEquipos = 0;
+let paginaObservaciones = 0;
+let totalPaginasObservaciones = 0;
 let temporizadorToast = null;
 
 function puedeEliminarEquipos(){
@@ -2200,6 +2338,159 @@ function listarEquipos(){
 
 }
 
+function filtrarConObservaciones(){
+
+    abrirModalObservaciones();
+
+}
+
+function activarTarjetaObservaciones(event){
+
+    if(event.key === "Enter" || event.key === " "){
+        event.preventDefault();
+        filtrarConObservaciones();
+    }
+
+}
+
+function abrirModalObservaciones(){
+
+    paginaObservaciones = 0;
+
+    document
+        .getElementById("modalObservaciones")
+        .classList
+        .add("visible");
+
+    cargarObservaciones();
+
+}
+
+function cerrarModalObservaciones(){
+
+    document
+        .getElementById("modalObservaciones")
+        .classList
+        .remove("visible");
+
+}
+
+function cambiarPaginaObservaciones(cambio){
+
+    let siguientePagina =
+        paginaObservaciones + cambio;
+
+    if(siguientePagina < 0 || siguientePagina >= totalPaginasObservaciones){
+        return;
+    }
+
+    paginaObservaciones =
+        siguientePagina;
+
+    cargarObservaciones();
+
+}
+
+function cargarObservaciones(){
+
+    let estado =
+        document.getElementById("estadoObservaciones");
+
+    let lista =
+        document.getElementById("listaObservaciones");
+
+    estado.className = "alert alert-info mb-3";
+    estado.innerText = "Cargando seriales con observaciones...";
+    lista.innerHTML = "";
+
+    let parametros =
+        new URLSearchParams({
+            page:paginaObservaciones,
+            size:10,
+            conObservaciones:"true"
+        });
+
+    fetch("/equipos?" + parametros.toString())
+    .then(res => {
+        if(!res.ok){
+            throw new Error("No se pudo cargar la información.");
+        }
+        return res.json();
+    })
+    .then(pagina => {
+
+        let equipos =
+            pagina.content || [];
+
+        totalPaginasObservaciones =
+            pagina.totalPages || 0;
+
+        if(equipos.length === 0){
+            estado.className = "alert alert-warning mb-3";
+            estado.innerText = "No hay seriales con observaciones registradas.";
+            actualizarBotonesObservaciones();
+            return;
+        }
+
+        estado.className = "alert alert-primary mb-3";
+        estado.innerText =
+            `Página ${(pagina.number || 0) + 1} de ${totalPaginasObservaciones || 1} - ${pagina.totalElements || equipos.length} seriales con observaciones`;
+
+        lista.innerHTML =
+            equipos.map(e => `
+                <div class="item-observacion">
+                    <div class="item-observacion-cabecera">
+                        <div>
+                            <div class="item-observacion-serial">
+                                ${escaparHtml(e.serial || 'Sin serial')}
+                            </div>
+                            <div class="item-observacion-meta">
+                                ${escaparHtml(e.producto?.nombre || 'Sin producto')}
+                                ${e.tipoProducto?.nombre ? ' | ' + escaparHtml(e.tipoProducto.nombre) : ''}
+                            </div>
+                        </div>
+                        <div class="item-observacion-meta text-end">
+                            ${escaparHtml(e.sede?.nombre || 'Sin sede')}<br>
+                            ${escaparHtml(e.fecha || 'Sin fecha')}
+                        </div>
+                    </div>
+                    <p class="item-observacion-texto">
+                        ${escaparHtml(e.observaciones || '')}
+                    </p>
+                </div>
+            `).join("");
+
+        actualizarBotonesObservaciones();
+
+    })
+    .catch(() => {
+        estado.className = "alert alert-danger mb-3";
+        estado.innerText = "No se pudieron cargar los seriales con observaciones.";
+        actualizarBotonesObservaciones();
+    });
+
+}
+
+function actualizarBotonesObservaciones(){
+
+    let botonAnterior =
+        document.getElementById("botonObservacionesAnterior");
+
+    let botonSiguiente =
+        document.getElementById("botonObservacionesSiguiente");
+
+    if(botonAnterior){
+        botonAnterior.disabled = paginaObservaciones <= 0;
+    }
+
+    if(botonSiguiente){
+        botonSiguiente.disabled =
+            totalPaginasObservaciones <= 1 ||
+            paginaObservaciones >= totalPaginasObservaciones - 1;
+    }
+
+}
+
 function filtrarTabla(){
 
     paginaActualEquipos = 0;
@@ -2405,6 +2696,7 @@ function buscarEquipo(){
         let dias = diferencia / (1000 * 60 * 60 * 24);
 
         let garantia = "";
+        let botonGarantia = "";
 
         let diasGarantia = 365;
 
@@ -2442,6 +2734,18 @@ function buscarEquipo(){
                     (${diasRestantes} días restantes)
 
                 </span>
+
+            `;
+
+            botonGarantia = `
+
+                <br><br>
+
+                <button
+                    class="btn btn-success"
+                    onclick="window.location.href='/garantias?serial=${encodeURIComponent(data.serial || '')}'">
+                    Tramitar garantia
+                </button>
 
             `;
 
@@ -2524,6 +2828,8 @@ function buscarEquipo(){
                 <strong>Garantía:</strong>
 
                 ${garantia}
+
+                ${botonGarantia}
 
             </div>
 

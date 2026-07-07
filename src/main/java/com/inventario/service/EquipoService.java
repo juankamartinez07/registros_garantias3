@@ -85,8 +85,16 @@ public class EquipoService {
         return equipoRepository.findAll();
     }
 
-    public Page<Equipo> listarPaginado(String serial, Pageable pageable) {
+    public Page<Equipo> listarPaginado(String serial, boolean conObservaciones, Pageable pageable) {
         String filtro = limpiar(serial);
+        if (conObservaciones && filtro == null) {
+            return equipoRepository.findConObservaciones(pageable);
+        }
+
+        if (conObservaciones) {
+            return equipoRepository.findBySerialContainingIgnoreCaseConObservaciones(filtro, pageable);
+        }
+
         if (filtro == null) {
             return equipoRepository.findAll(pageable);
         }
