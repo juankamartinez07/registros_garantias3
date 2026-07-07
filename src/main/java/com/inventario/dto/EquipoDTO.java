@@ -12,6 +12,7 @@ public class EquipoDTO {
     private String factura;
     private String fecha;
     private String estado;
+    private String observaciones;
 
     public String getSerial() {
         return serial;
@@ -75,5 +76,13 @@ public class EquipoDTO {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 }

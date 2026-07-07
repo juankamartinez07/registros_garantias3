@@ -9,8 +9,14 @@ import com.inventario.repository.ProductoRepository;
 import com.inventario.repository.ProveedorRepository;
 import com.inventario.repository.TipoProductoRepository;
 import com.inventario.service.EquipoService;
+import com.inventario.service.EquipoService.DashboardSeriales;
 import com.inventario.service.EquipoService.ResultadoImportacionExcel;
+import com.inventario.service.EquipoService.ResultadoLote;
 import com.inventario.service.EquipoService.SedeExcel;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -52,8 +58,24 @@ public class EquipoController {
     }
 
     @GetMapping
-    public List<Equipo> listar() {
-        return equipoService.listar();
+    public Page<Equipo> listar(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String serial) {
+
+        int pagina = Math.max(page, 0);
+        int tamano = Math.min(Math.max(size, 10), 50);
+        Pageable pageable = PageRequest.of(
+                pagina,
+                tamano,
+                Sort.by(Sort.Direction.DESC, "id_equipo"));
+
+        return equipoService.listarPaginado(serial, pageable);
+    }
+
+    @GetMapping("/dashboard")
+    public DashboardSeriales dashboard() {
+        return equipoService.obtenerDashboard();
     }
 
     @GetMapping("/excel")
@@ -100,8 +122,8 @@ public class EquipoController {
     }
 
     @PostMapping("/lote")
-    public void guardarLote(@RequestBody EquipoDTO dto) {
-        equipoService.guardarLote(dto);
+    public ResultadoLote guardarLote(@RequestBody EquipoDTO dto) {
+        return equipoService.guardarLote(dto);
     }
 
     @PutMapping("/editar/{id}")

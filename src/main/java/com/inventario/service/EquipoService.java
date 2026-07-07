@@ -24,6 +24,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,7 @@ public class EquipoService {
             "Factura",
             "Fecha",
             "Estado",
+            "Observaciones / novedades",
             "Sede",
             "Registrado por"
     };
@@ -82,6 +85,26 @@ public class EquipoService {
         return equipoRepository.findAll();
     }
 
+    public Page<Equipo> listarPaginado(String serial, Pageable pageable) {
+        String filtro = limpiar(serial);
+        if (filtro == null) {
+            return equipoRepository.findAll(pageable);
+        }
+        return equipoRepository.findBySerialContainingIgnoreCase(filtro, pageable);
+    }
+
+    public DashboardSeriales obtenerDashboard() {
+        LocalDate hoy = LocalDate.now();
+        String inicioMes = hoy.withDayOfMonth(1).toString();
+        String finMes = hoy.withDayOfMonth(hoy.lengthOfMonth()).toString();
+
+        return new DashboardSeriales(
+                equipoRepository.count(),
+                equipoRepository.countByFechaBetween(inicioMes, finMes),
+                equipoRepository.countConObservaciones()
+        );
+    }
+
     public Equipo buscarPorSerial(String serial) {
         return equipoRepository.findBySerial(serial).orElse(null);
     }
@@ -98,8 +121,8 @@ public class EquipoService {
             throw new RuntimeException("El serial es obligatorio");
         }
 
-        if (equipoRepository.findBySerial(serial).isPresent()) {
-            throw new RuntimeException("El serial " + serial + " ya se encuentra registrado");
+        if (equipoRepository.existsBySerial(serial)) {
+            throw new RuntimeException("Este serial ya ha sido registrado, verifique la información.");
         }
 
         TipoProducto tipo = obtenerTipo(dto.getTipo());
@@ -115,6 +138,7 @@ public class EquipoService {
         equipo.setFactura(limpiar(dto.getFactura()));
         equipo.setFecha(limpiar(dto.getFecha()));
         equipo.setEstado(limpiar(dto.getEstado()) != null ? limpiar(dto.getEstado()) : "ACTIVO");
+        equipo.setObservaciones(limpiar(dto.getObservaciones()));
         equipo.setUsuarioRegistro(usuario != null ? usuario.getUsername() : nombreUsuarioActual());
 
         if (usuario != null) {
@@ -125,7 +149,7 @@ public class EquipoService {
     }
 
     @Transactional
-    public void guardarLote(EquipoDTO dto) {
+    public ResultadoLote guardarLote(EquipoDTO dto) {
         if (dto.getSeriales() == null || dto.getSeriales().isEmpty()) {
             throw new RuntimeException("Debe ingresar al menos un serial");
         }
@@ -147,22 +171,23 @@ public class EquipoService {
             throw new RuntimeException("Debe ingresar al menos un serial valido");
         }
 
-        if (!repetidos.isEmpty()) {
-            throw new RuntimeException("Hay seriales repetidos en el lote: " + String.join(", ", repetidos));
-        }
-
         Set<String> existentes = new LinkedHashSet<>();
         for (String serial : serialesUnicos) {
-            if (equipoRepository.findBySerial(serial).isPresent()) {
+            if (equipoRepository.existsBySerial(serial)) {
                 existentes.add(serial);
             }
         }
 
-        if (!existentes.isEmpty()) {
-            throw new RuntimeException("Estos seriales ya se encuentran registrados: " + String.join(", ", existentes));
-        }
+        Set<String> duplicados = new LinkedHashSet<>();
+        duplicados.addAll(repetidos);
+        duplicados.addAll(existentes);
+
+        int registrados = 0;
 
         for (String serial : serialesUnicos) {
+            if (existentes.contains(serial)) {
+                continue;
+            }
             EquipoDTO item = new EquipoDTO();
             item.setSerial(serial);
             item.setProducto(dto.getProducto());
@@ -171,8 +196,12 @@ public class EquipoService {
             item.setFactura(dto.getFactura());
             item.setFecha(dto.getFecha());
             item.setEstado(dto.getEstado());
+            item.setObservaciones(dto.getObservaciones());
             guardarCompleto(item);
+            registrados++;
         }
+
+        return new ResultadoLote(serialesUnicos.size(), registrados, List.copyOf(duplicados));
     }
 
     @Transactional
@@ -184,8 +213,8 @@ public class EquipoService {
         String serial = limpiar(dto.getSerial());
 
         if (serial != null && !serial.equals(equipo.getSerial())) {
-            if (equipoRepository.findBySerial(serial).isPresent()) {
-                throw new RuntimeException("El serial " + serial + " ya se encuentra registrado");
+            if (equipoRepository.existsBySerial(serial)) {
+                throw new RuntimeException("Este serial ya ha sido registrado, verifique la información.");
             }
             equipo.setSerial(serial);
         }
@@ -195,6 +224,7 @@ public class EquipoService {
         equipo.setProveedor(proveedor);
         equipo.setFactura(limpiar(dto.getFactura()));
         equipo.setFecha(limpiar(dto.getFecha()));
+        equipo.setObservaciones(limpiar(dto.getObservaciones()));
 
         if (limpiar(dto.getEstado()) != null) {
             equipo.setEstado(limpiar(dto.getEstado()));
@@ -240,8 +270,9 @@ public class EquipoService {
                 fila.createCell(4).setCellValue(valor(equipo.getFactura()));
                 fila.createCell(5).setCellValue(valor(equipo.getFecha()));
                 fila.createCell(6).setCellValue(valor(equipo.getEstado()));
-                fila.createCell(7).setCellValue(equipo.getSede() == null ? "" : valor(equipo.getSede().getNombre()));
-                fila.createCell(8).setCellValue(valor(equipo.getUsuarioRegistro()));
+                fila.createCell(7).setCellValue(valor(equipo.getObservaciones()));
+                fila.createCell(8).setCellValue(equipo.getSede() == null ? "" : valor(equipo.getSede().getNombre()));
+                fila.createCell(9).setCellValue(valor(equipo.getUsuarioRegistro()));
             }
 
             for (int i = 0; i < COLUMNAS_EXCEL.length; i++) {
@@ -297,8 +328,14 @@ public class EquipoService {
         validarSerialesExcel(filas);
 
         int registrados = 0;
+        List<String> duplicados = new ArrayList<>();
         for (FilaExcel fila : filas) {
             try {
+                String serial = limpiar(fila.dto().getSerial());
+                if (serial != null && equipoRepository.existsBySerial(serial)) {
+                    duplicados.add(serial);
+                    continue;
+                }
                 guardarCompleto(fila.dto());
                 registrados++;
             } catch (RuntimeException exception) {
@@ -306,7 +343,7 @@ public class EquipoService {
             }
         }
 
-        return new ResultadoImportacionExcel(filas.size(), registrados);
+        return new ResultadoImportacionExcel(filas.size(), registrados, duplicados);
     }
 
     private List<FilaExcel> leerFilasExcel(MultipartFile archivo) {
@@ -333,6 +370,7 @@ public class EquipoService {
                 dto.setFactura(textoCelda(row, 4, formatter));
                 dto.setFecha(fechaCelda(row, 5, formatter));
                 dto.setEstado(textoCelda(row, 6, formatter));
+                dto.setObservaciones(textoCelda(row, 7, formatter));
 
                 filas.add(new FilaExcel(i + 1, dto));
             }
@@ -359,9 +397,6 @@ public class EquipoService {
                 errores.add("Fila " + fila.numero() + ": serial repetido en el archivo. Ya existe en la fila " + filaRepetida);
             }
 
-            if (equipoRepository.findBySerial(serial).isPresent()) {
-                errores.add("Fila " + fila.numero() + ": el serial " + serial + " ya se encuentra registrado");
-            }
         }
 
         if (!errores.isEmpty()) {
@@ -374,7 +409,7 @@ public class EquipoService {
             return true;
         }
 
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             if (limpiar(textoCelda(row, i, formatter)) != null) {
                 return false;
             }
@@ -490,7 +525,13 @@ public class EquipoService {
     private record FilaExcel(int numero, EquipoDTO dto) {
     }
 
-    public record ResultadoImportacionExcel(int total, int registrados) {
+    public record DashboardSeriales(long totalSeriales, long serialesMesActual, long serialesConObservaciones) {
+    }
+
+    public record ResultadoLote(int total, int registrados, List<String> duplicados) {
+    }
+
+    public record ResultadoImportacionExcel(int total, int registrados, List<String> duplicados) {
     }
 
     public record SedeExcel(Long id, String nombre) {
