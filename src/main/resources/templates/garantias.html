@@ -36,6 +36,16 @@
             margin-bottom:20px;
         }
 
+        .panel-formulario{
+            background:#e2e8f0;
+            border-color:#cbd5e1;
+            box-shadow:0 14px 32px rgba(15,23,42,0.12);
+        }
+
+        .panel-formulario h2{
+            color:#0f172a;
+        }
+
         .estado-pill{
             display:inline-flex;
             align-items:center;
@@ -231,7 +241,7 @@
 
     <div id="mensajeInicial" class="alert alert-info" style="display:none;"></div>
 
-    <div class="panel">
+    <div class="panel panel-formulario">
         <h2 class="h5 mb-3">Formulario de garantia</h2>
 
         <form id="formGarantia" onsubmit="guardarGarantia(event)">
@@ -326,13 +336,11 @@
     <div class="panel">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <div>
-                <h2 class="h5 mb-1">Dashboard de garantias</h2>
+                <h2 class="h5 mb-1">Resumen de garantias</h2>
                 <div class="text-muted">Accesos rapidos para filtrar la tabla de casos.</div>
             </div>
             <button class="btn btn-outline-primary btn-sm" onclick="limpiarFiltroDashboard()">Ver todas</button>
         </div>
-
-        <div id="filtroActivo" class="alert alert-primary" style="display:none;"></div>
 
         <div class="dashboard-garantias">
             <button class="dashboard-garantia-card principal" data-filtro-card="total" onclick="aplicarFiltroDashboard('total')">
@@ -403,7 +411,7 @@
             </button>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div id="bloqueListadoGarantias" class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <h2 class="h5 mb-0">Listado de garantias</h2>
 
             <div class="d-flex gap-2 flex-wrap">
@@ -423,6 +431,8 @@
                 <button class="btn btn-primary" onclick="filtrarGarantias()">Buscar</button>
             </div>
         </div>
+
+        <div id="filtroActivo" class="alert alert-primary" style="display:none;"></div>
 
         <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle">
@@ -601,6 +611,7 @@ function aplicarFiltroDashboard(tipo, valor = null){
 
     actualizarFiltroActivo();
     listarGarantias();
+    desplazarAListadoGarantias();
 }
 
 function limpiarFiltroDashboard(){
@@ -614,6 +625,21 @@ function limpiarFiltroDashboard(){
     history.pushState({}, "", "/garantias");
     actualizarFiltroActivo();
     listarGarantias();
+    desplazarAListadoGarantias();
+}
+
+function desplazarAListadoGarantias(){
+    setTimeout(() => {
+        const objetivo =
+            document.getElementById("bloqueListadoGarantias");
+
+        if(objetivo){
+            objetivo.scrollIntoView({
+                behavior:"smooth",
+                block:"start"
+            });
+        }
+    }, 120);
 }
 
 function claveFiltroActivo(){
