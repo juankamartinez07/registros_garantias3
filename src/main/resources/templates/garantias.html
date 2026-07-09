@@ -132,6 +132,80 @@
             white-space:pre-wrap;
         }
 
+        .dashboard-garantias{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+            gap:12px;
+            margin-bottom:18px;
+        }
+
+        .dashboard-garantia-card{
+            min-height:112px;
+            width:100%;
+            border:1px solid #dbe3ef;
+            border-radius:8px;
+            background:#f8fafc;
+            padding:14px;
+            text-align:left;
+            color:#0f172a;
+            transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+
+        .dashboard-garantia-card:hover,
+        .dashboard-garantia-card.activa{
+            transform:translateY(-2px);
+            border-color:#2563eb;
+            box-shadow:0 12px 28px rgba(37,99,235,0.14);
+        }
+
+        .dashboard-garantia-card span{
+            display:block;
+            color:#475569;
+            font-size:13px;
+            font-weight:800;
+            margin-bottom:8px;
+        }
+
+        .dashboard-garantia-card strong{
+            display:block;
+            font-size:30px;
+            line-height:1;
+            color:#17324d;
+        }
+
+        .dashboard-garantia-card small{
+            display:block;
+            margin-top:8px;
+            color:#64748b;
+            font-weight:700;
+        }
+
+        .dashboard-garantia-card.principal{
+            background:#edf5ff;
+        }
+
+        .dashboard-garantia-card.abierta{
+            background:#eef6ff;
+        }
+
+        .dashboard-garantia-card.cerrada{
+            background:#f1f5f9;
+        }
+
+        .dashboard-garantia-card.alerta{
+            background:#fff7ed;
+        }
+
+        .dashboard-garantia-card.critica{
+            background:#fef2f2;
+        }
+
+        .dashboard-subtitulo{
+            color:#334155;
+            font-weight:800;
+            margin:12px 0 10px;
+        }
+
         textarea{
             resize:vertical;
         }
@@ -251,6 +325,85 @@
 
     <div class="panel">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h2 class="h5 mb-1">Dashboard de garantias</h2>
+                <div class="text-muted">Accesos rapidos para filtrar la tabla de casos.</div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" onclick="limpiarFiltroDashboard()">Ver todas</button>
+        </div>
+
+        <div id="filtroActivo" class="alert alert-primary" style="display:none;"></div>
+
+        <div class="dashboard-garantias">
+            <button class="dashboard-garantia-card principal" data-filtro-card="total" onclick="aplicarFiltroDashboard('total')">
+                <span>Total garantias</span>
+                <strong id="dgTotal">0</strong>
+                <small>Todos los casos</small>
+            </button>
+            <button class="dashboard-garantia-card abierta" data-filtro-card="general:ABIERTO" onclick="aplicarFiltroDashboard('estadoGeneral', 'ABIERTO')">
+                <span>Garantias abiertas</span>
+                <strong id="dgAbiertas">0</strong>
+                <small>Estado general abierto</small>
+            </button>
+            <button class="dashboard-garantia-card cerrada" data-filtro-card="general:CERRADO" onclick="aplicarFiltroDashboard('estadoGeneral', 'CERRADO')">
+                <span>Garantias cerradas</span>
+                <strong id="dgCerradas">0</strong>
+                <small>Estado general cerrado</small>
+            </button>
+            <button class="dashboard-garantia-card principal" data-filtro-card="filtro:ingresadasMesActual" onclick="aplicarFiltroDashboard('filtro', 'ingresadasMesActual')">
+                <span>Ingresadas este mes</span>
+                <strong id="dgMes">0</strong>
+                <small>Fecha ingreso garantia</small>
+            </button>
+            <button class="dashboard-garantia-card alerta" data-filtro-card="filtro:sinCasoProveedor" onclick="aplicarFiltroDashboard('filtro', 'sinCasoProveedor')">
+                <span>Sin caso proveedor</span>
+                <strong id="dgSinCaso">0</strong>
+                <small>Abiertas sin numero de caso</small>
+            </button>
+            <button class="dashboard-garantia-card critica" data-filtro-card="filtro:abiertas10dias" onclick="aplicarFiltroDashboard('filtro', 'abiertas10dias')">
+                <span>Abiertas +10 dias</span>
+                <strong id="dgMas10">0</strong>
+                <small>Seguimiento prioritario</small>
+            </button>
+        </div>
+
+        <div class="dashboard-subtitulo">Estados abiertos</div>
+        <div class="dashboard-garantias">
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:EN_TRAMITE" onclick="aplicarFiltroDashboard('estadoEspecifico', 'EN_TRAMITE')">
+                <span>En tramite</span>
+                <strong id="dgEnTramite">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:EN_REVISION_INTERNA" onclick="aplicarFiltroDashboard('estadoEspecifico', 'EN_REVISION_INTERNA')">
+                <span>En revision interna</span>
+                <strong id="dgRevision">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:ENVIADO_A_PROVEEDOR" onclick="aplicarFiltroDashboard('estadoEspecifico', 'ENVIADO_A_PROVEEDOR')">
+                <span>Enviado a proveedor</span>
+                <strong id="dgProveedor">0</strong>
+            </button>
+        </div>
+
+        <div class="dashboard-subtitulo">Estados cerrados</div>
+        <div class="dashboard-garantias mb-4">
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:REPARADO" onclick="aplicarFiltroDashboard('estadoEspecifico', 'REPARADO')">
+                <span>Reparado</span>
+                <strong id="dgReparado">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:NO_APLICO_GARANTIA" onclick="aplicarFiltroDashboard('estadoEspecifico', 'NO_APLICO_GARANTIA')">
+                <span>No aplico garantia</span>
+                <strong id="dgNoAplico">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:CAMBIO_EQUIPO_NUEVO" onclick="aplicarFiltroDashboard('estadoEspecifico', 'CAMBIO_EQUIPO_NUEVO')">
+                <span>Cambio por equipo nuevo</span>
+                <strong id="dgCambio">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:NOTA_CREDITO" onclick="aplicarFiltroDashboard('estadoEspecifico', 'NOTA_CREDITO')">
+                <span>Nota credito</span>
+                <strong id="dgNota">0</strong>
+            </button>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <h2 class="h5 mb-0">Listado de garantias</h2>
 
             <div class="d-flex gap-2 flex-wrap">
@@ -328,10 +481,39 @@ const ESTADOS_API = {
     "Cambio por equipo nuevo":"Cambio por equipo nuevo",
     "Nota credito":"Nota credito"
 };
+const ESTADOS_ESPECIFICOS_URL = {
+    "EN_TRAMITE":"En tramite",
+    "EN_REVISION_INTERNA":"En revision interna",
+    "ENVIADO_A_PROVEEDOR":"Enviado a proveedor",
+    "REPARADO":"Reparado",
+    "NO_APLICO_GARANTIA":"No aplico garantia",
+    "CAMBIO_EQUIPO_NUEVO":"Cambio por equipo nuevo",
+    "NOTA_CREDITO":"Nota credito"
+};
+const TEXTOS_FILTRO = {
+    "estadoGeneral:ABIERTO":"Mostrando garantias abiertas.",
+    "estadoGeneral:CERRADO":"Mostrando garantias cerradas.",
+    "estadoEspecifico:EN_TRAMITE":"Mostrando garantias en tramite.",
+    "estadoEspecifico:EN_REVISION_INTERNA":"Mostrando garantias en revision interna.",
+    "estadoEspecifico:ENVIADO_A_PROVEEDOR":"Mostrando garantias enviadas a proveedor.",
+    "estadoEspecifico:REPARADO":"Mostrando garantias reparadas.",
+    "estadoEspecifico:NO_APLICO_GARANTIA":"Mostrando garantias que no aplicaron garantia.",
+    "estadoEspecifico:CAMBIO_EQUIPO_NUEVO":"Mostrando garantias con cambio por equipo nuevo.",
+    "estadoEspecifico:NOTA_CREDITO":"Mostrando garantias con nota credito.",
+    "filtro:sinCasoProveedor":"Mostrando garantias sin numero de caso del proveedor.",
+    "filtro:abiertas10dias":"Mostrando garantias abiertas hace mas de 10 dias.",
+    "filtro:ingresadasMesActual":"Mostrando garantias ingresadas durante el mes actual.",
+    "filtro:tiempoAbiertas":"Mostrando estado de tiempo de garantias abiertas."
+};
 
 let paginaActual = 0;
 let totalPaginas = 0;
 let temporizadorToast = null;
+let filtroDashboard = {
+    estadoGeneral:null,
+    estadoEspecifico:null,
+    filtro:null
+};
 
 window.onload = function(){
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
@@ -344,6 +526,8 @@ window.onload = function(){
         prepararGarantiaDesdeSerial();
     }
 
+    aplicarFiltrosDesdeUrl(params);
+    cargarDashboardGarantiasModulo();
     listarGarantias();
 };
 
@@ -366,6 +550,119 @@ function escaparHtml(valor){
 
 function puedeEliminarGarantias(){
     return document.getElementById("permisoEliminarGarantias") !== null;
+}
+
+function cargarDashboardGarantiasModulo(){
+    fetch("/garantias/api/dashboard")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("dgTotal").innerText = data.totalGarantias || 0;
+            document.getElementById("dgAbiertas").innerText = data.abiertas || 0;
+            document.getElementById("dgCerradas").innerText = data.cerradas || 0;
+            document.getElementById("dgMes").innerText = data.ingresadasMesActual || 0;
+            document.getElementById("dgSinCaso").innerText = data.abiertasSinCasoProveedor || 0;
+            document.getElementById("dgMas10").innerText = data.abiertasMas10Dias || 0;
+            document.getElementById("dgEnTramite").innerText = data.enTramite || 0;
+            document.getElementById("dgRevision").innerText = data.enRevisionInterna || 0;
+            document.getElementById("dgProveedor").innerText = data.enviadoAProveedor || 0;
+            document.getElementById("dgReparado").innerText = data.reparado || 0;
+            document.getElementById("dgNoAplico").innerText = data.noAplicoGarantia || 0;
+            document.getElementById("dgCambio").innerText = data.cambioEquipoNuevo || 0;
+            document.getElementById("dgNota").innerText = data.notaCredito || 0;
+        })
+        .catch(() => mostrarToast("No se pudo cargar el dashboard de garantias.", "warning"));
+}
+
+function aplicarFiltrosDesdeUrl(params){
+    filtroDashboard.estadoGeneral = params.get("estadoGeneral");
+    filtroDashboard.estadoEspecifico = params.get("estadoEspecifico");
+    filtroDashboard.filtro = params.get("filtro");
+    actualizarFiltroActivo();
+}
+
+function aplicarFiltroDashboard(tipo, valor = null){
+    paginaActual = 0;
+    document.getElementById("filtroEstado").value = "";
+
+    filtroDashboard = {
+        estadoGeneral:null,
+        estadoEspecifico:null,
+        filtro:null
+    };
+
+    if(tipo === "total"){
+        history.pushState({}, "", "/garantias");
+    }else{
+        filtroDashboard[tipo] = valor;
+        const params = new URLSearchParams();
+        params.set(tipo, valor);
+        history.pushState({}, "", `/garantias?${params.toString()}`);
+    }
+
+    actualizarFiltroActivo();
+    listarGarantias();
+}
+
+function limpiarFiltroDashboard(){
+    filtroDashboard = {
+        estadoGeneral:null,
+        estadoEspecifico:null,
+        filtro:null
+    };
+    paginaActual = 0;
+    document.getElementById("filtroEstado").value = "";
+    history.pushState({}, "", "/garantias");
+    actualizarFiltroActivo();
+    listarGarantias();
+}
+
+function claveFiltroActivo(){
+    if(filtroDashboard.estadoGeneral){
+        return `estadoGeneral:${filtroDashboard.estadoGeneral}`;
+    }
+    if(filtroDashboard.estadoEspecifico){
+        return `estadoEspecifico:${filtroDashboard.estadoEspecifico}`;
+    }
+    if(filtroDashboard.filtro){
+        return `filtro:${filtroDashboard.filtro}`;
+    }
+    return null;
+}
+
+function actualizarFiltroActivo(){
+    const clave = claveFiltroActivo();
+    const alerta = document.getElementById("filtroActivo");
+
+    document
+        .querySelectorAll(".dashboard-garantia-card")
+        .forEach(card => card.classList.remove("activa"));
+
+    if(!clave){
+        alerta.style.display = "none";
+        return;
+    }
+
+    alerta.style.display = "block";
+    alerta.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>${escaparHtml(TEXTOS_FILTRO[clave] || "Mostrando garantias filtradas.")}</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="limpiarFiltroDashboard()">Limpiar filtro</button>
+        </div>
+    `;
+
+    let selector = null;
+    if(filtroDashboard.estadoGeneral){
+        selector = `[data-filtro-card="general:${filtroDashboard.estadoGeneral}"]`;
+    }else if(filtroDashboard.estadoEspecifico){
+        selector = `[data-filtro-card="especifico:${filtroDashboard.estadoEspecifico}"]`;
+    }else if(filtroDashboard.filtro){
+        selector = `[data-filtro-card="filtro:${filtroDashboard.filtro}"]`;
+    }
+
+    const card = selector ? document.querySelector(selector) : null;
+    if(card){
+        card.classList.add("activa");
+    }
 }
 
 function normalizarEstado(estado){
@@ -509,6 +806,7 @@ function guardarGarantia(event){
         .then(() => {
             mostrarToast("Garantia guardada correctamente.", "success");
             limpiarFormulario();
+            cargarDashboardGarantiasModulo();
             listarGarantias();
         })
         .catch(error => mostrarToast(error.message, "danger"));
@@ -601,6 +899,7 @@ function eliminarGarantia(id){
                 throw new Error(mensaje || "No se pudo eliminar la garantia.");
             }
             mostrarToast("Garantia eliminada correctamente.", "success");
+            cargarDashboardGarantiasModulo();
             listarGarantias();
         })
         .catch(error => mostrarToast(error.message, "danger"));
@@ -621,6 +920,18 @@ function listarGarantias(){
 
     if(estado !== ""){
         params.append("estado", ESTADOS_API[estado] || estado);
+    }
+
+    if(filtroDashboard.estadoGeneral){
+        params.append("estadoGeneral", filtroDashboard.estadoGeneral);
+    }
+
+    if(filtroDashboard.estadoEspecifico){
+        params.append("estadoEspecifico", filtroDashboard.estadoEspecifico);
+    }
+
+    if(filtroDashboard.filtro){
+        params.append("filtro", filtroDashboard.filtro);
     }
 
     fetch(`/garantias/api?${params.toString()}`)
@@ -672,6 +983,13 @@ function listarGarantias(){
 
 function filtrarGarantias(){
     paginaActual = 0;
+    filtroDashboard = {
+        estadoGeneral:null,
+        estadoEspecifico:null,
+        filtro:null
+    };
+    history.pushState({}, "", "/garantias");
+    actualizarFiltroActivo();
     listarGarantias();
 }
 

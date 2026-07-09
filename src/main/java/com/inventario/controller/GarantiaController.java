@@ -1,5 +1,6 @@
 package com.inventario.controller;
 
+import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.model.Garantia;
 import com.inventario.service.GarantiaService;
@@ -41,6 +42,9 @@ public class GarantiaController {
     public Page<Garantia> listar(
             @RequestParam(required = false) String serial,
             @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String estadoGeneral,
+            @RequestParam(required = false) String estadoEspecifico,
+            @RequestParam(required = false) String filtro,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -49,7 +53,13 @@ public class GarantiaController {
                 Math.min(Math.max(size, 10), 50),
                 Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
 
-        return garantiaService.listar(serial, estado, pageable);
+        return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
+    }
+
+    @GetMapping("/api/dashboard")
+    @ResponseBody
+    public DashboardGarantias dashboard() {
+        return garantiaService.dashboard();
     }
 
     @GetMapping("/api/preparar")

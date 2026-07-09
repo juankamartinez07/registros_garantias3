@@ -1,5 +1,6 @@
 package com.inventario.service;
 
+import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.model.Equipo;
 import com.inventario.model.Garantia;
@@ -56,8 +57,57 @@ public class GarantiaService {
         this.equipoRepository = equipoRepository;
     }
 
-    public Page<Garantia> listar(String serial, String estado, Pageable pageable) {
-        return garantiaRepository.buscar(limpiar(serial), limpiar(estado), pageable);
+    public Page<Garantia> listar(
+            String serial,
+            String estado,
+            String estadoGeneral,
+            String estadoEspecifico,
+            String filtro,
+            Pageable pageable) {
+
+        LocalDate hoy = LocalDate.now();
+        LocalDate inicioMes = hoy.withDayOfMonth(1);
+        LocalDate finMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
+        LocalDate fechaLimite10Dias = hoy.minusDays(10);
+        String filtroLimpio = limpiar(filtro);
+
+        return garantiaRepository.buscar(
+                limpiar(serial),
+                normalizarEstadoLibre(estado),
+                normalizarEstadoGeneral(estadoGeneral),
+                normalizarEstadoEspecifico(estadoEspecifico),
+                "ingresadasMesActual".equalsIgnoreCase(filtroLimpio),
+                "sinCasoProveedor".equalsIgnoreCase(filtroLimpio),
+                "abiertas10dias".equalsIgnoreCase(filtroLimpio),
+                "tiempoAbiertas".equalsIgnoreCase(filtroLimpio),
+                inicioMes,
+                finMes,
+                fechaLimite10Dias,
+                pageable);
+    }
+
+    public DashboardGarantias dashboard() {
+        LocalDate hoy = LocalDate.now();
+        LocalDate inicioMes = hoy.withDayOfMonth(1);
+        LocalDate finMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
+        LocalDate fechaLimite10Dias = hoy.minusDays(10);
+
+        DashboardGarantias dashboard = new DashboardGarantias();
+        dashboard.setTotalGarantias(garantiaRepository.count());
+        dashboard.setAbiertas(garantiaRepository.countByEstadoGeneral(ESTADO_GENERAL_ABIERTO));
+        dashboard.setCerradas(garantiaRepository.countByEstadoGeneral(ESTADO_GENERAL_CERRADO));
+        dashboard.setIngresadasMesActual(garantiaRepository.countByFechaIngresoGarantiaBetween(inicioMes, finMes));
+        dashboard.setAbiertasSinCasoProveedor(garantiaRepository.contarAbiertasSinCasoProveedor());
+        dashboard.setAbiertasMas10Dias(garantiaRepository.contarAbiertasMas10Dias(fechaLimite10Dias));
+        dashboard.setEnTramite(garantiaRepository.countByEstadoEspecifico(ESTADO_EN_TRAMITE));
+        dashboard.setEnRevisionInterna(garantiaRepository.countByEstadoEspecifico(ESTADO_REVISION_INTERNA));
+        dashboard.setEnviadoAProveedor(garantiaRepository.countByEstadoEspecifico(ESTADO_ENVIADO_PROVEEDOR));
+        dashboard.setReparado(garantiaRepository.countByEstadoEspecifico(ESTADO_REPARADO));
+        dashboard.setNoAplicoGarantia(garantiaRepository.countByEstadoEspecifico(ESTADO_NO_APLICO));
+        dashboard.setCambioEquipoNuevo(garantiaRepository.countByEstadoEspecifico(ESTADO_CAMBIO));
+        dashboard.setNotaCredito(garantiaRepository.countByEstadoEspecifico(ESTADO_NOTA_CREDITO));
+        aplicarEstadoTiempoAbiertas(dashboard, hoy);
+        return dashboard;
     }
 
     public Garantia obtener(Long id) {
@@ -244,6 +294,74 @@ public class GarantiaService {
             return ESTADO_GENERAL_CERRADO;
         }
         return ESTADO_GENERAL_ABIERTO;
+    }
+
+    private void aplicarEstadoTiempoAbiertas(DashboardGarantias dashboard, LocalDate hoy) {
+        LocalDate fechaMasAntigua = garantiaRepository.fechaAbiertaMasAntigua();
+        if (fechaMasAntigua == null) {
+            dashboard.setMaxDiasAbierta(0);
+            dashboard.setEstadoTiempoAbiertas("normal");
+            dashboard.setTextoTiempoAbiertas("Sin casos abiertos");
+            return;
+        }
+
+        long dias = Math.max(0, ChronoUnit.DAYS.between(fechaMasAntigua, hoy));
+        dashboard.setMaxDiasAbierta(dias);
+
+        if (dias >= 10) {
+            dashboard.setEstadoTiempoAbiertas("critico");
+            dashboard.setTextoTiempoAbiertas("Casos abiertos +10 dias");
+        } else if (dias >= 5) {
+            dashboard.setEstadoTiempoAbiertas("seguimiento");
+            dashboard.setTextoTiempoAbiertas("Casos abiertos en seguimiento");
+        } else {
+            dashboard.setEstadoTiempoAbiertas("normal");
+            dashboard.setTextoTiempoAbiertas("Casos abiertos en tiempo normal");
+        }
+    }
+
+    private String normalizarEstadoGeneral(String estadoGeneral) {
+        String limpio = limpiar(estadoGeneral);
+        if (limpio == null) {
+            return null;
+        }
+        if ("ABIERTO".equalsIgnoreCase(limpio) || ESTADO_GENERAL_ABIERTO.equalsIgnoreCase(limpio)) {
+            return ESTADO_GENERAL_ABIERTO;
+        }
+        if ("CERRADO".equalsIgnoreCase(limpio) || ESTADO_GENERAL_CERRADO.equalsIgnoreCase(limpio)) {
+            return ESTADO_GENERAL_CERRADO;
+        }
+        return limpio;
+    }
+
+    private String normalizarEstadoEspecifico(String estadoEspecifico) {
+        String limpio = limpiar(estadoEspecifico);
+        if (limpio == null) {
+            return null;
+        }
+
+        return switch (limpio.toUpperCase()) {
+            case "EN_TRAMITE" -> ESTADO_EN_TRAMITE;
+            case "EN_REVISION_INTERNA" -> ESTADO_REVISION_INTERNA;
+            case "ENVIADO_A_PROVEEDOR" -> ESTADO_ENVIADO_PROVEEDOR;
+            case "REPARADO" -> ESTADO_REPARADO;
+            case "NO_APLICO_GARANTIA" -> ESTADO_NO_APLICO;
+            case "CAMBIO_EQUIPO_NUEVO" -> ESTADO_CAMBIO;
+            case "NOTA_CREDITO" -> ESTADO_NOTA_CREDITO;
+            default -> limpio;
+        };
+    }
+
+    private String normalizarEstadoLibre(String estado) {
+        String limpio = limpiar(estado);
+        if (limpio == null) {
+            return null;
+        }
+        String general = normalizarEstadoGeneral(limpio);
+        if (ESTADO_GENERAL_ABIERTO.equals(general) || ESTADO_GENERAL_CERRADO.equals(general)) {
+            return general;
+        }
+        return normalizarEstadoEspecifico(limpio);
     }
 
     private void validarPuedeGestionarGarantias() {
