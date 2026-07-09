@@ -39,7 +39,9 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                 create table if not exists garantias (
                     id bigint not null auto_increment,
                     equipo_id bigint null,
-                    numero_ticket varchar(32) null,
+                    numero_ticket varchar(5) null,
+                    estado_general varchar(20) null,
+                    estado_especifico varchar(80) null,
                     sede varchar(255) null,
                     referencia_producto varchar(255) null,
                     serial varchar(255) not null,
@@ -51,6 +53,8 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     motivos_garantia text null,
                     numero_caso_proveedor varchar(255) null,
                     motivo_no_aplica_garantia text null,
+                    observaciones text null,
+                    usuario_creacion varchar(255) null,
                     fecha_creacion datetime null,
                     fecha_actualizacion datetime null,
                     primary key (id),
@@ -64,19 +68,29 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                 )
                 """);
 
-        Integer existeNumeroTicket = jdbcTemplate.queryForObject(
-                """
-                select count(*)
-                from information_schema.columns
-                where table_schema = database()
-                  and table_name = 'garantias'
-                  and column_name = 'numero_ticket'
-                """,
-                Integer.class);
+        agregarColumnaSiFalta("garantias", "numero_ticket", "alter table garantias add column numero_ticket varchar(5) null after equipo_id");
+        agregarColumnaSiFalta("garantias", "estado_general", "alter table garantias add column estado_general varchar(20) null after numero_ticket");
+        agregarColumnaSiFalta("garantias", "estado_especifico", "alter table garantias add column estado_especifico varchar(80) null after estado_general");
+        agregarColumnaSiFalta("garantias", "observaciones", "alter table garantias add column observaciones text null after motivo_no_aplica_garantia");
+        agregarColumnaSiFalta("garantias", "usuario_creacion", "alter table garantias add column usuario_creacion varchar(255) null after observaciones");
 
-        if (existeNumeroTicket == null || existeNumeroTicket == 0) {
-            jdbcTemplate.execute("alter table garantias add column numero_ticket varchar(32) null after equipo_id");
-        }
+        jdbcTemplate.execute(
+                """
+                update garantias
+                set estado_general = case
+                    when estado in ('Reparado', 'No aplico garantia', 'No aplicó garantía', 'Cambio por equipo nuevo', 'Nota credito', 'Nota crédito')
+                        then 'Cerrado'
+                    else 'Abierto'
+                end
+                where estado_general is null
+                """);
+
+        jdbcTemplate.execute(
+                """
+                update garantias
+                set estado_especifico = coalesce(estado_especifico, estado, 'En tramite')
+                where estado_especifico is null
+                """);
 
         Integer existeIndiceTicket = jdbcTemplate.queryForObject(
                 """
@@ -90,6 +104,24 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
 
         if (existeIndiceTicket == null || existeIndiceTicket == 0) {
             jdbcTemplate.execute("create unique index uk_garantias_numero_ticket on garantias (numero_ticket)");
+        }
+    }
+
+    private void agregarColumnaSiFalta(String tabla, String columna, String sql) {
+        Integer existe = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.columns
+                where table_schema = database()
+                  and table_name = ?
+                  and column_name = ?
+                """,
+                Integer.class,
+                tabla,
+                columna);
+
+        if (existe == null || existe == 0) {
+            jdbcTemplate.execute(sql);
         }
     }
 }

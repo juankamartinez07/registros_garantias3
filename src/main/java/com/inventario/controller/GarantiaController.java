@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -75,6 +76,12 @@ public class GarantiaController {
             @PathVariable Long id,
             @RequestBody GarantiaDTO dto) {
         return garantiaService.actualizar(id, dto);
+    }
+
+    @DeleteMapping("/api/{id}")
+    @ResponseBody
+    public void eliminar(@PathVariable Long id) {
+        garantiaService.eliminar(id);
     }
 
     @ExceptionHandler(RuntimeException.class)

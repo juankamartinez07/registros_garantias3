@@ -8,26 +8,38 @@ import com.inventario.repository.GarantiaRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 
 @Service
 public class GarantiaService {
 
-    public static final String ESTADO_EN_TRAMITE = "En trámite";
+    public static final String ESTADO_GENERAL_ABIERTO = "Abierto";
+    public static final String ESTADO_GENERAL_CERRADO = "Cerrado";
+    public static final String ESTADO_EN_TRAMITE = "En tramite";
+    public static final String ESTADO_REVISION_INTERNA = "En revision interna";
+    public static final String ESTADO_ENVIADO_PROVEEDOR = "Enviado a proveedor";
     public static final String ESTADO_REPARADO = "Reparado";
-    public static final String ESTADO_NO_APLICO = "No aplicó garantía";
+    public static final String ESTADO_NO_APLICO = "No aplico garantia";
     public static final String ESTADO_CAMBIO = "Cambio por equipo nuevo";
-    public static final String ESTADO_NOTA_CREDITO = "Nota crédito";
+    public static final String ESTADO_NOTA_CREDITO = "Nota credito";
 
     private static final int DIAS_GARANTIA = 365;
-    private static final Set<String> ESTADOS_VALIDOS = Set.of(
+    private static final Set<String> ESTADOS_GENERALES_VALIDOS = Set.of(
+            ESTADO_GENERAL_ABIERTO,
+            ESTADO_GENERAL_CERRADO
+    );
+    private static final Set<String> ESTADOS_ABIERTOS_VALIDOS = Set.of(
             ESTADO_EN_TRAMITE,
+            ESTADO_REVISION_INTERNA,
+            ESTADO_ENVIADO_PROVEEDOR
+    );
+    private static final Set<String> ESTADOS_CERRADOS_VALIDOS = Set.of(
             ESTADO_REPARADO,
             ESTADO_NO_APLICO,
             ESTADO_CAMBIO,
@@ -50,10 +62,11 @@ public class GarantiaService {
 
     public Garantia obtener(Long id) {
         return garantiaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Garantía no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Garantia no encontrada"));
     }
 
     public GarantiaDTO preparar(String serial) {
+        validarPuedeGestionarGarantias();
         Equipo equipo = obtenerEquipoApto(serial);
         validarGarantiaAbierta(equipo.getSerial());
         return crearDtoBase(equipo);
@@ -61,28 +74,39 @@ public class GarantiaService {
 
     @Transactional
     public Garantia crear(GarantiaDTO dto) {
+        validarPuedeGestionarGarantias();
         Equipo equipo = obtenerEquipoApto(dto.getSerial());
         validarGarantiaAbierta(equipo.getSerial());
 
         Garantia garantia = new Garantia();
         garantia.setEquipo(equipo);
         garantia.setNumeroTicket(generarNumeroTicket());
+        garantia.setUsuarioCreacion(nombreUsuarioActual());
         aplicarDatos(garantia, dto, equipo);
-        garantia.setEstado(ESTADO_EN_TRAMITE);
         return garantiaRepository.save(garantia);
     }
 
     @Transactional
     public Garantia actualizar(Long id, GarantiaDTO dto) {
+        validarPuedeGestionarGarantias();
         Garantia garantia = obtener(id);
         String serialDto = limpiar(dto.getSerial());
         if (serialDto != null && !serialDto.equalsIgnoreCase(garantia.getSerial())) {
-            throw new RuntimeException("No se permite cambiar el serial de una garantía existente.");
+            throw new RuntimeException("No se permite cambiar el serial de una garantia existente.");
         }
 
         Equipo equipo = garantia.getEquipo();
         aplicarDatos(garantia, dto, equipo);
         return garantiaRepository.save(garantia);
+    }
+
+    @Transactional
+    public void eliminar(Long id) {
+        validarPuedeEliminarGarantias();
+        if (!garantiaRepository.existsById(id)) {
+            throw new RuntimeException("Garantia no encontrada.");
+        }
+        garantiaRepository.deleteById(id);
     }
 
     public boolean estaEnGarantia(Equipo equipo) {
@@ -101,34 +125,49 @@ public class GarantiaService {
         }
 
         Equipo equipo = equipoRepository.findBySerial(serialLimpio)
-                .orElseThrow(() -> new RuntimeException("No se puede tramitar garantía de un serial inexistente."));
+                .orElseThrow(() -> new RuntimeException("No se puede tramitar garantia de un serial inexistente."));
 
         if (!estaEnGarantia(equipo)) {
-            throw new RuntimeException("No se puede tramitar garantía porque el serial está fuera del periodo de garantía.");
+            throw new RuntimeException("No se puede tramitar garantia porque el serial esta fuera del periodo de garantia.");
         }
 
         return equipo;
     }
 
     private void validarGarantiaAbierta(String serial) {
-        if (garantiaRepository.existsBySerialIgnoreCaseAndEstado(serial, ESTADO_EN_TRAMITE)) {
-            throw new RuntimeException("Este serial ya tiene una garantía en trámite.");
+        if (garantiaRepository.existsBySerialIgnoreCaseAndEstadoGeneral(serial, ESTADO_GENERAL_ABIERTO)) {
+            throw new RuntimeException("Este serial ya tiene una garantia abierta.");
         }
     }
 
     private void aplicarDatos(Garantia garantia, GarantiaDTO dto, Equipo equipo) {
-        String estado = limpiar(dto.getEstado());
-        if (estado == null) {
-            estado = garantia.getEstado() == null ? ESTADO_EN_TRAMITE : garantia.getEstado();
+        String estadoGeneral = limpiar(dto.getEstadoGeneral());
+        String estadoEspecifico = limpiar(dto.getEstadoEspecifico());
+
+        if (estadoGeneral == null && limpiar(dto.getEstado()) != null) {
+            estadoGeneral = estadoGeneralDesdeEstadoAnterior(dto.getEstado());
+            estadoEspecifico = limpiar(dto.getEstado());
         }
 
-        if (!ESTADOS_VALIDOS.contains(estado)) {
-            throw new RuntimeException("Estado de garantía no válido.");
+        if (estadoGeneral == null) {
+            estadoGeneral = garantia.getEstadoGeneral() == null ? ESTADO_GENERAL_ABIERTO : garantia.getEstadoGeneral();
         }
+
+        if (estadoEspecifico == null) {
+            estadoEspecifico = garantia.getEstadoEspecifico() == null ? ESTADO_EN_TRAMITE : garantia.getEstadoEspecifico();
+        }
+
+        validarEstados(estadoGeneral, estadoEspecifico);
 
         String motivoNoAplica = limpiar(dto.getMotivoNoAplicaGarantia());
-        if (ESTADO_NO_APLICO.equals(estado) && motivoNoAplica == null) {
-            throw new RuntimeException("Debe ingresar el motivo cuando no aplica garantía.");
+        if (ESTADO_GENERAL_CERRADO.equals(estadoGeneral)
+                && ESTADO_NO_APLICO.equals(estadoEspecifico)
+                && motivoNoAplica == null) {
+            throw new RuntimeException("Debe ingresar el motivo por el cual no aplico la garantia.");
+        }
+
+        if (!ESTADO_NO_APLICO.equals(estadoEspecifico)) {
+            motivoNoAplica = null;
         }
 
         garantia.setSede(valorBase(dto.getSede(), equipo == null || equipo.getSede() == null ? null : equipo.getSede().getNombre()));
@@ -141,7 +180,10 @@ public class GarantiaService {
         garantia.setMotivosGarantia(limpiar(dto.getMotivosGarantia()));
         garantia.setNumeroCasoProveedor(limpiar(dto.getNumeroCasoProveedor()));
         garantia.setMotivoNoAplicaGarantia(motivoNoAplica);
-        garantia.setEstado(estado);
+        garantia.setObservaciones(limpiar(dto.getObservaciones()));
+        garantia.setEstadoGeneral(estadoGeneral);
+        garantia.setEstadoEspecifico(estadoEspecifico);
+        garantia.setEstado(estadoEspecifico);
     }
 
     private GarantiaDTO crearDtoBase(Equipo equipo) {
@@ -151,6 +193,8 @@ public class GarantiaService {
         dto.setSede(equipo.getSede() == null ? "" : equipo.getSede().getNombre());
         dto.setReferenciaProducto(equipo.getProducto() == null ? "" : equipo.getProducto().getNombre());
         dto.setSerial(equipo.getSerial());
+        dto.setEstadoGeneral(ESTADO_GENERAL_ABIERTO);
+        dto.setEstadoEspecifico(ESTADO_EN_TRAMITE);
         dto.setEstado(ESTADO_EN_TRAMITE);
         dto.setProveedor(equipo.getProveedor() == null ? "" : equipo.getProveedor().getNombre());
         dto.setFacturaProveedor(equipo.getFactura());
@@ -160,15 +204,73 @@ public class GarantiaService {
     }
 
     private String generarNumeroTicket() {
-        String fecha = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        String ticket;
+        int siguiente = 1;
+        String maximo = garantiaRepository.maxNumeroTicketCorto();
 
-        do {
-            int consecutivo = ThreadLocalRandom.current().nextInt(100000, 1000000);
-            ticket = fecha + consecutivo;
-        } while (garantiaRepository.existsByNumeroTicket(ticket));
+        if (maximo != null) {
+            siguiente = Integer.parseInt(maximo) + 1;
+        }
 
-        return ticket;
+        while (siguiente <= 99999) {
+            String ticket = String.format("%05d", siguiente);
+            if (!garantiaRepository.existsByNumeroTicket(ticket)) {
+                return ticket;
+            }
+            siguiente++;
+        }
+
+        throw new RuntimeException("No hay numeros de ticket disponibles.");
+    }
+
+    private void validarEstados(String estadoGeneral, String estadoEspecifico) {
+        if (!ESTADOS_GENERALES_VALIDOS.contains(estadoGeneral)) {
+            throw new RuntimeException("Debe seleccionar un estado general valido.");
+        }
+
+        if (ESTADO_GENERAL_ABIERTO.equals(estadoGeneral)
+                && !ESTADOS_ABIERTOS_VALIDOS.contains(estadoEspecifico)) {
+            throw new RuntimeException("Debe seleccionar un estado especifico valido para garantias abiertas.");
+        }
+
+        if (ESTADO_GENERAL_CERRADO.equals(estadoGeneral)
+                && !ESTADOS_CERRADOS_VALIDOS.contains(estadoEspecifico)) {
+            throw new RuntimeException("Debe seleccionar un estado especifico valido para garantias cerradas.");
+        }
+    }
+
+    private String estadoGeneralDesdeEstadoAnterior(String estado) {
+        String estadoLimpio = limpiar(estado);
+        if (ESTADOS_CERRADOS_VALIDOS.contains(estadoLimpio)) {
+            return ESTADO_GENERAL_CERRADO;
+        }
+        return ESTADO_GENERAL_ABIERTO;
+    }
+
+    private void validarPuedeGestionarGarantias() {
+        if (!tieneRol("SUPER_ADMIN") && !tieneRol("SUPERUSER") && !tieneRol("ADMIN")) {
+            throw new RuntimeException("Permisos insuficientes. Solo los usuarios ADMIN o SUPER_ADMIN pueden tramitar garantias.");
+        }
+    }
+
+    private void validarPuedeEliminarGarantias() {
+        if (!tieneRol("SUPER_ADMIN") && !tieneRol("SUPERUSER")) {
+            throw new RuntimeException("Permisos insuficientes. Solo los usuarios SUPER_ADMIN pueden eliminar garantias.");
+        }
+    }
+
+    private boolean tieneRol(String rol) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + rol));
+    }
+
+    private String nombreUsuarioActual() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication == null ? null : authentication.getName();
     }
 
     private LocalDate parseFecha(String fecha) {

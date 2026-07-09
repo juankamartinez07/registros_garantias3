@@ -29,6 +29,12 @@ public class Garantia {
     @Column(name = "numero_ticket", unique = true)
     private String numeroTicket;
 
+    @Column(name = "estado_general")
+    private String estadoGeneral;
+
+    @Column(name = "estado_especifico")
+    private String estadoEspecifico;
+
     private String sede;
 
     @Column(name = "referencia_producto")
@@ -57,6 +63,12 @@ public class Garantia {
 
     @Column(name = "motivo_no_aplica_garantia", columnDefinition = "TEXT")
     private String motivoNoAplicaGarantia;
+
+    @Column(columnDefinition = "TEXT")
+    private String observaciones;
+
+    @Column(name = "usuario_creacion")
+    private String usuarioCreacion;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
@@ -98,6 +110,22 @@ public class Garantia {
 
     public void setNumeroTicket(String numeroTicket) {
         this.numeroTicket = numeroTicket;
+    }
+
+    public String getEstadoGeneral() {
+        return estadoGeneral;
+    }
+
+    public void setEstadoGeneral(String estadoGeneral) {
+        this.estadoGeneral = estadoGeneral;
+    }
+
+    public String getEstadoEspecifico() {
+        return estadoEspecifico;
+    }
+
+    public void setEstadoEspecifico(String estadoEspecifico) {
+        this.estadoEspecifico = estadoEspecifico;
     }
 
     public String getSede() {
@@ -186,6 +214,22 @@ public class Garantia {
 
     public void setMotivoNoAplicaGarantia(String motivoNoAplicaGarantia) {
         this.motivoNoAplicaGarantia = motivoNoAplicaGarantia;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public String getUsuarioCreacion() {
+        return usuarioCreacion;
+    }
+
+    public void setUsuarioCreacion(String usuarioCreacion) {
+        this.usuarioCreacion = usuarioCreacion;
     }
 
     public LocalDateTime getFechaCreacion() {

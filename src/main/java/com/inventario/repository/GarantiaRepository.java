@@ -9,9 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
 
-    boolean existsBySerialIgnoreCaseAndEstado(String serial, String estado);
+    boolean existsBySerialIgnoreCaseAndEstadoGeneral(String serial, String estadoGeneral);
 
     boolean existsByNumeroTicket(String numeroTicket);
+
+    @Query("select max(g.numeroTicket) from Garantia g where length(g.numeroTicket) = 5")
+    String maxNumeroTicketCorto();
 
     @Query("""
             select g
@@ -19,7 +22,7 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
             where (:serial is null
                 or lower(g.serial) like lower(concat('%', :serial, '%'))
                 or lower(g.numeroTicket) like lower(concat('%', :serial, '%')))
-              and (:estado is null or g.estado = :estado)
+              and (:estado is null or g.estadoGeneral = :estado or g.estadoEspecifico = :estado)
             """)
     Page<Garantia> buscar(
             @Param("serial") String serial,

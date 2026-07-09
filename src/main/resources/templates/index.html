@@ -412,6 +412,12 @@
         style="display:none;">
     </div>
 
+    <div
+        id="permisoTramitarGarantias"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')"
+        style="display:none;">
+    </div>
+
    <div class="d-flex justify-content-between align-items-center mb-4">
 
     <h1 class="titulo">
@@ -421,7 +427,7 @@
     <form action="/logout" method="post">
 
         
-        <div sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')">
+        <div sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')">
 
     <a href="/configuracion"
        class="btn btn-dark me-2">
@@ -435,6 +441,7 @@
 </div>
 
         <a href="/garantias"
+           sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')"
            class="btn btn-primary me-2">
 
             Garantias en tramite
@@ -1002,6 +1009,28 @@ function puedeEliminarEquipos(){
 
     return document
         .getElementById("permisoEliminarEquipos") !== null;
+
+}
+
+function puedeTramitarGarantias(){
+
+    return document
+        .getElementById("permisoTramitarGarantias") !== null;
+
+}
+
+function tramitarGarantiaDesdeBusqueda(serial){
+
+    if(!puedeTramitarGarantias()){
+        mostrarToast(
+            "Permisos insuficientes. Solo los usuarios ADMIN o SUPER_ADMIN pueden tramitar garantias.",
+            "warning"
+        );
+        return;
+    }
+
+    window.location.href =
+        "/garantias?serial=" + encodeURIComponent(serial || "");
 
 }
 
@@ -2743,7 +2772,8 @@ function buscarEquipo(){
 
                 <button
                     class="btn btn-success"
-                    onclick="window.location.href='/garantias?serial=${encodeURIComponent(data.serial || '')}'">
+                    data-serial="${escaparHtml(data.serial || '')}"
+                    onclick="tramitarGarantiaDesdeBusqueda(this.dataset.serial)">
                     Tramitar garantia
                 </button>
 
