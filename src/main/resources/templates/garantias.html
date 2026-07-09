@@ -9,7 +9,12 @@
     <style>
         body{
             min-height:100vh;
-            background:#eef2f7;
+            background:
+                linear-gradient(90deg, rgba(248,250,252,0.92) 0%, rgba(248,250,252,0.72) 42%, rgba(248,250,252,0.9) 100%),
+                url('/img/fondo-proceso-garantia.png')
+                center top / cover
+                fixed
+                no-repeat;
         }
 
         .page-shell{
@@ -539,6 +544,10 @@ window.onload = function(){
     aplicarFiltrosDesdeUrl(params);
     cargarDashboardGarantiasModulo();
     listarGarantias();
+
+    if(tieneFiltroDashboardActivo()){
+        desplazarAListadoGarantias();
+    }
 };
 
 function mostrarToast(mensaje, tipo = "info"){
@@ -653,6 +662,10 @@ function claveFiltroActivo(){
         return `filtro:${filtroDashboard.filtro}`;
     }
     return null;
+}
+
+function tieneFiltroDashboardActivo(){
+    return claveFiltroActivo() !== null;
 }
 
 function actualizarFiltroActivo(){
