@@ -49,10 +49,16 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/login",
+                        "/demo-expirada",
                         "/css/**",
                         "/js/**",
                         "/img/**")
                 .permitAll()
+
+                .requestMatchers(
+                        "/configuracion/demo/**",
+                        "/configuracion/demo")
+                .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         "/usuarios/**",

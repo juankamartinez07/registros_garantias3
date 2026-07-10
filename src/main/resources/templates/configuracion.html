@@ -89,6 +89,13 @@
 <div class="container mt-5 mb-5">
 
     <div
+        th:if="${demoEstado != null and demoEstado.mostrarBanner}"
+        class="alert mb-4"
+        th:classappend="${demoEstado.superAdmin} ? ' alert-info' : ' alert-warning'"
+        th:text="${demoEstado.superAdmin ? (demoEstado.demoExpirada ? 'Modo demo expirado para usuarios. Como SUPERADMIN puedes administrar la configuracion.' : 'Modo demo activo para usuarios: quedan ' + demoEstado.diasRestantes + ' dias.') : (demoEstado.diasRestantes == 1 ? 'Prueba demo activa: queda 1 dia de uso.' : 'Prueba demo activa: quedan ' + demoEstado.diasRestantes + ' dias de uso.')}">
+    </div>
+
+    <div
         id="permisoSuperAdmin"
         sec:authorize="hasRole('SUPER_ADMIN')"
         style="display:none;">
@@ -261,6 +268,59 @@
 
             </table>
 
+        </div>
+
+    </div>
+
+
+    <!-- CONFIGURACION DEMO -->
+
+    <div
+        class="card shadow p-4 mt-4"
+        sec:authorize="hasRole('SUPER_ADMIN')">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h3 class="mb-0">Configuracion de demo</h3>
+            <span id="demoEstadoBadge" class="badge bg-secondary">Cargando</span>
+        </div>
+
+        <div id="demoResumen" class="alert alert-info">
+            Cargando configuracion de demo...
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Demo activa</label>
+                <select id="demoActiva" class="form-select">
+                    <option value="true">Si</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Fecha de inicio</label>
+                <input type="date" id="fechaInicioDemo" class="form-control">
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Duracion en dias</label>
+                <input type="number" id="diasDemo" class="form-control" min="1" value="10">
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-success" onclick="guardarConfiguracionDemo()">
+                Guardar configuracion
+            </button>
+            <button type="button" class="btn btn-primary" onclick="accionDemo('activar')">
+                Activar demo
+            </button>
+            <button type="button" class="btn btn-warning" onclick="accionDemo('desactivar')">
+                Desactivar demo
+            </button>
+            <button type="button" class="btn btn-outline-dark" onclick="accionDemo('reiniciar')">
+                Reiniciar demo
+            </button>
         </div>
 
     </div>
@@ -453,6 +513,102 @@
 
         return document
             .getElementById("permisoSuperAdmin") !== null;
+
+    }
+
+    function cargarConfiguracionDemo(){
+
+        if(!document.getElementById("demoResumen")){
+            return;
+        }
+
+        fetch("/configuracion/demo")
+            .then(r => {
+                if(!r.ok){
+                    throw new Error("No se pudo cargar la configuracion demo.");
+                }
+                return r.json();
+            })
+            .then(demo => {
+                document.getElementById("demoActiva").value = String(demo.demoActiva);
+                document.getElementById("fechaInicioDemo").value = demo.fechaInicioDemo || "";
+                document.getElementById("diasDemo").value = demo.diasDemo || 10;
+
+                const estadoBadge = document.getElementById("demoEstadoBadge");
+                estadoBadge.textContent = demo.estado || "sin estado";
+                estadoBadge.className = "badge " + (
+                    demo.estado === "activa"
+                        ? "bg-success"
+                        : demo.estado === "expirada"
+                            ? "bg-danger"
+                            : "bg-secondary"
+                );
+
+                const diasTexto = demo.diasRestantes === 1
+                    ? "queda 1 dia"
+                    : `quedan ${demo.diasRestantes} dias`;
+
+                document.getElementById("demoResumen").innerHTML = `
+                    <strong>Estado:</strong> ${demo.estado}<br>
+                    <strong>Fecha inicio:</strong> ${demo.fechaInicioDemo}<br>
+                    <strong>Fecha finalizacion:</strong> ${demo.fechaFinalizacion}<br>
+                    <strong>Dias restantes:</strong> ${demo.demoActiva ? diasTexto : "demo desactivada"}
+                `;
+            })
+            .catch(error => alert(error.message));
+
+    }
+
+    function guardarConfiguracionDemo(){
+
+        const diasDemo = Number(document.getElementById("diasDemo").value);
+
+        if(!diasDemo || diasDemo < 1){
+            alert("La duracion de la demo debe ser mayor a cero.");
+            return;
+        }
+
+        fetch("/configuracion/demo", {
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                demoActiva:document.getElementById("demoActiva").value === "true",
+                fechaInicioDemo:document.getElementById("fechaInicioDemo").value,
+                diasDemo:diasDemo
+            })
+        })
+        .then(r => {
+            if(!r.ok){
+                return r.text().then(texto => { throw new Error(texto || "No se pudo guardar la configuracion demo."); });
+            }
+            return r.json();
+        })
+        .then(() => {
+            alert("Configuracion demo actualizada.");
+            cargarConfiguracionDemo();
+        })
+        .catch(error => alert(error.message));
+
+    }
+
+    function accionDemo(accion){
+
+        fetch(`/configuracion/demo/${accion}`, {
+            method:"POST"
+        })
+        .then(r => {
+            if(!r.ok){
+                return r.text().then(texto => { throw new Error(texto || "No se pudo actualizar la demo."); });
+            }
+            return r.json();
+        })
+        .then(() => {
+            alert("Demo actualizada.");
+            cargarConfiguracionDemo();
+        })
+        .catch(error => alert(error.message));
 
     }
 
@@ -1342,6 +1498,8 @@
     listarSedes();
 
     listarUsuarios();
+
+    cargarConfiguracionDemo();
 
     listarProveedores();
 

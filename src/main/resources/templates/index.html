@@ -485,6 +485,13 @@
 <div class="container mt-4 mb-5">
 
     <div
+        th:if="${demoEstado != null and demoEstado.mostrarBanner}"
+        class="alert mb-4"
+        th:classappend="${demoEstado.superAdmin} ? ' alert-info' : ' alert-warning'"
+        th:text="${demoEstado.superAdmin ? (demoEstado.demoExpirada ? 'Modo demo expirado para usuarios. Como SUPERADMIN puedes administrar la configuracion.' : 'Modo demo activo para usuarios: quedan ' + demoEstado.diasRestantes + ' dias.') : (demoEstado.diasRestantes == 1 ? 'Prueba demo activa: queda 1 dia de uso.' : 'Prueba demo activa: quedan ' + demoEstado.diasRestantes + ' dias de uso.')}">
+    </div>
+
+    <div
         id="permisoEliminarEquipos"
         sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')"
         style="display:none;">

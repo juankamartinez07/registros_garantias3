@@ -68,7 +68,7 @@ public class UsuarioContextService {
         if (limpio.startsWith("ROLE_")) {
             limpio = limpio.substring("ROLE_".length());
         }
-        if ("SUPERUSUARIO".equals(limpio) || "SUPERUSER".equals(limpio)) {
+        if ("SUPERUSUARIO".equals(limpio) || "SUPERUSER".equals(limpio) || "SUPERADMIN".equals(limpio)) {
             return "SUPER_ADMIN";
         }
         if ("USUARIO".equals(limpio)) {

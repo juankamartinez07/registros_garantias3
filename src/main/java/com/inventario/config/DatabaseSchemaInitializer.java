@@ -20,6 +20,31 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
             return;
         }
 
+        jdbcTemplate.execute(
+                """
+                create table if not exists configuracion_demo (
+                    id bigint not null auto_increment,
+                    demo_activa boolean not null default true,
+                    fecha_inicio_demo date not null,
+                    dias_demo int not null default 10,
+                    fecha_creacion datetime null default current_timestamp,
+                    fecha_actualizacion datetime null default current_timestamp on update current_timestamp,
+                    primary key (id)
+                )
+                """);
+
+        Integer configuracionesDemo = jdbcTemplate.queryForObject(
+                "select count(*) from configuracion_demo",
+                Integer.class);
+
+        if (configuracionesDemo == null || configuracionesDemo == 0) {
+            jdbcTemplate.execute(
+                    """
+                    insert into configuracion_demo (demo_activa, fecha_inicio_demo, dias_demo)
+                    values (true, current_date, 10)
+                    """);
+        }
+
         Integer existeObservaciones = jdbcTemplate.queryForObject(
                 """
                 select count(*)
@@ -35,7 +60,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         }
 
         agregarColumnaSiFalta("usuarios", "activo", "alter table usuarios add column activo boolean not null default true");
-        jdbcTemplate.execute("update usuarios set rol = 'SUPER_ADMIN' where upper(rol) in ('SUPERUSER', 'SUPERUSUARIO', 'ROLE_SUPERUSER')");
+        jdbcTemplate.execute("update usuarios set rol = 'SUPER_ADMIN' where upper(rol) in ('SUPERUSER', 'SUPERUSUARIO', 'SUPERADMIN', 'ROLE_SUPERUSER', 'ROLE_SUPERADMIN')");
 
         jdbcTemplate.execute(
                 """

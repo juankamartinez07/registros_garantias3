@@ -216,7 +216,7 @@ public class UsuarioController {
 
         }
 
-        if ("SUPERUSUARIO".equals(rolLimpio) || "SUPERUSER".equals(rolLimpio)) {
+        if ("SUPERUSUARIO".equals(rolLimpio) || "SUPERUSER".equals(rolLimpio) || "SUPERADMIN".equals(rolLimpio)) {
 
             return "SUPER_ADMIN";
 
