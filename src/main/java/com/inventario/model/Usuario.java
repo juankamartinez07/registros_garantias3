@@ -32,6 +32,9 @@ public class Usuario {
     @JoinColumn(name = "sede_id")
     private Sede sede;
 
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
     public Long getId() {
         return id;
     }
@@ -70,6 +73,14 @@ public class Usuario {
 
     public void setSede(Sede sede) {
         this.sede = sede;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 
 }

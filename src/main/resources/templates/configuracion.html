@@ -182,6 +182,10 @@
                         Administrador
                     </option>
 
+                    <option value="TECNICO">
+                        Tecnico
+                    </option>
+
                     <option value="USER">
                         Usuario
                     </option>
@@ -244,6 +248,7 @@
                         <th>Usuario</th>
                         <th>Rol</th>
                         <th>Sede</th>
+                        <th>Estado</th>
                         <th>Contraseña</th>
                         <th>Acciones</th>
                     </tr>
@@ -773,6 +778,11 @@
                         <td>${u.rol || ""}</td>
                         <td>${u.sede || ""}</td>
                         <td>
+                            <span class="badge ${u.activo ? "bg-success" : "bg-danger"}">
+                                ${u.activo ? "Activo" : "Inactivo"}
+                            </span>
+                        </td>
+                        <td>
                             <span class="badge bg-secondary">
                                 ${u.passwordEstado || "Protegida"}
                             </span>
@@ -783,6 +793,22 @@
                                 onclick="cambiarPasswordUsuario(${u.id})">
 
                                 Cambiar contraseÃ±a
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-warning btn-sm me-2"
+                                onclick="editarUsuario(${u.id}, '${(u.username || "").replace(/'/g, "\\'")}', '${(u.rol || "").replace(/'/g, "\\'")}', ${u.sedeId === null || u.sedeId === undefined ? "null" : u.sedeId}, ${u.activo ? "true" : "false"})">
+
+                                Editar
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                onclick="cambiarEstadoUsuario(${u.id}, '${(u.username || "").replace(/'/g, "\\'")}', '${(u.rol || "").replace(/'/g, "\\'")}', ${u.sedeId === null || u.sedeId === undefined ? "null" : u.sedeId}, ${u.activo ? "false" : "true"})">
+
+                                ${u.activo ? "Deshabilitar" : "Habilitar"}
 
                             </button>
 
@@ -808,6 +834,82 @@
 
     }
 
+    function editarUsuario(id, usernameActual, rolActual, sedeIdActual, activoActual){
+
+        let username =
+            prompt("Nombre de usuario:", usernameActual || "");
+
+        if(username === null){
+            return;
+        }
+
+        let rol =
+            prompt("Rol (SUPER_ADMIN, ADMIN, TECNICO, USER):", rolActual || "USER");
+
+        if(rol === null){
+            return;
+        }
+
+        let sedeId =
+            prompt("ID de sede asignada (deje vacio para sin sede):", sedeIdActual === null ? "" : sedeIdActual);
+
+        if(sedeId === null){
+            return;
+        }
+
+        actualizarUsuario(id, {
+            username:username,
+            rol:rol,
+            sedeId:sedeId.trim() === "" ? null : Number(sedeId),
+            activo:activoActual
+        });
+
+    }
+
+    function cambiarEstadoUsuario(id, username, rol, sedeId, activo){
+
+        let accion =
+            activo ? "habilitar" : "deshabilitar";
+
+        if(!confirm(`¿Desea ${accion} este usuario?`)){
+            return;
+        }
+
+        actualizarUsuario(id, {
+            username:username,
+            rol:rol,
+            sedeId:sedeId,
+            activo:activo
+        });
+
+    }
+
+    function actualizarUsuario(id, data){
+
+        fetch("/usuarios/" + id, {
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify(data)
+        })
+        .then(async response => {
+            if(!response.ok){
+                let mensaje = await response.text();
+                throw new Error(mensaje);
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert("Usuario actualizado");
+            listarUsuarios();
+        })
+        .catch(error => {
+            alert(error.message || "No se pudo actualizar el usuario.");
+        });
+
+    }
+
 
     function eliminarUsuario(id){
 
@@ -823,11 +925,18 @@
 
         })
 
-        .then(() => {
+        .then(async response => {
+            if(!response.ok){
+                let mensaje = await response.text();
+                throw new Error(mensaje);
+            }
 
             alert("Usuario eliminado");
             listarUsuarios();
 
+        })
+        .catch(error => {
+            alert(error.message || "No se pudo eliminar el usuario.");
         });
 
     }

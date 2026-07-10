@@ -64,6 +64,7 @@ public class EquipoService {
     private final TipoProductoRepository tipoProductoRepository;
     private final UsuarioRepository usuarioRepository;
     private final SedeRepository sedeRepository;
+    private final UsuarioContextService usuarioContextService;
 
     public EquipoService(
             EquipoRepository equipoRepository,
@@ -71,7 +72,8 @@ public class EquipoService {
             ProveedorRepository proveedorRepository,
             TipoProductoRepository tipoProductoRepository,
             UsuarioRepository usuarioRepository,
-            SedeRepository sedeRepository
+            SedeRepository sedeRepository,
+            UsuarioContextService usuarioContextService
     ) {
         this.equipoRepository = equipoRepository;
         this.productoRepository = productoRepository;
@@ -79,6 +81,7 @@ public class EquipoService {
         this.tipoProductoRepository = tipoProductoRepository;
         this.usuarioRepository = usuarioRepository;
         this.sedeRepository = sedeRepository;
+        this.usuarioContextService = usuarioContextService;
     }
 
     public List<Equipo> listar() {
@@ -87,6 +90,28 @@ public class EquipoService {
 
     public Page<Equipo> listarPaginado(String serial, boolean conObservaciones, Pageable pageable) {
         String filtro = limpiar(serial);
+        boolean superUsuario = usuarioContextService.esSuperUsuario();
+        Long sedeId = superUsuario ? null : usuarioContextService.sedeIdActual();
+
+        if (!superUsuario && sedeId == null) {
+            return Page.empty(pageable);
+        }
+
+        if (sedeId != null) {
+            if (conObservaciones && filtro == null) {
+                return equipoRepository.findConObservacionesPorSede(sedeId, pageable);
+            }
+
+            if (conObservaciones) {
+                return equipoRepository.findBySedeIdAndSerialContainingIgnoreCaseConObservaciones(sedeId, filtro, pageable);
+            }
+
+            if (filtro == null) {
+                return equipoRepository.findBySedeId(sedeId, pageable);
+            }
+            return equipoRepository.findBySedeIdAndSerialContainingIgnoreCase(sedeId, filtro, pageable);
+        }
+
         if (conObservaciones && filtro == null) {
             return equipoRepository.findConObservaciones(pageable);
         }
@@ -107,9 +132,17 @@ public class EquipoService {
         String finMes = hoy.withDayOfMonth(hoy.lengthOfMonth()).toString();
 
         return new DashboardSeriales(
-                equipoRepository.count(),
-                equipoRepository.countByFechaBetween(inicioMes, finMes),
-                equipoRepository.countConObservaciones()
+                contarSerialesVisibles(),
+                contarSerialesMesVisibles(inicioMes, finMes),
+                contarObservacionesVisibles()
+        );
+    }
+
+    public ContextoUsuario contextoUsuario() {
+        return new ContextoUsuario(
+                usuarioContextService.esSuperUsuario(),
+                usuarioContextService.sedeIdActual(),
+                usuarioContextService.sedeNombreActual()
         );
     }
 
@@ -118,8 +151,10 @@ public class EquipoService {
     }
 
     public Equipo obtenerPorId(Long id) {
-        return equipoRepository.findById(id)
+        Equipo equipo = equipoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+        usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
+        return equipo;
     }
 
     @Transactional
@@ -214,7 +249,9 @@ public class EquipoService {
 
     @Transactional
     public Equipo actualizarCompleto(Long id, EquipoDTO dto) {
-        Equipo equipo = obtenerPorId(id);
+        Equipo equipo = equipoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+        usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
         TipoProducto tipo = obtenerTipo(dto.getTipo());
         Proveedor proveedor = obtenerProveedor(dto.getProveedor());
         Producto producto = obtenerOCrearProducto(dto.getProducto(), tipo);
@@ -243,9 +280,9 @@ public class EquipoService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!equipoRepository.existsById(id)) {
-            throw new RuntimeException("Equipo no encontrado");
-        }
+        Equipo equipo = equipoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+        usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
         equipoRepository.deleteById(id);
     }
 
@@ -295,6 +332,12 @@ public class EquipoService {
     }
 
     public List<SedeExcel> listarSedesExcel() {
+        if (!usuarioContextService.esSuperUsuario()) {
+            Long sedeId = usuarioContextService.sedeIdActual();
+            String sedeNombre = usuarioContextService.sedeNombreActual();
+            return sedeId == null ? List.of() : List.of(new SedeExcel(sedeId, valor(sedeNombre)));
+        }
+
         return sedeRepository.findAll()
                 .stream()
                 .map(sede -> new SedeExcel(
@@ -304,6 +347,11 @@ public class EquipoService {
     }
 
     private List<Equipo> equiposParaExportar(Long sedeId) {
+        if (!usuarioContextService.esSuperUsuario()) {
+            Long sedeUsuario = usuarioContextService.sedeIdActual();
+            return sedeUsuario == null ? List.of() : equipoRepository.listarPorSede(sedeUsuario);
+        }
+
         List<Equipo> equipos = equipoRepository.findAll();
 
         if (sedeId == null) {
@@ -315,6 +363,37 @@ public class EquipoService {
                 .filter(equipo -> equipo.getSede() != null)
                 .filter(equipo -> sedeId.equals(equipo.getSede().getId()))
                 .toList();
+    }
+
+    private long contarSerialesVisibles() {
+        boolean superUsuario = usuarioContextService.esSuperUsuario();
+        Long sedeId = superUsuario ? null : usuarioContextService.sedeIdActual();
+        if (!superUsuario && sedeId == null) {
+            return 0;
+        }
+        return sedeId == null ? equipoRepository.count() : equipoRepository.countBySedeId(sedeId);
+    }
+
+    private long contarSerialesMesVisibles(String inicioMes, String finMes) {
+        boolean superUsuario = usuarioContextService.esSuperUsuario();
+        Long sedeId = superUsuario ? null : usuarioContextService.sedeIdActual();
+        if (!superUsuario && sedeId == null) {
+            return 0;
+        }
+        return sedeId == null
+                ? equipoRepository.countByFechaBetween(inicioMes, finMes)
+                : equipoRepository.countBySedeIdAndFechaBetween(sedeId, inicioMes, finMes);
+    }
+
+    private long contarObservacionesVisibles() {
+        boolean superUsuario = usuarioContextService.esSuperUsuario();
+        Long sedeId = superUsuario ? null : usuarioContextService.sedeIdActual();
+        if (!superUsuario && sedeId == null) {
+            return 0;
+        }
+        return sedeId == null
+                ? equipoRepository.countConObservaciones()
+                : equipoRepository.countConObservacionesPorSede(sedeId);
     }
 
     @Transactional
@@ -543,5 +622,8 @@ public class EquipoService {
     }
 
     public record SedeExcel(Long id, String nombre) {
+    }
+
+    public record ContextoUsuario(boolean superUsuario, Long sedeId, String sedeNombre) {
     }
 }

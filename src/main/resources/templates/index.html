@@ -123,6 +123,84 @@
             line-height:1;
         }
 
+        .garantias-resumen{
+            display:none;
+            margin-top:-4px;
+            margin-bottom:24px;
+            padding:18px;
+            border-radius:14px;
+            background:rgba(15,23,42,0.76);
+            border:1px solid rgba(148,163,184,0.34);
+            box-shadow:0 18px 42px rgba(2,6,23,0.28);
+        }
+
+        .garantias-resumen h3{
+            margin:0 0 14px;
+            color:#e5eefb;
+            font-size:20px;
+            font-weight:800;
+        }
+
+        .garantias-resumen-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+            gap:14px;
+        }
+
+        .garantia-resumen-card{
+            width:100%;
+            border:1px solid rgba(219,234,254,0.22);
+            border-radius:12px;
+            padding:18px;
+            text-align:left;
+            background:#17324d;
+            color:#f8fafc;
+            box-shadow:0 12px 28px rgba(2,6,23,0.22);
+            transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .garantia-resumen-card:hover{
+            transform:translateY(-2px);
+            border-color:#93c5fd;
+            box-shadow:0 16px 34px rgba(37,99,235,0.24);
+        }
+
+        .garantia-resumen-card span{
+            display:block;
+            color:#cbd5e1;
+            font-weight:800;
+            margin-bottom:8px;
+        }
+
+        .garantia-resumen-card strong{
+            display:block;
+            font-size:34px;
+            line-height:1;
+        }
+
+        .garantia-resumen-card small{
+            display:block;
+            margin-top:8px;
+            color:#dbeafe;
+            font-weight:700;
+        }
+
+        .garantia-resumen-card.cerradas{
+            background:#26384f;
+        }
+
+        .garantia-resumen-card.tiempo-normal{
+            background:#166047;
+        }
+
+        .garantia-resumen-card.tiempo-seguimiento{
+            background:#1e4f8a;
+        }
+
+        .garantia-resumen-card.tiempo-critico{
+            background:#8b1e2d;
+        }
+
         .paginacion-tabla{
             display:flex;
             align-items:center;
@@ -412,6 +490,12 @@
         style="display:none;">
     </div>
 
+    <div
+        id="permisoTramitarGarantias"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
+        style="display:none;">
+    </div>
+
    <div class="d-flex justify-content-between align-items-center mb-4">
 
     <h1 class="titulo">
@@ -435,6 +519,7 @@
 </div>
 
         <a href="/garantias"
+           sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
            class="btn btn-primary me-2">
 
             Garantias en tramite
@@ -477,6 +562,43 @@
         </div>
 
     </div>
+
+    <section
+        id="resumenGarantias"
+        class="garantias-resumen"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')">
+        <h3>Resumen de garantias</h3>
+
+        <div class="garantias-resumen-grid">
+            <button
+                type="button"
+                class="garantia-resumen-card"
+                onclick="abrirGarantiasDashboard('/garantias?estadoGeneral=ABIERTO')">
+                <span>Casos abiertos</span>
+                <strong id="resumenGarantiasAbiertas">0</strong>
+                <small>Ver garantias abiertas</small>
+            </button>
+
+            <button
+                type="button"
+                class="garantia-resumen-card cerradas"
+                onclick="abrirGarantiasDashboard('/garantias?estadoGeneral=CERRADO')">
+                <span>Casos cerrados</span>
+                <strong id="resumenGarantiasCerradas">0</strong>
+                <small>Ver garantias cerradas</small>
+            </button>
+
+            <button
+                type="button"
+                id="resumenGarantiasTiempoCard"
+                class="garantia-resumen-card tiempo-normal"
+                onclick="abrirGarantiasDashboard('/garantias?filtro=tiempoAbiertas')">
+                <span id="resumenGarantiasTiempoTexto">Casos abiertos en tiempo normal</span>
+                <strong id="resumenGarantiasTiempoDias">0</strong>
+                <small>Maximo dias abierto</small>
+            </button>
+        </div>
+    </section>
 
 
     <!-- BUSCAR -->
@@ -997,11 +1119,51 @@ let totalPaginasEquipos = 0;
 let paginaObservaciones = 0;
 let totalPaginasObservaciones = 0;
 let temporizadorToast = null;
+let contextoUsuarioActual = {
+    superUsuario:false,
+    sedeNombre:null
+};
 
 function puedeEliminarEquipos(){
 
     return document
         .getElementById("permisoEliminarEquipos") !== null;
+
+}
+
+function puedeTramitarGarantias(){
+
+    return document
+        .getElementById("permisoTramitarGarantias") !== null;
+
+}
+
+function tramitarGarantiaDesdeBusqueda(serial){
+
+    if(!puedeTramitarGarantias()){
+        mostrarToast(
+            "Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden tramitar garantias.",
+            "warning"
+        );
+        return;
+    }
+
+    window.location.href =
+        "/garantias?serial=" + encodeURIComponent(serial || "");
+
+}
+
+function abrirGarantiasDashboard(url){
+
+    if(!puedeTramitarGarantias()){
+        mostrarToast(
+            "Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden acceder al modulo de garantias.",
+            "warning"
+        );
+        return;
+    }
+
+    window.location.href = url;
 
 }
 
@@ -1046,11 +1208,86 @@ function cargarDashboard(){
 
 }
 
+function cargarContextoUsuario(){
+
+    fetch("/equipos/contexto")
+    .then(response => response.json())
+    .then(data => {
+        contextoUsuarioActual = {
+            superUsuario:!!data.superUsuario,
+            sedeNombre:data.sedeNombre || null
+        };
+    })
+    .catch(() => {
+        contextoUsuarioActual = {
+            superUsuario:false,
+            sedeNombre:null
+        };
+    });
+
+}
+
+function cargarDashboardGarantias(){
+
+    let contenedor =
+        document.getElementById("resumenGarantias");
+
+    if(!contenedor){
+        return;
+    }
+
+    fetch("/garantias/api/dashboard")
+    .then(response => {
+        if(!response.ok){
+            throw new Error("No se pudo cargar el resumen de garantias.");
+        }
+        return response.json();
+    })
+    .then(data => {
+        contenedor.style.display = "block";
+
+        document.getElementById("resumenGarantiasAbiertas").innerText =
+            data.abiertas || 0;
+
+        document.getElementById("resumenGarantiasCerradas").innerText =
+            data.cerradas || 0;
+
+        document.getElementById("resumenGarantiasTiempoTexto").innerText =
+            data.textoTiempoAbiertas || "Casos abiertos en tiempo normal";
+
+        document.getElementById("resumenGarantiasTiempoDias").innerText =
+            data.maxDiasAbierta || 0;
+
+        let tarjetaTiempo =
+            document.getElementById("resumenGarantiasTiempoCard");
+
+        tarjetaTiempo.classList.remove(
+            "tiempo-normal",
+            "tiempo-seguimiento",
+            "tiempo-critico"
+        );
+
+        tarjetaTiempo.classList.add(
+            data.estadoTiempoAbiertas === "critico"
+                ? "tiempo-critico"
+                : data.estadoTiempoAbiertas === "seguimiento"
+                    ? "tiempo-seguimiento"
+                    : "tiempo-normal"
+        );
+    })
+    .catch(() => {
+        contenedor.style.display = "none";
+    });
+
+}
+
 window.onload = function(){
 
     cargarTipos();
     cargarProveedores();
+    cargarContextoUsuario();
     cargarDashboard();
+    cargarDashboardGarantias();
     listarEquipos();
     marcarCampoLoteObligatorio();
     activarLimpiezaCamposObligatorios();
@@ -2697,6 +2934,20 @@ function buscarEquipo(){
 
         let garantia = "";
         let botonGarantia = "";
+        let avisoOtraSede = "";
+
+        if(
+            !contextoUsuarioActual.superUsuario &&
+            contextoUsuarioActual.sedeNombre &&
+            data.sede?.nombre &&
+            data.sede.nombre !== contextoUsuarioActual.sedeNombre
+        ){
+            avisoOtraSede = `
+                <div class="alert alert-info mt-3 mb-0">
+                    Este serial se encuentra registrado en la sede ${escaparHtml(data.sede.nombre)}.
+                </div>
+            `;
+        }
 
         let diasGarantia = 365;
 
@@ -2743,7 +2994,8 @@ function buscarEquipo(){
 
                 <button
                     class="btn btn-success"
-                    onclick="window.location.href='/garantias?serial=${encodeURIComponent(data.serial || '')}'">
+                    data-serial="${escaparHtml(data.serial || '')}"
+                    onclick="tramitarGarantiaDesdeBusqueda(this.dataset.serial)">
                     Tramitar garantia
                 </button>
 
@@ -2830,6 +3082,8 @@ function buscarEquipo(){
                 ${garantia}
 
                 ${botonGarantia}
+
+                ${avisoOtraSede}
 
             </div>
 
