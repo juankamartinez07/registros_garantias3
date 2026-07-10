@@ -34,6 +34,8 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
             jdbcTemplate.execute("alter table equipos add column observaciones text null");
         }
 
+        agregarColumnaSiFalta("usuarios", "activo", "alter table usuarios add column activo boolean not null default true");
+
         jdbcTemplate.execute(
                 """
                 create table if not exists garantias (

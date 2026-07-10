@@ -31,6 +31,7 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
               and (:sinCasoProveedor = false or (g.estadoGeneral = 'Abierto' and (g.numeroCasoProveedor is null or trim(g.numeroCasoProveedor) = '')))
               and (:abiertas10Dias = false or (g.estadoGeneral = 'Abierto' and g.fechaIngresoGarantia <= :fechaLimite10Dias))
               and (:tiempoAbiertas = false or g.estadoGeneral = 'Abierto')
+              and (:sedeNombre is null or g.sede = :sedeNombre)
             """)
     Page<Garantia> buscar(
             @Param("serial") String serial,
@@ -44,6 +45,7 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
             @Param("inicioMes") LocalDate inicioMes,
             @Param("finMes") LocalDate finMes,
             @Param("fechaLimite10Dias") LocalDate fechaLimite10Dias,
+            @Param("sedeNombre") String sedeNombre,
             Pageable pageable);
 
     long countByEstadoGeneral(String estadoGeneral);
@@ -51,6 +53,14 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
     long countByEstadoEspecifico(String estadoEspecifico);
 
     long countByFechaIngresoGarantiaBetween(LocalDate inicio, LocalDate fin);
+
+    long countBySede(String sede);
+
+    long countBySedeAndEstadoGeneral(String sede, String estadoGeneral);
+
+    long countBySedeAndEstadoEspecifico(String sede, String estadoEspecifico);
+
+    long countBySedeAndFechaIngresoGarantiaBetween(String sede, LocalDate inicio, LocalDate fin);
 
     @Query("""
             select count(g)
@@ -63,10 +73,28 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
     @Query("""
             select count(g)
             from Garantia g
+            where g.sede = :sede
+              and g.estadoGeneral = 'Abierto'
+              and (g.numeroCasoProveedor is null or trim(g.numeroCasoProveedor) = '')
+            """)
+    long contarAbiertasSinCasoProveedorPorSede(@Param("sede") String sede);
+
+    @Query("""
+            select count(g)
+            from Garantia g
             where g.estadoGeneral = 'Abierto'
               and g.fechaIngresoGarantia <= :fechaLimite
             """)
     long contarAbiertasMas10Dias(@Param("fechaLimite") LocalDate fechaLimite);
+
+    @Query("""
+            select count(g)
+            from Garantia g
+            where g.sede = :sede
+              and g.estadoGeneral = 'Abierto'
+              and g.fechaIngresoGarantia <= :fechaLimite
+            """)
+    long contarAbiertasMas10DiasPorSede(@Param("sede") String sede, @Param("fechaLimite") LocalDate fechaLimite);
 
     @Query("""
             select min(g.fechaIngresoGarantia)
@@ -75,4 +103,13 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
               and g.fechaIngresoGarantia is not null
             """)
     LocalDate fechaAbiertaMasAntigua();
+
+    @Query("""
+            select min(g.fechaIngresoGarantia)
+            from Garantia g
+            where g.sede = :sede
+              and g.estadoGeneral = 'Abierto'
+              and g.fechaIngresoGarantia is not null
+            """)
+    LocalDate fechaAbiertaMasAntiguaPorSede(@Param("sede") String sede);
 }

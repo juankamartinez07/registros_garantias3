@@ -59,6 +59,7 @@ public class CustomUserDetailsService
                 .withUsername(usuario.getUsername())
                 .password(normalizarPassword(usuario.getPassword()))
                 .authorities(authority)
+                .disabled(Boolean.FALSE.equals(usuario.getActivo()))
                 .build();
 
     }

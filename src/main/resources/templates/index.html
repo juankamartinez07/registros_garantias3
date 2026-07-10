@@ -486,7 +486,7 @@
 
     <div
         id="permisoEliminarEquipos"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')"
         style="display:none;">
     </div>
 
@@ -1119,6 +1119,10 @@ let totalPaginasEquipos = 0;
 let paginaObservaciones = 0;
 let totalPaginasObservaciones = 0;
 let temporizadorToast = null;
+let contextoUsuarioActual = {
+    superUsuario:false,
+    sedeNombre:null
+};
 
 function puedeEliminarEquipos(){
 
@@ -1204,6 +1208,25 @@ function cargarDashboard(){
 
 }
 
+function cargarContextoUsuario(){
+
+    fetch("/equipos/contexto")
+    .then(response => response.json())
+    .then(data => {
+        contextoUsuarioActual = {
+            superUsuario:!!data.superUsuario,
+            sedeNombre:data.sedeNombre || null
+        };
+    })
+    .catch(() => {
+        contextoUsuarioActual = {
+            superUsuario:false,
+            sedeNombre:null
+        };
+    });
+
+}
+
 function cargarDashboardGarantias(){
 
     let contenedor =
@@ -1262,6 +1285,7 @@ window.onload = function(){
 
     cargarTipos();
     cargarProveedores();
+    cargarContextoUsuario();
     cargarDashboard();
     cargarDashboardGarantias();
     listarEquipos();
@@ -2910,6 +2934,20 @@ function buscarEquipo(){
 
         let garantia = "";
         let botonGarantia = "";
+        let avisoOtraSede = "";
+
+        if(
+            !contextoUsuarioActual.superUsuario &&
+            contextoUsuarioActual.sedeNombre &&
+            data.sede?.nombre &&
+            data.sede.nombre !== contextoUsuarioActual.sedeNombre
+        ){
+            avisoOtraSede = `
+                <div class="alert alert-info mt-3 mb-0">
+                    Este serial se encuentra registrado en la sede ${escaparHtml(data.sede.nombre)}.
+                </div>
+            `;
+        }
 
         let diasGarantia = 365;
 
@@ -3044,6 +3082,8 @@ function buscarEquipo(){
                 ${garantia}
 
                 ${botonGarantia}
+
+                ${avisoOtraSede}
 
             </div>
 

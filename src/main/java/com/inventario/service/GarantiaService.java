@@ -49,12 +49,15 @@ public class GarantiaService {
 
     private final GarantiaRepository garantiaRepository;
     private final EquipoRepository equipoRepository;
+    private final UsuarioContextService usuarioContextService;
 
     public GarantiaService(
             GarantiaRepository garantiaRepository,
-            EquipoRepository equipoRepository) {
+            EquipoRepository equipoRepository,
+            UsuarioContextService usuarioContextService) {
         this.garantiaRepository = garantiaRepository;
         this.equipoRepository = equipoRepository;
+        this.usuarioContextService = usuarioContextService;
     }
 
     public Page<Garantia> listar(
@@ -70,6 +73,11 @@ public class GarantiaService {
         LocalDate finMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
         LocalDate fechaLimite10Dias = hoy.minusDays(10);
         String filtroLimpio = limpiar(filtro);
+        String sedeNombre = sedeVisible();
+
+        if (!usuarioContextService.esSuperUsuario() && sedeNombre == null) {
+            return Page.empty(pageable);
+        }
 
         return garantiaRepository.buscar(
                 limpiar(serial),
@@ -83,6 +91,7 @@ public class GarantiaService {
                 inicioMes,
                 finMes,
                 fechaLimite10Dias,
+                sedeNombre,
                 pageable);
     }
 
@@ -91,28 +100,42 @@ public class GarantiaService {
         LocalDate inicioMes = hoy.withDayOfMonth(1);
         LocalDate finMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
         LocalDate fechaLimite10Dias = hoy.minusDays(10);
+        String sedeNombre = sedeVisible();
 
         DashboardGarantias dashboard = new DashboardGarantias();
-        dashboard.setTotalGarantias(garantiaRepository.count());
-        dashboard.setAbiertas(garantiaRepository.countByEstadoGeneral(ESTADO_GENERAL_ABIERTO));
-        dashboard.setCerradas(garantiaRepository.countByEstadoGeneral(ESTADO_GENERAL_CERRADO));
-        dashboard.setIngresadasMesActual(garantiaRepository.countByFechaIngresoGarantiaBetween(inicioMes, finMes));
-        dashboard.setAbiertasSinCasoProveedor(garantiaRepository.contarAbiertasSinCasoProveedor());
-        dashboard.setAbiertasMas10Dias(garantiaRepository.contarAbiertasMas10Dias(fechaLimite10Dias));
-        dashboard.setEnTramite(garantiaRepository.countByEstadoEspecifico(ESTADO_EN_TRAMITE));
-        dashboard.setEnRevisionInterna(garantiaRepository.countByEstadoEspecifico(ESTADO_REVISION_INTERNA));
-        dashboard.setEnviadoAProveedor(garantiaRepository.countByEstadoEspecifico(ESTADO_ENVIADO_PROVEEDOR));
-        dashboard.setReparado(garantiaRepository.countByEstadoEspecifico(ESTADO_REPARADO));
-        dashboard.setNoAplicoGarantia(garantiaRepository.countByEstadoEspecifico(ESTADO_NO_APLICO));
-        dashboard.setCambioEquipoNuevo(garantiaRepository.countByEstadoEspecifico(ESTADO_CAMBIO));
-        dashboard.setNotaCredito(garantiaRepository.countByEstadoEspecifico(ESTADO_NOTA_CREDITO));
-        aplicarEstadoTiempoAbiertas(dashboard, hoy);
+        if (!usuarioContextService.esSuperUsuario() && sedeNombre == null) {
+            aplicarEstadoTiempoAbiertas(dashboard, hoy, null);
+            return dashboard;
+        }
+
+        dashboard.setTotalGarantias(sedeNombre == null ? garantiaRepository.count() : garantiaRepository.countBySede(sedeNombre));
+        dashboard.setAbiertas(contarPorEstadoGeneral(sedeNombre, ESTADO_GENERAL_ABIERTO));
+        dashboard.setCerradas(contarPorEstadoGeneral(sedeNombre, ESTADO_GENERAL_CERRADO));
+        dashboard.setIngresadasMesActual(sedeNombre == null
+                ? garantiaRepository.countByFechaIngresoGarantiaBetween(inicioMes, finMes)
+                : garantiaRepository.countBySedeAndFechaIngresoGarantiaBetween(sedeNombre, inicioMes, finMes));
+        dashboard.setAbiertasSinCasoProveedor(sedeNombre == null
+                ? garantiaRepository.contarAbiertasSinCasoProveedor()
+                : garantiaRepository.contarAbiertasSinCasoProveedorPorSede(sedeNombre));
+        dashboard.setAbiertasMas10Dias(sedeNombre == null
+                ? garantiaRepository.contarAbiertasMas10Dias(fechaLimite10Dias)
+                : garantiaRepository.contarAbiertasMas10DiasPorSede(sedeNombre, fechaLimite10Dias));
+        dashboard.setEnTramite(contarPorEstadoEspecifico(sedeNombre, ESTADO_EN_TRAMITE));
+        dashboard.setEnRevisionInterna(contarPorEstadoEspecifico(sedeNombre, ESTADO_REVISION_INTERNA));
+        dashboard.setEnviadoAProveedor(contarPorEstadoEspecifico(sedeNombre, ESTADO_ENVIADO_PROVEEDOR));
+        dashboard.setReparado(contarPorEstadoEspecifico(sedeNombre, ESTADO_REPARADO));
+        dashboard.setNoAplicoGarantia(contarPorEstadoEspecifico(sedeNombre, ESTADO_NO_APLICO));
+        dashboard.setCambioEquipoNuevo(contarPorEstadoEspecifico(sedeNombre, ESTADO_CAMBIO));
+        dashboard.setNotaCredito(contarPorEstadoEspecifico(sedeNombre, ESTADO_NOTA_CREDITO));
+        aplicarEstadoTiempoAbiertas(dashboard, hoy, sedeNombre);
         return dashboard;
     }
 
     public Garantia obtener(Long id) {
-        return garantiaRepository.findById(id)
+        Garantia garantia = garantiaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Garantia no encontrada"));
+        validarSedeGarantia(garantia);
+        return garantia;
     }
 
     public GarantiaDTO preparar(String serial) {
@@ -153,9 +176,9 @@ public class GarantiaService {
     @Transactional
     public void eliminar(Long id) {
         validarPuedeEliminarGarantias();
-        if (!garantiaRepository.existsById(id)) {
-            throw new RuntimeException("Garantia no encontrada.");
-        }
+        Garantia garantia = garantiaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Garantia no encontrada."));
+        validarSedeGarantia(garantia);
         garantiaRepository.deleteById(id);
     }
 
@@ -180,6 +203,8 @@ public class GarantiaService {
         if (!estaEnGarantia(equipo)) {
             throw new RuntimeException("No se puede tramitar garantia porque el serial esta fuera del periodo de garantia.");
         }
+
+        usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
 
         return equipo;
     }
@@ -296,8 +321,10 @@ public class GarantiaService {
         return ESTADO_GENERAL_ABIERTO;
     }
 
-    private void aplicarEstadoTiempoAbiertas(DashboardGarantias dashboard, LocalDate hoy) {
-        LocalDate fechaMasAntigua = garantiaRepository.fechaAbiertaMasAntigua();
+    private void aplicarEstadoTiempoAbiertas(DashboardGarantias dashboard, LocalDate hoy, String sedeNombre) {
+        LocalDate fechaMasAntigua = sedeNombre == null
+                ? garantiaRepository.fechaAbiertaMasAntigua()
+                : garantiaRepository.fechaAbiertaMasAntiguaPorSede(sedeNombre);
         if (fechaMasAntigua == null) {
             dashboard.setMaxDiasAbierta(0);
             dashboard.setEstadoTiempoAbiertas("normal");
@@ -317,6 +344,33 @@ public class GarantiaService {
         } else {
             dashboard.setEstadoTiempoAbiertas("normal");
             dashboard.setTextoTiempoAbiertas("Casos abiertos en tiempo normal");
+        }
+    }
+
+    private long contarPorEstadoGeneral(String sedeNombre, String estadoGeneral) {
+        return sedeNombre == null
+                ? garantiaRepository.countByEstadoGeneral(estadoGeneral)
+                : garantiaRepository.countBySedeAndEstadoGeneral(sedeNombre, estadoGeneral);
+    }
+
+    private long contarPorEstadoEspecifico(String sedeNombre, String estadoEspecifico) {
+        return sedeNombre == null
+                ? garantiaRepository.countByEstadoEspecifico(estadoEspecifico)
+                : garantiaRepository.countBySedeAndEstadoEspecifico(sedeNombre, estadoEspecifico);
+    }
+
+    private String sedeVisible() {
+        return usuarioContextService.esSuperUsuario() ? null : limpiar(usuarioContextService.sedeNombreActual());
+    }
+
+    private void validarSedeGarantia(Garantia garantia) {
+        if (usuarioContextService.esSuperUsuario()) {
+            return;
+        }
+        String sedeUsuario = limpiar(usuarioContextService.sedeNombreActual());
+        String sedeGarantia = limpiar(garantia.getSede());
+        if (sedeUsuario == null || sedeGarantia == null || !sedeUsuario.equalsIgnoreCase(sedeGarantia)) {
+            throw new RuntimeException("No tiene permisos para modificar registros de otra sede.");
         }
     }
 
