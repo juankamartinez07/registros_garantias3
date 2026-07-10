@@ -90,7 +90,7 @@
 
     <div
         id="permisoSuperAdmin"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER')"
+        sec:authorize="hasRole('SUPER_ADMIN')"
         style="display:none;">
     </div>
 
@@ -122,7 +122,7 @@
 
     <div
         class="card shadow p-4"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER')">
+        sec:authorize="hasRole('SUPER_ADMIN')">
 
         <h3 class="mb-4">
 
@@ -178,12 +178,12 @@
                         Super administrador
                     </option>
 
-                    <option value="SUPERUSER">
-                        Superuser
-                    </option>
-
                     <option value="ADMIN">
                         Administrador
+                    </option>
+
+                    <option value="TECNICO">
+                        Tecnico
                     </option>
 
                     <option value="USER">
@@ -230,7 +230,7 @@
 
     <div
         class="card shadow p-4 mt-4"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER')">
+        sec:authorize="hasRole('SUPER_ADMIN')">
 
         <h3 class="mb-4">
 
@@ -273,7 +273,7 @@
 
     <div
         class="card shadow p-4 mt-4"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER')">
+        sec:authorize="hasRole('SUPER_ADMIN')">
 
         <h3 class="mb-4">
 
@@ -313,7 +313,7 @@
 
     <div
         class="card shadow p-4 mt-4"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER')">
+        sec:authorize="hasRole('SUPER_ADMIN')">
 
         <h3 class="mb-4">
 
@@ -844,7 +844,7 @@
         }
 
         let rol =
-            prompt("Rol (SUPER_ADMIN, SUPERUSER, ADMIN, USER):", rolActual || "USER");
+            prompt("Rol (SUPER_ADMIN, ADMIN, TECNICO, USER):", rolActual || "USER");
 
         if(rol === null){
             return;

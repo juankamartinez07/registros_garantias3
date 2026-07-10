@@ -17,7 +17,7 @@ public class CustomUserDetailsService
         implements UserDetailsService {
 
     private static final Set<String> ROLES_VALIDOS =
-            Set.of("SUPER_ADMIN", "SUPERUSER", "ADMIN", "USER");
+            Set.of("SUPER_ADMIN", "ADMIN", "TECNICO", "USER");
 
     private static final String BCRYPT_PREFIX = "{bcrypt}";
 
@@ -103,9 +103,9 @@ public class CustomUserDetailsService
 
         }
 
-        if ("SUPERUSUARIO".equals(rolLimpio)) {
+        if ("SUPERUSUARIO".equals(rolLimpio) || "SUPERUSER".equals(rolLimpio)) {
 
-            return "SUPERUSER";
+            return "SUPER_ADMIN";
 
         }
 

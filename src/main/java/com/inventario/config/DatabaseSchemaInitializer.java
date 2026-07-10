@@ -35,6 +35,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         }
 
         agregarColumnaSiFalta("usuarios", "activo", "alter table usuarios add column activo boolean not null default true");
+        jdbcTemplate.execute("update usuarios set rol = 'SUPER_ADMIN' where upper(rol) in ('SUPERUSER', 'SUPERUSUARIO', 'ROLE_SUPERUSER')");
 
         jdbcTemplate.execute(
                 """

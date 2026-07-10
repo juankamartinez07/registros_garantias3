@@ -57,39 +57,39 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/usuarios/**",
                         "/sedes/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER")
+                .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         HttpMethod.PUT,
                         "/proveedores/**",
                         "/tipos/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER")
+                .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         HttpMethod.DELETE,
                         "/garantias/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER")
+                .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         HttpMethod.DELETE,
                         "/equipos/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER", "ADMIN")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN")
 
                 .requestMatchers(
                         HttpMethod.DELETE,
                         "/proveedores/**",
                         "/tipos/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER")
+                .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         "/garantias/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER", "ADMIN")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN", "TECNICO")
 
                 .requestMatchers(
                         "/configuracion/**",
                         "/proveedores/**",
                         "/tipos/**")
-                .hasAnyRole("SUPER_ADMIN", "SUPERUSER", "ADMIN")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN")
 
                 .anyRequest()
                 .authenticated())

@@ -33,7 +33,7 @@ public class UsuarioContextService {
 
     public boolean esRolSuperUsuario(String rol) {
         String limpio = normalizarRol(rol);
-        return "SUPER_ADMIN".equals(limpio) || "SUPERUSER".equals(limpio);
+        return "SUPER_ADMIN".equals(limpio);
     }
 
     public Long sedeIdActual() {
@@ -68,8 +68,8 @@ public class UsuarioContextService {
         if (limpio.startsWith("ROLE_")) {
             limpio = limpio.substring("ROLE_".length());
         }
-        if ("SUPERUSUARIO".equals(limpio)) {
-            return "SUPERUSER";
+        if ("SUPERUSUARIO".equals(limpio) || "SUPERUSER".equals(limpio)) {
+            return "SUPER_ADMIN";
         }
         if ("USUARIO".equals(limpio)) {
             return "USER";

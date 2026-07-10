@@ -486,13 +486,13 @@
 
     <div
         id="permisoEliminarEquipos"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')"
         style="display:none;">
     </div>
 
     <div
         id="permisoTramitarGarantias"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
         style="display:none;">
     </div>
 
@@ -505,7 +505,7 @@
     <form action="/logout" method="post">
 
         
-        <div sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')">
+        <div sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')">
 
     <a href="/configuracion"
        class="btn btn-dark me-2">
@@ -519,7 +519,7 @@
 </div>
 
         <a href="/garantias"
-           sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')"
+           sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
            class="btn btn-primary me-2">
 
             Garantias en tramite
@@ -566,7 +566,7 @@
     <section
         id="resumenGarantias"
         class="garantias-resumen"
-        sec:authorize="hasAnyRole('SUPER_ADMIN','SUPERUSER','ADMIN')">
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')">
         <h3>Resumen de garantias</h3>
 
         <div class="garantias-resumen-grid">
@@ -1142,7 +1142,7 @@ function tramitarGarantiaDesdeBusqueda(serial){
 
     if(!puedeTramitarGarantias()){
         mostrarToast(
-            "Permisos insuficientes. Solo los usuarios ADMIN o SUPER_ADMIN pueden tramitar garantias.",
+            "Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden tramitar garantias.",
             "warning"
         );
         return;
@@ -1157,7 +1157,7 @@ function abrirGarantiasDashboard(url){
 
     if(!puedeTramitarGarantias()){
         mostrarToast(
-            "Permisos insuficientes. Solo los usuarios ADMIN o SUPER_ADMIN pueden acceder al modulo de garantias.",
+            "Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden acceder al modulo de garantias.",
             "warning"
         );
         return;

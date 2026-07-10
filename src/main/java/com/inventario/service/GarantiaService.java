@@ -419,13 +419,13 @@ public class GarantiaService {
     }
 
     private void validarPuedeGestionarGarantias() {
-        if (!tieneRol("SUPER_ADMIN") && !tieneRol("SUPERUSER") && !tieneRol("ADMIN")) {
-            throw new RuntimeException("Permisos insuficientes. Solo los usuarios ADMIN o SUPER_ADMIN pueden tramitar garantias.");
+        if (!tieneRol("SUPER_ADMIN") && !tieneRol("ADMIN") && !tieneRol("TECNICO")) {
+            throw new RuntimeException("Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden tramitar garantias.");
         }
     }
 
     private void validarPuedeEliminarGarantias() {
-        if (!tieneRol("SUPER_ADMIN") && !tieneRol("SUPERUSER")) {
+        if (!tieneRol("SUPER_ADMIN")) {
             throw new RuntimeException("Permisos insuficientes. Solo los usuarios SUPER_ADMIN pueden eliminar garantias.");
         }
     }

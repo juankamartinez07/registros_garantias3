@@ -19,10 +19,10 @@ import java.util.Set;
 public class UsuarioController {
 
     private static final Set<String> ROLES_VALIDOS =
-            Set.of("SUPER_ADMIN", "SUPERUSER", "ADMIN", "USER");
+            Set.of("SUPER_ADMIN", "ADMIN", "TECNICO", "USER");
 
     private static final Set<String> ROLES_SUPER =
-            Set.of("SUPER_ADMIN", "SUPERUSER");
+            Set.of("SUPER_ADMIN");
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -216,9 +216,9 @@ public class UsuarioController {
 
         }
 
-        if ("SUPERUSUARIO".equals(rolLimpio)) {
+        if ("SUPERUSUARIO".equals(rolLimpio) || "SUPERUSER".equals(rolLimpio)) {
 
-            return "SUPERUSER";
+            return "SUPER_ADMIN";
 
         }
 
@@ -247,7 +247,7 @@ public class UsuarioController {
 
         if (eraSuperActivo && !quedaSuperActivo
                 && usuarioRepository.countByRolInAndActivoTrue(ROLES_SUPER) <= 1) {
-            throw new RuntimeException("No se puede deshabilitar o quitar el rol del ultimo SUPERUSER activo.");
+            throw new RuntimeException("No se puede deshabilitar o quitar el rol del ultimo SUPER_ADMIN activo.");
         }
 
     }
