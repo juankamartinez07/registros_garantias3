@@ -49,6 +49,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/login",
+                        "/logout-inactividad",
                         "/demo-expirada",
                         "/css/**",
                         "/js/**",
@@ -114,6 +115,9 @@ public class SecurityConfig {
                     }
                 })
                 .permitAll())
+
+            .sessionManagement(session -> session
+                .invalidSessionUrl("/login?timeout"))
 
             .logout(logout -> logout
                 .logoutUrl("/logout")
