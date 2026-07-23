@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -48,10 +49,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/login",
+                        "/logout-inactividad",
+                        "/demo-expirada",
                         "/css/**",
                         "/js/**",
                         "/img/**")
                 .permitAll()
+
+                .requestMatchers(
+                        "/configuracion/demo/**",
+                        "/configuracion/demo")
+                .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
                         "/usuarios/**",
@@ -66,6 +74,11 @@ public class SecurityConfig {
 
                 .requestMatchers(
                         HttpMethod.DELETE,
+                        "/garantias/**")
+                .hasRole("SUPER_ADMIN")
+
+                .requestMatchers(
+                        HttpMethod.DELETE,
                         "/equipos/**")
                 .hasAnyRole("SUPER_ADMIN", "ADMIN")
 
@@ -74,6 +87,10 @@ public class SecurityConfig {
                         "/proveedores/**",
                         "/tipos/**")
                 .hasRole("SUPER_ADMIN")
+
+                .requestMatchers(
+                        "/garantias/**")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN", "TECNICO")
 
                 .requestMatchers(
                         "/configuracion/**",
@@ -90,8 +107,17 @@ public class SecurityConfig {
                 .usernameParameter("username")
                 .passwordParameter("password")
                 .defaultSuccessUrl("/", true)
-                .failureUrl("/login?error")
+                .failureHandler((request, response, exception) -> {
+                    if (exception instanceof DisabledException) {
+                        response.sendRedirect("/login?disabled");
+                    } else {
+                        response.sendRedirect("/login?error");
+                    }
+                })
                 .permitAll())
+
+            .sessionManagement(session -> session
+                .invalidSessionUrl("/login?timeout"))
 
             .logout(logout -> logout
                 .logoutUrl("/logout")

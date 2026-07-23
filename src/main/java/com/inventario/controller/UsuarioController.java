@@ -4,6 +4,7 @@ import com.inventario.model.Sede;
 import com.inventario.model.Usuario;
 import com.inventario.repository.SedeRepository;
 import com.inventario.repository.UsuarioRepository;
+import com.inventario.service.UsuarioContextService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +19,10 @@ import java.util.Set;
 public class UsuarioController {
 
     private static final Set<String> ROLES_VALIDOS =
-            Set.of("SUPER_ADMIN", "ADMIN", "USER");
+            Set.of("SUPER_ADMIN", "ADMIN", "TECNICO", "USER");
+
+    private static final Set<String> ROLES_SUPER =
+            Set.of("SUPER_ADMIN");
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -28,6 +32,9 @@ public class UsuarioController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UsuarioContextService usuarioContextService;
 
     @GetMapping
     public List<UsuarioRespuesta> listar() {
@@ -66,9 +73,46 @@ public class UsuarioController {
                         solicitud.getPassword()));
 
         usuario.setRol(normalizarRol(solicitud.getRol()));
+        usuario.setActivo(solicitud.getActivo() == null || solicitud.getActivo());
 
         usuario.setSede(
                 obtenerSede(solicitud.getSedeId()));
+
+        return new UsuarioRespuesta(
+                usuarioRepository.save(usuario));
+
+    }
+
+    @PutMapping("/{id}")
+    public UsuarioRespuesta actualizar(
+            @PathVariable Long id,
+            @RequestBody UsuarioSolicitud solicitud) {
+
+        validarSolicitud(solicitud, false);
+
+        Usuario usuario = usuarioRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException(
+                        "Usuario no encontrado."));
+
+        String username = solicitud.getUsername().trim();
+        usuarioRepository
+                .findByUsername(username)
+                .filter(existente -> !existente.getId().equals(id))
+                .ifPresent(existente -> {
+                    throw new RuntimeException("El usuario ya existe.");
+                });
+
+        String rolAnterior = normalizarRol(usuario.getRol());
+        String rolNuevo = normalizarRol(solicitud.getRol());
+        Boolean activoNuevo = solicitud.getActivo() == null ? usuario.getActivo() : solicitud.getActivo();
+
+        validarNoDesprotegerSuperUsuario(usuario, rolAnterior, rolNuevo, activoNuevo);
+
+        usuario.setUsername(username);
+        usuario.setRol(rolNuevo);
+        usuario.setSede(obtenerSede(solicitud.getSedeId()));
+        usuario.setActivo(activoNuevo);
 
         return new UsuarioRespuesta(
                 usuarioRepository.save(usuario));
@@ -106,6 +150,12 @@ public class UsuarioController {
     public void eliminar(
             @PathVariable Long id) {
 
+        Usuario usuario = usuarioRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException(
+                        "Usuario no encontrado."));
+
+        validarNoDesprotegerSuperUsuario(usuario, normalizarRol(usuario.getRol()), null, false);
         usuarioRepository.deleteById(id);
 
     }
@@ -166,7 +216,39 @@ public class UsuarioController {
 
         }
 
+        if ("SUPERUSUARIO".equals(rolLimpio) || "SUPERUSER".equals(rolLimpio) || "SUPERADMIN".equals(rolLimpio)) {
+
+            return "SUPER_ADMIN";
+
+        }
+
         return rolLimpio;
+
+    }
+
+    private void validarNoDesprotegerSuperUsuario(
+            Usuario usuario,
+            String rolAnterior,
+            String rolNuevo,
+            Boolean activoNuevo) {
+
+        String usuarioActual = usuarioContextService.usernameActual();
+        if (usuarioActual != null
+                && usuarioActual.equals(usuario.getUsername())
+                && Boolean.FALSE.equals(activoNuevo)) {
+            throw new RuntimeException("No puede deshabilitar su propio usuario.");
+        }
+
+        boolean eraSuperActivo = ROLES_SUPER.contains(rolAnterior)
+                && !Boolean.FALSE.equals(usuario.getActivo());
+        boolean quedaSuperActivo = rolNuevo != null
+                && ROLES_SUPER.contains(rolNuevo)
+                && !Boolean.FALSE.equals(activoNuevo);
+
+        if (eraSuperActivo && !quedaSuperActivo
+                && usuarioRepository.countByRolInAndActivoTrue(ROLES_SUPER) <= 1) {
+            throw new RuntimeException("No se puede deshabilitar o quitar el rol del ultimo SUPER_ADMIN activo.");
+        }
 
     }
 
@@ -198,6 +280,7 @@ public class UsuarioController {
         private String password;
         private String rol;
         private Long sedeId;
+        private Boolean activo;
 
         public String getUsername() {
             return username;
@@ -231,6 +314,14 @@ public class UsuarioController {
             this.sedeId = sedeId;
         }
 
+        public Boolean getActivo() {
+            return activo;
+        }
+
+        public void setActivo(Boolean activo) {
+            this.activo = activo;
+        }
+
     }
 
     public static class UsuarioRespuesta {
@@ -239,6 +330,8 @@ public class UsuarioController {
         private String username;
         private String rol;
         private String sede;
+        private Long sedeId;
+        private Boolean activo;
         private String passwordEstado;
 
         public UsuarioRespuesta(Usuario usuario) {
@@ -249,6 +342,10 @@ public class UsuarioController {
             this.sede = usuario.getSede() == null
                     ? ""
                     : usuario.getSede().getNombre();
+            this.sedeId = usuario.getSede() == null
+                    ? null
+                    : usuario.getSede().getId();
+            this.activo = !Boolean.FALSE.equals(usuario.getActivo());
             this.passwordEstado = "Protegida";
 
         }
@@ -267,6 +364,14 @@ public class UsuarioController {
 
         public String getSede() {
             return sede;
+        }
+
+        public Long getSedeId() {
+            return sedeId;
+        }
+
+        public Boolean getActivo() {
+            return activo;
         }
 
         public String getPasswordEstado() {

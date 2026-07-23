@@ -395,6 +395,13 @@
 
         </div>
 
+        <div th:if="${param.disabled}"
+             class="alert alert-danger">
+
+            Usuario deshabilitado. Comuníquese con el administrador.
+
+        </div>
+
 
         <!-- LOGOUT -->
 
@@ -402,6 +409,13 @@
              class="alert alert-success">
 
             Sesion cerrada correctamente
+
+        </div>
+
+        <div th:if="${param.timeout}"
+             class="alert alert-warning">
+
+            Sesion cerrada automaticamente por inactividad
 
         </div>
 
@@ -466,7 +480,7 @@
 </div>
 
 <div class="system-version">
-    Versión 2.0<br>
+    Versión 3.0<br>
     © SMD Seguridad 2026
 </div>
 

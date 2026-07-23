@@ -1,0 +1,6 @@
+ALTER TABLE usuarios
+    ADD COLUMN activo BOOLEAN NOT NULL DEFAULT TRUE;
+
+UPDATE usuarios
+SET activo = TRUE
+WHERE activo IS NULL;

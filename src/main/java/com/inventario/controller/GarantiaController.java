@@ -1,5 +1,6 @@
 package com.inventario.controller;
 
+import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.model.Garantia;
 import com.inventario.service.GarantiaService;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,6 +42,9 @@ public class GarantiaController {
     public Page<Garantia> listar(
             @RequestParam(required = false) String serial,
             @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String estadoGeneral,
+            @RequestParam(required = false) String estadoEspecifico,
+            @RequestParam(required = false) String filtro,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -48,7 +53,13 @@ public class GarantiaController {
                 Math.min(Math.max(size, 10), 50),
                 Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
 
-        return garantiaService.listar(serial, estado, pageable);
+        return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
+    }
+
+    @GetMapping("/api/dashboard")
+    @ResponseBody
+    public DashboardGarantias dashboard() {
+        return garantiaService.dashboard();
     }
 
     @GetMapping("/api/preparar")
@@ -75,6 +86,12 @@ public class GarantiaController {
             @PathVariable Long id,
             @RequestBody GarantiaDTO dto) {
         return garantiaService.actualizar(id, dto);
+    }
+
+    @DeleteMapping("/api/{id}")
+    @ResponseBody
+    public void eliminar(@PathVariable Long id) {
+        garantiaService.eliminar(id);
     }
 
     @ExceptionHandler(RuntimeException.class)

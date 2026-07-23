@@ -13,6 +13,7 @@ import com.inventario.service.EquipoService.DashboardSeriales;
 import com.inventario.service.EquipoService.ResultadoImportacionExcel;
 import com.inventario.service.EquipoService.ResultadoLote;
 import com.inventario.service.EquipoService.SedeExcel;
+import com.inventario.service.EquipoService.ContextoUsuario;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -77,6 +78,11 @@ public class EquipoController {
     @GetMapping("/dashboard")
     public DashboardSeriales dashboard() {
         return equipoService.obtenerDashboard();
+    }
+
+    @GetMapping("/contexto")
+    public ContextoUsuario contextoUsuario() {
+        return equipoService.contextoUsuario();
     }
 
     @GetMapping("/excel")

@@ -17,7 +17,7 @@ public class CustomUserDetailsService
         implements UserDetailsService {
 
     private static final Set<String> ROLES_VALIDOS =
-            Set.of("SUPER_ADMIN", "ADMIN", "USER");
+            Set.of("SUPER_ADMIN", "ADMIN", "TECNICO", "USER");
 
     private static final String BCRYPT_PREFIX = "{bcrypt}";
 
@@ -59,6 +59,7 @@ public class CustomUserDetailsService
                 .withUsername(usuario.getUsername())
                 .password(normalizarPassword(usuario.getPassword()))
                 .authorities(authority)
+                .disabled(Boolean.FALSE.equals(usuario.getActivo()))
                 .build();
 
     }
@@ -99,6 +100,12 @@ public class CustomUserDetailsService
         if ("USUARIO".equals(rolLimpio)) {
 
             return "USER";
+
+        }
+
+        if ("SUPERUSUARIO".equals(rolLimpio) || "SUPERUSER".equals(rolLimpio) || "SUPERADMIN".equals(rolLimpio)) {
+
+            return "SUPER_ADMIN";
 
         }
 

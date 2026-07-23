@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
     <meta charset="UTF-8">
@@ -9,11 +11,16 @@
     <style>
         body{
             min-height:100vh;
-            background:#eef2f7;
+            background:
+                linear-gradient(90deg, rgba(248,250,252,0.92) 0%, rgba(248,250,252,0.72) 42%, rgba(248,250,252,0.9) 100%),
+                url('/img/fondo-proceso-garantia.png')
+                center top / cover
+                fixed
+                no-repeat;
         }
 
         .page-shell{
-            max-width:1180px;
+            max-width:1220px;
             margin:0 auto;
             padding:28px 16px 48px;
         }
@@ -36,6 +43,16 @@
             margin-bottom:20px;
         }
 
+        .panel-formulario{
+            background:#e2e8f0;
+            border-color:#cbd5e1;
+            box-shadow:0 14px 32px rgba(15,23,42,0.12);
+        }
+
+        .panel-formulario h2{
+            color:#0f172a;
+        }
+
         .estado-pill{
             display:inline-flex;
             align-items:center;
@@ -47,11 +64,16 @@
             color:#1d4ed8;
         }
 
+        .estado-pill.cerrado{
+            background:#dcfce7;
+            color:#166534;
+        }
+
         .toast-sistema{
             position:fixed;
             top:22px;
             right:22px;
-            z-index:1000;
+            z-index:1200;
             min-width:280px;
             max-width:460px;
             display:none;
@@ -59,6 +81,146 @@
 
         .toast-sistema.visible{
             display:block;
+        }
+
+        .modal-detalles{
+            position:fixed;
+            inset:0;
+            z-index:1100;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:22px;
+            background:rgba(15,23,42,0.62);
+        }
+
+        .modal-detalles.visible{
+            display:flex;
+        }
+
+        .modal-detalles-contenido{
+            width:min(980px, 100%);
+            max-height:88vh;
+            overflow:auto;
+            background:#fff;
+            border-radius:10px;
+            box-shadow:0 26px 70px rgba(0,0,0,0.32);
+        }
+
+        .modal-detalles-cabecera{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            gap:14px;
+            padding:22px 24px 14px;
+            border-bottom:1px solid #e5e7eb;
+        }
+
+        .modal-detalles-cuerpo{
+            padding:20px 24px 24px;
+        }
+
+        .detalle-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+            gap:12px;
+        }
+
+        .detalle-item{
+            border:1px solid #e5e7eb;
+            border-radius:8px;
+            padding:12px;
+            background:#f8fafc;
+        }
+
+        .detalle-item span{
+            display:block;
+            color:#64748b;
+            font-size:12px;
+            font-weight:800;
+            text-transform:uppercase;
+            margin-bottom:4px;
+        }
+
+        .detalle-item strong,
+        .detalle-item p{
+            color:#0f172a;
+            margin:0;
+            white-space:pre-wrap;
+        }
+
+        .dashboard-garantias{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+            gap:12px;
+            margin-bottom:18px;
+        }
+
+        .dashboard-garantia-card{
+            min-height:112px;
+            width:100%;
+            border:1px solid #dbe3ef;
+            border-radius:8px;
+            background:#f8fafc;
+            padding:14px;
+            text-align:left;
+            color:#0f172a;
+            transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+
+        .dashboard-garantia-card:hover,
+        .dashboard-garantia-card.activa{
+            transform:translateY(-2px);
+            border-color:#2563eb;
+            box-shadow:0 12px 28px rgba(37,99,235,0.14);
+        }
+
+        .dashboard-garantia-card span{
+            display:block;
+            color:#475569;
+            font-size:13px;
+            font-weight:800;
+            margin-bottom:8px;
+        }
+
+        .dashboard-garantia-card strong{
+            display:block;
+            font-size:30px;
+            line-height:1;
+            color:#17324d;
+        }
+
+        .dashboard-garantia-card small{
+            display:block;
+            margin-top:8px;
+            color:#64748b;
+            font-weight:700;
+        }
+
+        .dashboard-garantia-card.principal{
+            background:#edf5ff;
+        }
+
+        .dashboard-garantia-card.abierta{
+            background:#eef6ff;
+        }
+
+        .dashboard-garantia-card.cerrada{
+            background:#f1f5f9;
+        }
+
+        .dashboard-garantia-card.alerta{
+            background:#fff7ed;
+        }
+
+        .dashboard-garantia-card.critica{
+            background:#fef2f2;
+        }
+
+        .dashboard-subtitulo{
+            color:#334155;
+            font-weight:800;
+            margin:12px 0 10px;
         }
 
         textarea{
@@ -70,6 +232,14 @@
 <body>
 
 <div class="page-shell">
+    <div
+        th:if="${demoEstado != null and demoEstado.mostrarBanner}"
+        class="alert mb-4"
+        th:classappend="${demoEstado.superAdmin} ? ' alert-info' : ' alert-warning'"
+        th:text="${demoEstado.superAdmin ? (demoEstado.demoExpirada ? 'Modo demo expirado para usuarios. Como SUPERADMIN puedes administrar la configuracion.' : 'Modo demo activo para usuarios: quedan ' + demoEstado.diasRestantes + ' dias.') : (demoEstado.diasRestantes == 1 ? 'Prueba demo activa: queda 1 dia de uso.' : 'Prueba demo activa: quedan ' + demoEstado.diasRestantes + ' dias de uso.')}">
+    </div>
+
+    <div id="permisoEliminarGarantias" sec:authorize="hasRole('SUPER_ADMIN')" style="display:none;"></div>
 
     <div class="toolbar">
         <div>
@@ -85,7 +255,7 @@
 
     <div id="mensajeInicial" class="alert alert-info" style="display:none;"></div>
 
-    <div class="panel">
+    <div class="panel panel-formulario">
         <h2 class="h5 mb-3">Formulario de garantia</h2>
 
         <form id="formGarantia" onsubmit="guardarGarantia(event)">
@@ -93,6 +263,11 @@
             <input type="hidden" id="equipoId">
 
             <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label"># de ticket</label>
+                    <input id="numeroTicket" class="form-control" readonly placeholder="Se genera al guardar">
+                </div>
+
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Serial</label>
                     <div class="input-group">
@@ -137,14 +312,16 @@
                 </div>
 
                 <div class="col-md-4 mb-3">
-                    <label class="form-label">Estado</label>
-                    <select id="estado" class="form-select" onchange="actualizarMotivoNoAplica()">
-                        <option>En tramite</option>
-                        <option>Reparado</option>
-                        <option>No aplico garantia</option>
-                        <option>Cambio por equipo nuevo</option>
-                        <option>Nota credito</option>
+                    <label class="form-label">Estado general</label>
+                    <select id="estadoGeneral" class="form-select" required onchange="actualizarEstadosEspecificos()">
+                        <option value="Abierto">Abierto</option>
+                        <option value="Cerrado">Cerrado</option>
                     </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Estado especifico</label>
+                    <select id="estadoEspecifico" class="form-select" required onchange="actualizarMotivoNoAplica()"></select>
                 </div>
 
                 <div class="col-md-12 mb-3">
@@ -153,8 +330,13 @@
                 </div>
 
                 <div id="grupoMotivoNoAplica" class="col-md-12 mb-3" style="display:none;">
-                    <label class="form-label">Motivo no aplica garantia</label>
+                    <label class="form-label">Motivo por el cual no aplico la garantia</label>
                     <textarea id="motivoNoAplicaGarantia" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Observaciones</label>
+                    <textarea id="observaciones" class="form-control" rows="3"></textarea>
                 </div>
             </div>
 
@@ -167,13 +349,94 @@
 
     <div class="panel">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h2 class="h5 mb-1">Resumen de garantias</h2>
+                <div class="text-muted">Accesos rapidos para filtrar la tabla de casos.</div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" onclick="limpiarFiltroDashboard()">Ver todas</button>
+        </div>
+
+        <div class="dashboard-garantias">
+            <button class="dashboard-garantia-card principal" data-filtro-card="total" onclick="aplicarFiltroDashboard('total')">
+                <span>Total garantias</span>
+                <strong id="dgTotal">0</strong>
+                <small>Todos los casos</small>
+            </button>
+            <button class="dashboard-garantia-card abierta" data-filtro-card="general:ABIERTO" onclick="aplicarFiltroDashboard('estadoGeneral', 'ABIERTO')">
+                <span>Garantias abiertas</span>
+                <strong id="dgAbiertas">0</strong>
+                <small>Estado general abierto</small>
+            </button>
+            <button class="dashboard-garantia-card cerrada" data-filtro-card="general:CERRADO" onclick="aplicarFiltroDashboard('estadoGeneral', 'CERRADO')">
+                <span>Garantias cerradas</span>
+                <strong id="dgCerradas">0</strong>
+                <small>Estado general cerrado</small>
+            </button>
+            <button class="dashboard-garantia-card principal" data-filtro-card="filtro:ingresadasMesActual" onclick="aplicarFiltroDashboard('filtro', 'ingresadasMesActual')">
+                <span>Ingresadas este mes</span>
+                <strong id="dgMes">0</strong>
+                <small>Fecha ingreso garantia</small>
+            </button>
+            <button class="dashboard-garantia-card alerta" data-filtro-card="filtro:sinCasoProveedor" onclick="aplicarFiltroDashboard('filtro', 'sinCasoProveedor')">
+                <span>Sin caso proveedor</span>
+                <strong id="dgSinCaso">0</strong>
+                <small>Abiertas sin numero de caso</small>
+            </button>
+            <button class="dashboard-garantia-card critica" data-filtro-card="filtro:abiertas10dias" onclick="aplicarFiltroDashboard('filtro', 'abiertas10dias')">
+                <span>Abiertas +10 dias</span>
+                <strong id="dgMas10">0</strong>
+                <small>Seguimiento prioritario</small>
+            </button>
+        </div>
+
+        <div class="dashboard-subtitulo">Estados abiertos</div>
+        <div class="dashboard-garantias">
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:EN_TRAMITE" onclick="aplicarFiltroDashboard('estadoEspecifico', 'EN_TRAMITE')">
+                <span>En tramite</span>
+                <strong id="dgEnTramite">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:EN_REVISION_INTERNA" onclick="aplicarFiltroDashboard('estadoEspecifico', 'EN_REVISION_INTERNA')">
+                <span>En revision interna</span>
+                <strong id="dgRevision">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:ENVIADO_A_PROVEEDOR" onclick="aplicarFiltroDashboard('estadoEspecifico', 'ENVIADO_A_PROVEEDOR')">
+                <span>Enviado a proveedor</span>
+                <strong id="dgProveedor">0</strong>
+            </button>
+        </div>
+
+        <div class="dashboard-subtitulo">Estados cerrados</div>
+        <div class="dashboard-garantias mb-4">
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:REPARADO" onclick="aplicarFiltroDashboard('estadoEspecifico', 'REPARADO')">
+                <span>Reparado</span>
+                <strong id="dgReparado">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:NO_APLICO_GARANTIA" onclick="aplicarFiltroDashboard('estadoEspecifico', 'NO_APLICO_GARANTIA')">
+                <span>No aplico garantia</span>
+                <strong id="dgNoAplico">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:CAMBIO_EQUIPO_NUEVO" onclick="aplicarFiltroDashboard('estadoEspecifico', 'CAMBIO_EQUIPO_NUEVO')">
+                <span>Cambio por equipo nuevo</span>
+                <strong id="dgCambio">0</strong>
+            </button>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:NOTA_CREDITO" onclick="aplicarFiltroDashboard('estadoEspecifico', 'NOTA_CREDITO')">
+                <span>Nota credito</span>
+                <strong id="dgNota">0</strong>
+            </button>
+        </div>
+
+        <div id="bloqueListadoGarantias" class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <h2 class="h5 mb-0">Listado de garantias</h2>
 
             <div class="d-flex gap-2 flex-wrap">
-                <input id="filtroSerial" class="form-control" style="max-width:220px;" placeholder="Buscar serial">
-                <select id="filtroEstado" class="form-select" style="max-width:220px;">
+                <input id="filtroSerial" class="form-control" style="max-width:220px;" placeholder="Buscar serial o ticket">
+                <select id="filtroEstado" class="form-select" style="max-width:240px;">
                     <option value="">Todos los estados</option>
+                    <option>Abierto</option>
+                    <option>Cerrado</option>
                     <option>En tramite</option>
+                    <option>En revision interna</option>
+                    <option>Enviado a proveedor</option>
                     <option>Reparado</option>
                     <option>No aplico garantia</option>
                     <option>Cambio por equipo nuevo</option>
@@ -183,15 +446,20 @@
             </div>
         </div>
 
+        <div id="filtroActivo" class="alert alert-primary" style="display:none;"></div>
+
         <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
+                        <th>Ticket</th>
                         <th>Serial</th>
-                        <th>Producto</th>
+                        <th>Producto / referencia</th>
+                        <th>Sede</th>
                         <th>Proveedor</th>
-                        <th>Estado</th>
-                        <th>Fecha garantia</th>
+                        <th>Fecha ingreso garantia</th>
+                        <th>Estado general</th>
+                        <th>Estado especifico</th>
                         <th>Caso proveedor</th>
                         <th>Acciones</th>
                     </tr>
@@ -208,30 +476,72 @@
             </div>
         </div>
     </div>
+</div>
 
+<div id="modalDetalles" class="modal-detalles">
+    <div class="modal-detalles-contenido">
+        <div class="modal-detalles-cabecera">
+            <div>
+                <h3 class="h5 mb-1">Detalles de garantia</h3>
+                <div id="detalleTitulo" class="text-muted"></div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
+        </div>
+        <div id="contenidoDetalles" class="modal-detalles-cuerpo"></div>
+    </div>
 </div>
 
 <div id="toastSistema" class="toast-sistema alert alert-info shadow"></div>
 
 <script>
+const ESTADOS_ABIERTOS = ["En tramite", "En revision interna", "Enviado a proveedor"];
+const ESTADOS_CERRADOS = ["Reparado", "No aplico garantia", "Cambio por equipo nuevo", "Nota credito"];
 const ESTADOS_API = {
-    "En tramite":"En trámite",
+    "En tramite":"En tramite",
+    "En revision interna":"En revision interna",
+    "Enviado a proveedor":"Enviado a proveedor",
     "Reparado":"Reparado",
-    "No aplico garantia":"No aplicó garantía",
+    "No aplico garantia":"No aplico garantia",
     "Cambio por equipo nuevo":"Cambio por equipo nuevo",
-    "Nota credito":"Nota crédito"
+    "Nota credito":"Nota credito"
 };
-
-const ESTADOS_UI = Object.fromEntries(
-    Object.entries(ESTADOS_API).map(([ui, api]) => [api, ui])
-);
+const ESTADOS_ESPECIFICOS_URL = {
+    "EN_TRAMITE":"En tramite",
+    "EN_REVISION_INTERNA":"En revision interna",
+    "ENVIADO_A_PROVEEDOR":"Enviado a proveedor",
+    "REPARADO":"Reparado",
+    "NO_APLICO_GARANTIA":"No aplico garantia",
+    "CAMBIO_EQUIPO_NUEVO":"Cambio por equipo nuevo",
+    "NOTA_CREDITO":"Nota credito"
+};
+const TEXTOS_FILTRO = {
+    "estadoGeneral:ABIERTO":"Mostrando garantias abiertas.",
+    "estadoGeneral:CERRADO":"Mostrando garantias cerradas.",
+    "estadoEspecifico:EN_TRAMITE":"Mostrando garantias en tramite.",
+    "estadoEspecifico:EN_REVISION_INTERNA":"Mostrando garantias en revision interna.",
+    "estadoEspecifico:ENVIADO_A_PROVEEDOR":"Mostrando garantias enviadas a proveedor.",
+    "estadoEspecifico:REPARADO":"Mostrando garantias reparadas.",
+    "estadoEspecifico:NO_APLICO_GARANTIA":"Mostrando garantias que no aplicaron garantia.",
+    "estadoEspecifico:CAMBIO_EQUIPO_NUEVO":"Mostrando garantias con cambio por equipo nuevo.",
+    "estadoEspecifico:NOTA_CREDITO":"Mostrando garantias con nota credito.",
+    "filtro:sinCasoProveedor":"Mostrando garantias sin numero de caso del proveedor.",
+    "filtro:abiertas10dias":"Mostrando garantias abiertas hace mas de 10 dias.",
+    "filtro:ingresadasMesActual":"Mostrando garantias ingresadas durante el mes actual.",
+    "filtro:tiempoAbiertas":"Mostrando estado de tiempo de garantias abiertas."
+};
 
 let paginaActual = 0;
 let totalPaginas = 0;
 let temporizadorToast = null;
+let filtroDashboard = {
+    estadoGeneral:null,
+    estadoEspecifico:null,
+    filtro:null
+};
 
 window.onload = function(){
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
+    actualizarEstadosEspecificos("En tramite");
 
     const params = new URLSearchParams(window.location.search);
     const serial = params.get("serial");
@@ -240,7 +550,13 @@ window.onload = function(){
         prepararGarantiaDesdeSerial();
     }
 
+    aplicarFiltrosDesdeUrl(params);
+    cargarDashboardGarantiasModulo();
     listarGarantias();
+
+    if(tieneFiltroDashboardActivo()){
+        desplazarAListadoGarantias();
+    }
 };
 
 function mostrarToast(mensaje, tipo = "info"){
@@ -260,12 +576,177 @@ function escaparHtml(valor){
         .replace(/'/g, "&#039;");
 }
 
-function estadoApiDesdeSelect(id){
-    return ESTADOS_API[document.getElementById(id).value] || document.getElementById(id).value;
+function puedeEliminarGarantias(){
+    return document.getElementById("permisoEliminarGarantias") !== null;
 }
 
-function estadoUiDesdeApi(estado){
-    return ESTADOS_UI[estado] || estado || "En tramite";
+function cargarDashboardGarantiasModulo(){
+    fetch("/garantias/api/dashboard")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("dgTotal").innerText = data.totalGarantias || 0;
+            document.getElementById("dgAbiertas").innerText = data.abiertas || 0;
+            document.getElementById("dgCerradas").innerText = data.cerradas || 0;
+            document.getElementById("dgMes").innerText = data.ingresadasMesActual || 0;
+            document.getElementById("dgSinCaso").innerText = data.abiertasSinCasoProveedor || 0;
+            document.getElementById("dgMas10").innerText = data.abiertasMas10Dias || 0;
+            document.getElementById("dgEnTramite").innerText = data.enTramite || 0;
+            document.getElementById("dgRevision").innerText = data.enRevisionInterna || 0;
+            document.getElementById("dgProveedor").innerText = data.enviadoAProveedor || 0;
+            document.getElementById("dgReparado").innerText = data.reparado || 0;
+            document.getElementById("dgNoAplico").innerText = data.noAplicoGarantia || 0;
+            document.getElementById("dgCambio").innerText = data.cambioEquipoNuevo || 0;
+            document.getElementById("dgNota").innerText = data.notaCredito || 0;
+        })
+        .catch(() => mostrarToast("No se pudo cargar el dashboard de garantias.", "warning"));
+}
+
+function aplicarFiltrosDesdeUrl(params){
+    filtroDashboard.estadoGeneral = params.get("estadoGeneral");
+    filtroDashboard.estadoEspecifico = params.get("estadoEspecifico");
+    filtroDashboard.filtro = params.get("filtro");
+    actualizarFiltroActivo();
+}
+
+function aplicarFiltroDashboard(tipo, valor = null){
+    paginaActual = 0;
+    document.getElementById("filtroEstado").value = "";
+
+    filtroDashboard = {
+        estadoGeneral:null,
+        estadoEspecifico:null,
+        filtro:null
+    };
+
+    if(tipo === "total"){
+        history.pushState({}, "", "/garantias");
+    }else{
+        filtroDashboard[tipo] = valor;
+        const params = new URLSearchParams();
+        params.set(tipo, valor);
+        history.pushState({}, "", `/garantias?${params.toString()}`);
+    }
+
+    actualizarFiltroActivo();
+    listarGarantias();
+    desplazarAListadoGarantias();
+}
+
+function limpiarFiltroDashboard(){
+    filtroDashboard = {
+        estadoGeneral:null,
+        estadoEspecifico:null,
+        filtro:null
+    };
+    paginaActual = 0;
+    document.getElementById("filtroEstado").value = "";
+    history.pushState({}, "", "/garantias");
+    actualizarFiltroActivo();
+    listarGarantias();
+    desplazarAListadoGarantias();
+}
+
+function desplazarAListadoGarantias(){
+    setTimeout(() => {
+        const objetivo =
+            document.getElementById("bloqueListadoGarantias");
+
+        if(objetivo){
+            objetivo.scrollIntoView({
+                behavior:"smooth",
+                block:"start"
+            });
+        }
+    }, 120);
+}
+
+function claveFiltroActivo(){
+    if(filtroDashboard.estadoGeneral){
+        return `estadoGeneral:${filtroDashboard.estadoGeneral}`;
+    }
+    if(filtroDashboard.estadoEspecifico){
+        return `estadoEspecifico:${filtroDashboard.estadoEspecifico}`;
+    }
+    if(filtroDashboard.filtro){
+        return `filtro:${filtroDashboard.filtro}`;
+    }
+    return null;
+}
+
+function tieneFiltroDashboardActivo(){
+    return claveFiltroActivo() !== null;
+}
+
+function actualizarFiltroActivo(){
+    const clave = claveFiltroActivo();
+    const alerta = document.getElementById("filtroActivo");
+
+    document
+        .querySelectorAll(".dashboard-garantia-card")
+        .forEach(card => card.classList.remove("activa"));
+
+    if(!clave){
+        alerta.style.display = "none";
+        return;
+    }
+
+    alerta.style.display = "block";
+    alerta.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>${escaparHtml(TEXTOS_FILTRO[clave] || "Mostrando garantias filtradas.")}</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="limpiarFiltroDashboard()">Limpiar filtro</button>
+        </div>
+    `;
+
+    let selector = null;
+    if(filtroDashboard.estadoGeneral){
+        selector = `[data-filtro-card="general:${filtroDashboard.estadoGeneral}"]`;
+    }else if(filtroDashboard.estadoEspecifico){
+        selector = `[data-filtro-card="especifico:${filtroDashboard.estadoEspecifico}"]`;
+    }else if(filtroDashboard.filtro){
+        selector = `[data-filtro-card="filtro:${filtroDashboard.filtro}"]`;
+    }
+
+    const card = selector ? document.querySelector(selector) : null;
+    if(card){
+        card.classList.add("activa");
+    }
+}
+
+function normalizarEstado(estado){
+    return String(estado || "")
+        .replace(/Ã¡/g, "a")
+        .replace(/Ã©/g, "e")
+        .replace(/Ã­/g, "i")
+        .replace(/Ã³/g, "o")
+        .replace(/Ãº/g, "u")
+        .replace(/[áà]/g, "a")
+        .replace(/[éè]/g, "e")
+        .replace(/[íì]/g, "i")
+        .replace(/[óò]/g, "o")
+        .replace(/[úù]/g, "u");
+}
+
+function estadoGeneralDesdeEstado(estado){
+    const limpio = normalizarEstado(estado);
+    return ESTADOS_CERRADOS.includes(limpio) ? "Cerrado" : "Abierto";
+}
+
+function actualizarEstadosEspecificos(valorSeleccionado = null){
+    const general = document.getElementById("estadoGeneral").value;
+    const select = document.getElementById("estadoEspecifico");
+    const opciones = general === "Cerrado" ? ESTADOS_CERRADOS : ESTADOS_ABIERTOS;
+    const seleccionado = valorSeleccionado ? normalizarEstado(valorSeleccionado) : select.value;
+
+    select.innerHTML = opciones
+        .map(estado => `<option value="${escaparHtml(estado)}">${escaparHtml(estado)}</option>`)
+        .join("");
+
+    if(opciones.includes(seleccionado)){
+        select.value = seleccionado;
+    }
+
+    actualizarMotivoNoAplica();
 }
 
 function prepararGarantiaDesdeSerial(){
@@ -298,12 +779,17 @@ function prepararGarantiaDesdeSerial(){
 }
 
 function llenarFormulario(data){
+    const estadoGeneral = data.estadoGeneral || estadoGeneralDesdeEstado(data.estadoEspecifico || data.estado);
+    const estadoEspecifico = normalizarEstado(data.estadoEspecifico || data.estado || "En tramite");
+
     document.getElementById("garantiaId").value = data.id || "";
     document.getElementById("equipoId").value = data.equipoId || data.equipo?.id_equipo || "";
+    document.getElementById("numeroTicket").value = data.numeroTicket || "";
     document.getElementById("sede").value = data.sede || "";
     document.getElementById("referenciaProducto").value = data.referenciaProducto || "";
     document.getElementById("serial").value = data.serial || "";
-    document.getElementById("estado").value = estadoUiDesdeApi(data.estado);
+    document.getElementById("estadoGeneral").value = estadoGeneral;
+    actualizarEstadosEspecificos(estadoEspecifico);
     document.getElementById("proveedor").value = data.proveedor || "";
     document.getElementById("facturaProveedor").value = data.facturaProveedor || "";
     document.getElementById("fechaIngresoGarantia").value = data.fechaIngresoGarantia || new Date().toISOString().slice(0, 10);
@@ -311,29 +797,43 @@ function llenarFormulario(data){
     document.getElementById("motivosGarantia").value = data.motivosGarantia || "";
     document.getElementById("numeroCasoProveedor").value = data.numeroCasoProveedor || "";
     document.getElementById("motivoNoAplicaGarantia").value = data.motivoNoAplicaGarantia || "";
+    document.getElementById("observaciones").value = data.observaciones || "";
     actualizarMotivoNoAplica();
 }
 
 function datosFormulario(){
+    const estadoEspecifico = document.getElementById("estadoEspecifico").value;
     return {
         id: document.getElementById("garantiaId").value || null,
         equipoId: document.getElementById("equipoId").value || null,
+        numeroTicket: document.getElementById("numeroTicket").value || null,
         sede: document.getElementById("sede").value,
         referenciaProducto: document.getElementById("referenciaProducto").value,
         serial: document.getElementById("serial").value,
-        estado: estadoApiDesdeSelect("estado"),
+        estadoGeneral: document.getElementById("estadoGeneral").value,
+        estadoEspecifico: estadoEspecifico,
+        estado: estadoEspecifico,
         proveedor: document.getElementById("proveedor").value,
         facturaProveedor: document.getElementById("facturaProveedor").value,
         fechaIngresoGarantia: document.getElementById("fechaIngresoGarantia").value || null,
         fechaIngresoSerial: document.getElementById("fechaIngresoSerial").value || null,
         motivosGarantia: document.getElementById("motivosGarantia").value,
         numeroCasoProveedor: document.getElementById("numeroCasoProveedor").value,
-        motivoNoAplicaGarantia: document.getElementById("motivoNoAplicaGarantia").value
+        motivoNoAplicaGarantia: document.getElementById("motivoNoAplicaGarantia").value,
+        observaciones: document.getElementById("observaciones").value
     };
 }
 
 function guardarGarantia(event){
     event.preventDefault();
+
+    const datos = datosFormulario();
+    if(datos.estadoGeneral === "Cerrado"
+            && datos.estadoEspecifico === "No aplico garantia"
+            && !datos.motivoNoAplicaGarantia.trim()){
+        mostrarToast("Debe ingresar el motivo por el cual no aplico la garantia.", "warning");
+        return;
+    }
 
     const id = document.getElementById("garantiaId").value;
     const metodo = id ? "PUT" : "POST";
@@ -342,7 +842,7 @@ function guardarGarantia(event){
     fetch(url, {
         method: metodo,
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(datosFormulario())
+        body: JSON.stringify(datos)
     })
         .then(async response => {
             if(!response.ok){
@@ -354,6 +854,7 @@ function guardarGarantia(event){
         .then(() => {
             mostrarToast("Garantia guardada correctamente.", "success");
             limpiarFormulario();
+            cargarDashboardGarantiasModulo();
             listarGarantias();
         })
         .catch(error => mostrarToast(error.message, "danger"));
@@ -363,24 +864,93 @@ function editarGarantia(id){
     fetch(`/garantias/api/${id}`)
         .then(response => response.json())
         .then(data => {
-            const dto = {
-                id: data.id,
-                equipoId: data.equipo?.id_equipo,
-                sede: data.sede,
-                referenciaProducto: data.referenciaProducto,
-                serial: data.serial,
-                estado: data.estado,
-                proveedor: data.proveedor,
-                facturaProveedor: data.facturaProveedor,
-                fechaIngresoGarantia: data.fechaIngresoGarantia,
-                fechaIngresoSerial: data.fechaIngresoSerial,
-                motivosGarantia: data.motivosGarantia,
-                numeroCasoProveedor: data.numeroCasoProveedor,
-                motivoNoAplicaGarantia: data.motivoNoAplicaGarantia
-            };
-            llenarFormulario(dto);
+            llenarFormulario(data);
             window.scrollTo({top:0, behavior:"smooth"});
         });
+}
+
+function mostrarDetalles(id){
+    fetch(`/garantias/api/${id}`)
+        .then(async response => {
+            if(!response.ok){
+                const mensaje = await response.text();
+                throw new Error(mensaje || "No se pudo cargar el detalle.");
+            }
+            return response.json();
+        })
+        .then(g => {
+            const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
+            const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "");
+            document.getElementById("detalleTitulo").innerText = `Ticket ${g.numeroTicket || ""} - Serial ${g.serial || ""}`;
+            document.getElementById("contenidoDetalles").innerHTML = `
+                <div class="detalle-grid">
+                    ${detalleItem("Numero de ticket", g.numeroTicket)}
+                    ${detalleItem("Sede", g.sede)}
+                    ${detalleItem("Referencia / producto", g.referenciaProducto)}
+                    ${detalleItem("Serial", g.serial)}
+                    ${detalleItem("Proveedor", g.proveedor)}
+                    ${detalleItem("Factura proveedor", g.facturaProveedor)}
+                    ${detalleItem("Fecha ingreso serial", g.fechaIngresoSerial)}
+                    ${detalleItem("Fecha ingreso garantia", g.fechaIngresoGarantia)}
+                    ${detalleItem("Estado general", estadoGeneral)}
+                    ${detalleItem("Estado especifico", estadoEspecifico)}
+                    ${detalleItem("Numero caso proveedor", g.numeroCasoProveedor)}
+                    ${detalleItem("Usuario que creo", g.usuarioCreacion)}
+                    ${detalleItem("Fecha creacion", g.fechaCreacion)}
+                    ${detalleItem("Ultima actualizacion", g.fechaActualizacion)}
+                    ${detalleTexto("Motivo de garantia", g.motivosGarantia)}
+                    ${detalleTexto("Motivo no aplico garantia", g.motivoNoAplicaGarantia)}
+                    ${detalleTexto("Observaciones", g.observaciones)}
+                </div>
+            `;
+            document.getElementById("modalDetalles").classList.add("visible");
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function detalleItem(titulo, valor){
+    return `
+        <div class="detalle-item">
+            <span>${escaparHtml(titulo)}</span>
+            <strong>${escaparHtml(valor || "Sin informacion")}</strong>
+        </div>
+    `;
+}
+
+function detalleTexto(titulo, valor){
+    return `
+        <div class="detalle-item">
+            <span>${escaparHtml(titulo)}</span>
+            <p>${escaparHtml(valor || "Sin informacion")}</p>
+        </div>
+    `;
+}
+
+function cerrarDetalles(){
+    document.getElementById("modalDetalles").classList.remove("visible");
+}
+
+function eliminarGarantia(id){
+    if(!puedeEliminarGarantias()){
+        mostrarToast("Permisos insuficientes. Solo los usuarios SUPER_ADMIN pueden eliminar garantias.", "warning");
+        return;
+    }
+
+    if(!confirm("Eliminar este caso de garantia?")){
+        return;
+    }
+
+    fetch(`/garantias/api/${id}`, {method:"DELETE"})
+        .then(async response => {
+            if(!response.ok){
+                const mensaje = await response.text();
+                throw new Error(mensaje || "No se pudo eliminar la garantia.");
+            }
+            mostrarToast("Garantia eliminada correctamente.", "success");
+            cargarDashboardGarantiasModulo();
+            listarGarantias();
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
 }
 
 function listarGarantias(){
@@ -400,6 +970,18 @@ function listarGarantias(){
         params.append("estado", ESTADOS_API[estado] || estado);
     }
 
+    if(filtroDashboard.estadoGeneral){
+        params.append("estadoGeneral", filtroDashboard.estadoGeneral);
+    }
+
+    if(filtroDashboard.estadoEspecifico){
+        params.append("estadoEspecifico", filtroDashboard.estadoEspecifico);
+    }
+
+    if(filtroDashboard.filtro){
+        params.append("filtro", filtroDashboard.filtro);
+    }
+
     fetch(`/garantias/api?${params.toString()}`)
         .then(response => response.json())
         .then(pagina => {
@@ -407,21 +989,34 @@ function listarGarantias(){
             totalPaginas = pagina.totalPages || 0;
 
             document.getElementById("tablaGarantias").innerHTML =
-                garantias.map(g => `
-                    <tr>
-                        <td>${escaparHtml(g.serial)}</td>
-                        <td>${escaparHtml(g.referenciaProducto)}</td>
-                        <td>${escaparHtml(g.proveedor)}</td>
-                        <td><span class="estado-pill">${escaparHtml(g.estado)}</span></td>
-                        <td>${escaparHtml(g.fechaIngresoGarantia || "")}</td>
-                        <td>${escaparHtml(g.numeroCasoProveedor || "")}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="editarGarantia(${g.id})">
-                                Editar
-                            </button>
-                        </td>
-                    </tr>
-                `).join("");
+                garantias.map(g => {
+                    const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
+                    const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "");
+                    const botonEliminar = puedeEliminarGarantias()
+                        ? `<button class="btn btn-danger btn-sm" onclick="eliminarGarantia(${g.id})">Eliminar</button>`
+                        : "";
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">${escaparHtml(g.numeroTicket || "")}</td>
+                            <td>${escaparHtml(g.serial)}</td>
+                            <td>${escaparHtml(g.referenciaProducto)}</td>
+                            <td>${escaparHtml(g.sede)}</td>
+                            <td>${escaparHtml(g.proveedor)}</td>
+                            <td>${escaparHtml(g.fechaIngresoGarantia || "")}</td>
+                            <td><span class="estado-pill ${estadoGeneral === "Cerrado" ? "cerrado" : ""}">${escaparHtml(estadoGeneral)}</span></td>
+                            <td>${escaparHtml(estadoEspecifico)}</td>
+                            <td>${escaparHtml(g.numeroCasoProveedor || "")}</td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${g.id})">Detalles</button>
+                                    <button class="btn btn-warning btn-sm" onclick="editarGarantia(${g.id})">Editar</button>
+                                    ${botonEliminar}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
 
             document.getElementById("estadoPaginacion").innerText =
                 garantias.length === 0
@@ -436,6 +1031,13 @@ function listarGarantias(){
 
 function filtrarGarantias(){
     paginaActual = 0;
+    filtroDashboard = {
+        estadoGeneral:null,
+        estadoEspecifico:null,
+        filtro:null
+    };
+    history.pushState({}, "", "/garantias");
+    actualizarFiltroActivo();
     listarGarantias();
 }
 
@@ -449,7 +1051,9 @@ function cambiarPagina(cambio){
 }
 
 function actualizarMotivoNoAplica(){
-    const noAplica = document.getElementById("estado").value === "No aplico garantia";
+    const noAplica =
+        document.getElementById("estadoGeneral").value === "Cerrado" &&
+        document.getElementById("estadoEspecifico").value === "No aplico garantia";
     document.getElementById("grupoMotivoNoAplica").style.display = noAplica ? "block" : "none";
     document.getElementById("motivoNoAplicaGarantia").required = noAplica;
 }
@@ -458,11 +1062,14 @@ function limpiarFormulario(){
     document.getElementById("formGarantia").reset();
     document.getElementById("garantiaId").value = "";
     document.getElementById("equipoId").value = "";
+    document.getElementById("numeroTicket").value = "";
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
-    document.getElementById("estado").value = "En tramite";
-    actualizarMotivoNoAplica();
+    document.getElementById("estadoGeneral").value = "Abierto";
+    actualizarEstadosEspecificos("En tramite");
 }
 </script>
+
+<script src="/js/inactividad.js"></script>
 
 </body>
 </html>
