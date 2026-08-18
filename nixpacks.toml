@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["jdk21", "maven"]
+nixPkgs = ["jdk17", "maven"]
 
 [phases.build]
 cmds = ["mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install"]
