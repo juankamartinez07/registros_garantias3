@@ -16,7 +16,15 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (System.getenv("DB_HOST") == null || System.getenv("DB_PORT") == null || System.getenv("DB_NAME") == null) {
+        boolean tieneUrlSpring = System.getenv("SPRING_DATASOURCE_URL") != null;
+        boolean tieneVariablesDb = System.getenv("DB_HOST") != null
+                && System.getenv("DB_PORT") != null
+                && System.getenv("DB_NAME") != null;
+        boolean tieneVariablesMysql = System.getenv("MYSQL_HOST") != null
+                && System.getenv("MYSQL_PORT") != null
+                && System.getenv("MYSQL_DATABASE") != null;
+
+        if (!tieneUrlSpring && !tieneVariablesDb && !tieneVariablesMysql) {
             return;
         }
 
