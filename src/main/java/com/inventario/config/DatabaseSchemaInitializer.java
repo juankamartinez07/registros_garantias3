@@ -17,6 +17,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         boolean tieneUrlSpring = System.getenv("SPRING_DATASOURCE_URL") != null;
+        boolean tieneDatabaseUrl = System.getenv("DATABASE_URL") != null;
         boolean tieneVariablesDb = System.getenv("DB_HOST") != null
                 && System.getenv("DB_PORT") != null
                 && System.getenv("DB_NAME") != null;
@@ -24,7 +25,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                 && System.getenv("MYSQL_PORT") != null
                 && System.getenv("MYSQL_DATABASE") != null;
 
-        if (!tieneUrlSpring && !tieneVariablesDb && !tieneVariablesMysql) {
+        if (!tieneUrlSpring && !tieneDatabaseUrl && !tieneVariablesDb && !tieneVariablesMysql) {
             return;
         }
 

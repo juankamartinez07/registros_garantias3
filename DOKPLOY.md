@@ -5,6 +5,16 @@ La aplicacion esta preparada para desplegar con Build Type `NIXPACKS`.
 Variables recomendadas:
 
 ```env
+DATABASE_URL=mariadb://seriales_user:valor_de_la_contrasena_en_dokploy@control-seriales-db-edwb4g:3306/control_seriales
+PORT=8080
+```
+
+La aplicacion convierte automaticamente `DATABASE_URL` al formato JDBC que
+necesita Spring Boot y separa el usuario y la contrasena.
+
+Tambien se puede configurar con las variables nativas de Spring:
+
+```env
 SPRING_DATASOURCE_URL=jdbc:mariadb://control-seriales-db-edwb4g:3306/control_seriales
 SPRING_DATASOURCE_USERNAME=seriales_user
 SPRING_DATASOURCE_PASSWORD=valor_de_la_contrasena_en_dokploy
