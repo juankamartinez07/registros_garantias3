@@ -4,6 +4,7 @@ import com.inventario.model.Sede;
 import com.inventario.model.Usuario;
 import com.inventario.repository.SedeRepository;
 import com.inventario.repository.UsuarioRepository;
+import com.inventario.service.DemoService;
 import com.inventario.service.UsuarioContextService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -36,13 +38,16 @@ public class UsuarioController {
     @Autowired
     private UsuarioContextService usuarioContextService;
 
+    @Autowired
+    private DemoService demoService;
+
     @GetMapping
     public List<UsuarioRespuesta> listar() {
 
         return usuarioRepository
                 .findAll()
                 .stream()
-                .map(UsuarioRespuesta::new)
+                .map(usuario -> new UsuarioRespuesta(usuario, demoService.estadoParaUsuario(usuario)))
                 .toList();
 
     }
@@ -78,8 +83,11 @@ public class UsuarioController {
         usuario.setSede(
                 obtenerSede(solicitud.getSedeId()));
 
+        Usuario guardado = usuarioRepository.save(usuario);
+
         return new UsuarioRespuesta(
-                usuarioRepository.save(usuario));
+                guardado,
+                demoService.estadoParaUsuario(guardado));
 
     }
 
@@ -114,8 +122,52 @@ public class UsuarioController {
         usuario.setSede(obtenerSede(solicitud.getSedeId()));
         usuario.setActivo(activoNuevo);
 
+        Usuario guardado = usuarioRepository.save(usuario);
+
         return new UsuarioRespuesta(
-                usuarioRepository.save(usuario));
+                guardado,
+                demoService.estadoParaUsuario(guardado));
+
+    }
+
+    @PutMapping("/{id}/demo")
+    public UsuarioRespuesta actualizarDemoUsuario(
+            @PathVariable Long id,
+            @RequestBody DemoUsuarioSolicitud solicitud) {
+
+        Usuario usuario = usuarioRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException(
+                        "Usuario no encontrado."));
+
+        if (usuarioContextService.esRolSuperUsuario(usuario.getRol())) {
+            throw new RuntimeException("El SUPER_ADMIN no requiere configuracion demo individual.");
+        }
+
+        if (!Boolean.TRUE.equals(solicitud.getDemoIndividualActiva())) {
+            usuario.setDemoIndividualActiva(null);
+            usuario.setFechaInicioDemoIndividual(null);
+            usuario.setDiasDemoIndividual(null);
+        } else {
+            LocalDate fechaInicio = solicitud.getFechaInicioDemoIndividual() == null
+                    ? LocalDate.now()
+                    : solicitud.getFechaInicioDemoIndividual();
+            Integer diasDemo = solicitud.getDiasDemoIndividual();
+
+            if (diasDemo == null || diasDemo < 1) {
+                throw new RuntimeException("La duracion de la demo individual debe ser mayor a cero.");
+            }
+
+            usuario.setDemoIndividualActiva(true);
+            usuario.setFechaInicioDemoIndividual(fechaInicio);
+            usuario.setDiasDemoIndividual(diasDemo);
+        }
+
+        Usuario guardado = usuarioRepository.save(usuario);
+
+        return new UsuarioRespuesta(
+                guardado,
+                demoService.estadoParaUsuario(guardado));
 
     }
 
@@ -141,8 +193,11 @@ public class UsuarioController {
                 passwordEncoder.encode(
                         solicitud.getPassword()));
 
+        Usuario guardado = usuarioRepository.save(usuario);
+
         return new UsuarioRespuesta(
-                usuarioRepository.save(usuario));
+                guardado,
+                demoService.estadoParaUsuario(guardado));
 
     }
 
@@ -324,6 +379,38 @@ public class UsuarioController {
 
     }
 
+    public static class DemoUsuarioSolicitud {
+
+        private Boolean demoIndividualActiva;
+        private LocalDate fechaInicioDemoIndividual;
+        private Integer diasDemoIndividual;
+
+        public Boolean getDemoIndividualActiva() {
+            return demoIndividualActiva;
+        }
+
+        public void setDemoIndividualActiva(Boolean demoIndividualActiva) {
+            this.demoIndividualActiva = demoIndividualActiva;
+        }
+
+        public LocalDate getFechaInicioDemoIndividual() {
+            return fechaInicioDemoIndividual;
+        }
+
+        public void setFechaInicioDemoIndividual(LocalDate fechaInicioDemoIndividual) {
+            this.fechaInicioDemoIndividual = fechaInicioDemoIndividual;
+        }
+
+        public Integer getDiasDemoIndividual() {
+            return diasDemoIndividual;
+        }
+
+        public void setDiasDemoIndividual(Integer diasDemoIndividual) {
+            this.diasDemoIndividual = diasDemoIndividual;
+        }
+
+    }
+
     public static class UsuarioRespuesta {
 
         private Long id;
@@ -333,8 +420,20 @@ public class UsuarioController {
         private Long sedeId;
         private Boolean activo;
         private String passwordEstado;
+        private Boolean demoIndividualActiva;
+        private LocalDate fechaInicioDemoIndividual;
+        private Integer diasDemoIndividual;
+        private LocalDate demoFechaFinalizacion;
+        private Long demoDiasRestantes;
+        private Boolean demoExpirada;
+        private String demoEstado;
+        private String demoOrigen;
 
         public UsuarioRespuesta(Usuario usuario) {
+            this(usuario, null);
+        }
+
+        public UsuarioRespuesta(Usuario usuario, DemoService.DemoEstado demoEstadoUsuario) {
 
             this.id = usuario.getId();
             this.username = usuario.getUsername();
@@ -347,6 +446,17 @@ public class UsuarioController {
                     : usuario.getSede().getId();
             this.activo = !Boolean.FALSE.equals(usuario.getActivo());
             this.passwordEstado = "Protegida";
+            this.demoIndividualActiva = Boolean.TRUE.equals(usuario.getDemoIndividualActiva());
+            this.fechaInicioDemoIndividual = usuario.getFechaInicioDemoIndividual();
+            this.diasDemoIndividual = usuario.getDiasDemoIndividual();
+
+            if (demoEstadoUsuario != null) {
+                this.demoFechaFinalizacion = demoEstadoUsuario.fechaFinalizacion();
+                this.demoDiasRestantes = demoEstadoUsuario.diasRestantes();
+                this.demoExpirada = demoEstadoUsuario.demoExpirada();
+                this.demoEstado = demoEstadoUsuario.estado();
+                this.demoOrigen = demoEstadoUsuario.origen();
+            }
 
         }
 
@@ -376,6 +486,38 @@ public class UsuarioController {
 
         public String getPasswordEstado() {
             return passwordEstado;
+        }
+
+        public Boolean getDemoIndividualActiva() {
+            return demoIndividualActiva;
+        }
+
+        public LocalDate getFechaInicioDemoIndividual() {
+            return fechaInicioDemoIndividual;
+        }
+
+        public Integer getDiasDemoIndividual() {
+            return diasDemoIndividual;
+        }
+
+        public LocalDate getDemoFechaFinalizacion() {
+            return demoFechaFinalizacion;
+        }
+
+        public Long getDemoDiasRestantes() {
+            return demoDiasRestantes;
+        }
+
+        public Boolean getDemoExpirada() {
+            return demoExpirada;
+        }
+
+        public String getDemoEstado() {
+            return demoEstado;
+        }
+
+        public String getDemoOrigen() {
+            return demoOrigen;
         }
 
     }

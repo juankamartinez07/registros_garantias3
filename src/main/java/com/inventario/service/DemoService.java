@@ -1,6 +1,7 @@
 package com.inventario.service;
 
 import com.inventario.model.ConfiguracionDemo;
+import com.inventario.model.Usuario;
 import com.inventario.repository.ConfiguracionDemoRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,17 +21,41 @@ public class DemoService {
 
     public DemoEstado estadoActual() {
         ConfiguracionDemo configuracion = obtenerConfiguracion();
+        Usuario usuario = usuarioContextService.usuarioActual();
+        return construirEstado(configuracion, usuario);
+    }
+
+    public DemoEstado estadoParaUsuario(Usuario usuario) {
+        ConfiguracionDemo configuracion = obtenerConfiguracion();
+        return construirEstado(configuracion, usuario);
+    }
+
+    private DemoEstado construirEstado(ConfiguracionDemo configuracion, Usuario usuario) {
         LocalDate fechaInicio = configuracion.getFechaInicioDemo() == null
                 ? LocalDate.now()
                 : configuracion.getFechaInicioDemo();
         int diasDemo = configuracion.getDiasDemo() == null || configuracion.getDiasDemo() < 1
                 ? 10
                 : configuracion.getDiasDemo();
+        boolean superAdmin = usuario != null && usuarioContextService.esRolSuperUsuario(usuario.getRol());
+        boolean demoIndividual = false;
+        String origen = "global";
         boolean activa = Boolean.TRUE.equals(configuracion.getDemoActiva());
+
+        if (activa && !superAdmin && usuario != null && Boolean.TRUE.equals(usuario.getDemoIndividualActiva())) {
+            fechaInicio = usuario.getFechaInicioDemoIndividual() == null
+                    ? LocalDate.now()
+                    : usuario.getFechaInicioDemoIndividual();
+            diasDemo = usuario.getDiasDemoIndividual() == null || usuario.getDiasDemoIndividual() < 1
+                    ? 10
+                    : usuario.getDiasDemoIndividual();
+            demoIndividual = true;
+            origen = "individual";
+        }
+
         LocalDate fechaFinalizacion = fechaInicio.plusDays(diasDemo);
         long diasRestantes = ChronoUnit.DAYS.between(LocalDate.now(), fechaFinalizacion);
         boolean expirada = activa && diasRestantes <= 0;
-        boolean superAdmin = usuarioContextService.esSuperUsuario();
         String estado = !activa ? "desactivada" : expirada ? "expirada" : "activa";
 
         return new DemoEstado(
@@ -44,7 +69,9 @@ public class DemoService {
                 estado,
                 superAdmin,
                 activa && !expirada,
-                activa && (superAdmin || !expirada));
+                activa && (superAdmin || !expirada),
+                demoIndividual,
+                origen);
     }
 
     public boolean debeBloquearUsuarioActual() {
@@ -109,6 +136,8 @@ public class DemoService {
             String estado,
             boolean superAdmin,
             boolean mostrarBannerUsuarios,
-            boolean mostrarBanner) {
+            boolean mostrarBanner,
+            boolean demoIndividual,
+            String origen) {
     }
 }

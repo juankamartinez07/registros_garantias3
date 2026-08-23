@@ -69,6 +69,9 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         }
 
         agregarColumnaSiFalta("usuarios", "activo", "alter table usuarios add column activo boolean not null default true");
+        agregarColumnaSiFalta("usuarios", "demo_individual_activa", "alter table usuarios add column demo_individual_activa boolean null");
+        agregarColumnaSiFalta("usuarios", "fecha_inicio_demo_individual", "alter table usuarios add column fecha_inicio_demo_individual date null");
+        agregarColumnaSiFalta("usuarios", "dias_demo_individual", "alter table usuarios add column dias_demo_individual int null");
         jdbcTemplate.execute("update usuarios set rol = 'SUPER_ADMIN' where upper(rol) in ('SUPERUSER', 'SUPERUSUARIO', 'SUPERADMIN', 'ROLE_SUPERUSER', 'ROLE_SUPERADMIN')");
 
         jdbcTemplate.execute(

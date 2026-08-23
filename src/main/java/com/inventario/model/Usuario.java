@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "usuarios")
@@ -34,6 +35,15 @@ public class Usuario {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+
+    @Column(name = "demo_individual_activa")
+    private Boolean demoIndividualActiva;
+
+    @Column(name = "fecha_inicio_demo_individual")
+    private LocalDate fechaInicioDemoIndividual;
+
+    @Column(name = "dias_demo_individual")
+    private Integer diasDemoIndividual;
 
     public Long getId() {
         return id;
@@ -81,6 +91,30 @@ public class Usuario {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
+    }
+
+    public Boolean getDemoIndividualActiva() {
+        return demoIndividualActiva;
+    }
+
+    public void setDemoIndividualActiva(Boolean demoIndividualActiva) {
+        this.demoIndividualActiva = demoIndividualActiva;
+    }
+
+    public LocalDate getFechaInicioDemoIndividual() {
+        return fechaInicioDemoIndividual;
+    }
+
+    public void setFechaInicioDemoIndividual(LocalDate fechaInicioDemoIndividual) {
+        this.fechaInicioDemoIndividual = fechaInicioDemoIndividual;
+    }
+
+    public Integer getDiasDemoIndividual() {
+        return diasDemoIndividual;
+    }
+
+    public void setDiasDemoIndividual(Integer diasDemoIndividual) {
+        this.diasDemoIndividual = diasDemoIndividual;
     }
 
 }

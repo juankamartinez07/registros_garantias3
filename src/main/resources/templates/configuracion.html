@@ -256,6 +256,7 @@
                         <th>Rol</th>
                         <th>Sede</th>
                         <th>Estado</th>
+                        <th>Demo</th>
                         <th>Contraseña</th>
                         <th>Acciones</th>
                     </tr>
@@ -286,6 +287,10 @@
 
         <div id="demoResumen" class="alert alert-info">
             Cargando configuracion de demo...
+        </div>
+
+        <div class="alert alert-secondary">
+            Los usuarios sin demo individual heredan esta configuracion global. Desde la tabla de usuarios puede asignar dias de demo independientes.
         </div>
 
         <div class="row">
@@ -588,6 +593,7 @@
         .then(() => {
             alert("Configuracion demo actualizada.");
             cargarConfiguracionDemo();
+            listarUsuarios();
         })
         .catch(error => alert(error.message));
 
@@ -607,6 +613,7 @@
         .then(() => {
             alert("Demo actualizada.");
             cargarConfiguracionDemo();
+            listarUsuarios();
         })
         .catch(error => alert(error.message));
 
@@ -909,6 +916,147 @@
     // LISTAR USUARIOS
     // =================================
 
+    function leerUsuarioPayload(payload){
+        return JSON.parse(decodeURIComponent(payload));
+    }
+
+    function fechaActualISO(){
+        const fecha = new Date();
+        fecha.setMinutes(fecha.getMinutes() - fecha.getTimezoneOffset());
+        return fecha.toISOString().slice(0, 10);
+    }
+
+    function renderDemoUsuario(u){
+        if((u.rol || "").toUpperCase() === "SUPER_ADMIN"){
+            return `<span class="badge bg-dark">No aplica</span>`;
+        }
+
+        if(u.demoEstado === "desactivada"){
+            return `<span class="badge bg-secondary">Demo desactivada</span>`;
+        }
+
+        const dias = Number(u.demoDiasRestantes || 0);
+        const diasTexto = dias === 1 ? "1 dia" : `${dias} dias`;
+        const origen = u.demoIndividualActiva ? "Individual" : "Global";
+        const badge = u.demoExpirada ? "bg-danger" : (u.demoIndividualActiva ? "bg-info text-dark" : "bg-primary");
+        const estadoTexto = u.demoExpirada ? "expirada" : `quedan ${diasTexto}`;
+        const inicio = u.demoIndividualActiva && u.fechaInicioDemoIndividual
+            ? `<small class="d-block text-muted">Inicio: ${u.fechaInicioDemoIndividual}</small>`
+            : "";
+
+        return `
+            <span class="badge ${badge}">${origen}: ${estadoTexto}</span>
+            ${inicio}
+        `;
+    }
+
+    function asignarDemoUsuario(payload){
+        const usuario = leerUsuarioPayload(payload);
+
+        if((usuario.rol || "").toUpperCase() === "SUPER_ADMIN"){
+            alert("El SUPER_ADMIN no requiere configuracion demo individual.");
+            return;
+        }
+
+        const fecha = prompt(
+            "Fecha de inicio de demo individual (AAAA-MM-DD):",
+            usuario.fechaInicioDemoIndividual || fechaActualISO()
+        );
+
+        if(fecha === null){
+            return;
+        }
+
+        const dias = prompt(
+            "Dias de demo para este usuario:",
+            usuario.diasDemoIndividual || 10
+        );
+
+        if(dias === null){
+            return;
+        }
+
+        const diasNumero = Number(dias);
+
+        if(!diasNumero || diasNumero < 1){
+            alert("La duracion de la demo individual debe ser mayor a cero.");
+            return;
+        }
+
+        actualizarDemoUsuario(usuario.id, {
+            demoIndividualActiva:true,
+            fechaInicioDemoIndividual:fecha,
+            diasDemoIndividual:diasNumero
+        });
+    }
+
+    function reiniciarDemoUsuario(payload){
+        const usuario = leerUsuarioPayload(payload);
+
+        if((usuario.rol || "").toUpperCase() === "SUPER_ADMIN"){
+            alert("El SUPER_ADMIN no requiere configuracion demo individual.");
+            return;
+        }
+
+        const dias = usuario.diasDemoIndividual || 10;
+
+        if(!confirm(`¿Reiniciar la demo individual de ${usuario.username} por ${dias} dias desde hoy?`)){
+            return;
+        }
+
+        actualizarDemoUsuario(usuario.id, {
+            demoIndividualActiva:true,
+            fechaInicioDemoIndividual:fechaActualISO(),
+            diasDemoIndividual:dias
+        });
+    }
+
+    function quitarDemoUsuario(payload){
+        const usuario = leerUsuarioPayload(payload);
+
+        if((usuario.rol || "").toUpperCase() === "SUPER_ADMIN"){
+            alert("El SUPER_ADMIN no requiere configuracion demo individual.");
+            return;
+        }
+
+        if(!usuario.demoIndividualActiva){
+            alert("Este usuario ya esta heredando la demo global.");
+            return;
+        }
+
+        if(!confirm(`¿Quitar la demo individual de ${usuario.username} y dejarlo con la demo global?`)){
+            return;
+        }
+
+        actualizarDemoUsuario(usuario.id, {
+            demoIndividualActiva:false
+        });
+    }
+
+    function actualizarDemoUsuario(id, data){
+        fetch("/usuarios/" + id + "/demo", {
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify(data)
+        })
+        .then(async response => {
+            if(!response.ok){
+                let mensaje = await response.text();
+                throw new Error(mensaje);
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert("Demo individual actualizada.");
+            listarUsuarios();
+        })
+        .catch(error => {
+            alert(error.message || "No se pudo actualizar la demo individual.");
+        });
+    }
+
     function listarUsuarios(){
 
         if(!document.getElementById("listaUsuarios")){
@@ -927,6 +1075,8 @@
 
             data.forEach(u => {
 
+                const usuarioPayload = encodeURIComponent(JSON.stringify(u));
+
                 html += `
 
                     <tr>
@@ -938,6 +1088,7 @@
                                 ${u.activo ? "Activo" : "Inactivo"}
                             </span>
                         </td>
+                        <td>${renderDemoUsuario(u)}</td>
                         <td>
                             <span class="badge bg-secondary">
                                 ${u.passwordEstado || "Protegida"}
@@ -965,6 +1116,30 @@
                                 onclick="cambiarEstadoUsuario(${u.id}, '${(u.username || "").replace(/'/g, "\\'")}', '${(u.rol || "").replace(/'/g, "\\'")}', ${u.sedeId === null || u.sedeId === undefined ? "null" : u.sedeId}, ${u.activo ? "false" : "true"})">
 
                                 ${u.activo ? "Deshabilitar" : "Habilitar"}
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-info btn-sm me-2"
+                                onclick="asignarDemoUsuario('${usuarioPayload}')">
+
+                                Demo
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-dark btn-sm me-2"
+                                onclick="reiniciarDemoUsuario('${usuarioPayload}')">
+
+                                Reiniciar demo
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                onclick="quitarDemoUsuario('${usuarioPayload}')">
+
+                                Heredar demo
 
                             </button>
 
