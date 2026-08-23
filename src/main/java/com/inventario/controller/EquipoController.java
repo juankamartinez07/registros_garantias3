@@ -76,8 +76,10 @@ public class EquipoController {
     }
 
     @GetMapping("/dashboard")
-    public DashboardSeriales dashboard() {
-        return equipoService.obtenerDashboard();
+    public DashboardSeriales dashboard(
+            @RequestParam(required = false) Integer anio,
+            @RequestParam(required = false) Integer mes) {
+        return equipoService.obtenerDashboard(anio, mes);
     }
 
     @GetMapping("/contexto")

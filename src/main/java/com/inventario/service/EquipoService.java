@@ -126,15 +126,27 @@ public class EquipoService {
         return equipoRepository.findBySerialContainingIgnoreCase(filtro, pageable);
     }
 
-    public DashboardSeriales obtenerDashboard() {
+    public DashboardSeriales obtenerDashboard(Integer anio, Integer mes) {
         LocalDate hoy = LocalDate.now();
-        String inicioMes = hoy.withDayOfMonth(1).toString();
-        String finMes = hoy.withDayOfMonth(hoy.lengthOfMonth()).toString();
+        int anioConsulta = anio == null ? hoy.getYear() : anio;
+        int mesConsulta = mes == null ? hoy.getMonthValue() : mes;
+
+        if (anioConsulta < 2000 || anioConsulta > 2100 || mesConsulta < 1 || mesConsulta > 12) {
+            throw new RuntimeException("Seleccione un mes valido para consultar el dashboard.");
+        }
+
+        LocalDate fechaConsulta = LocalDate.of(anioConsulta, mesConsulta, 1);
+        String inicioMes = fechaConsulta.toString();
+        String finMes = fechaConsulta.withDayOfMonth(fechaConsulta.lengthOfMonth()).toString();
 
         return new DashboardSeriales(
                 contarSerialesVisibles(),
                 contarSerialesMesVisibles(inicioMes, finMes),
-                contarObservacionesVisibles()
+                contarObservacionesVisibles(),
+                anioConsulta,
+                mesConsulta,
+                inicioMes,
+                finMes
         );
     }
 
@@ -612,7 +624,14 @@ public class EquipoService {
     private record FilaExcel(int numero, EquipoDTO dto) {
     }
 
-    public record DashboardSeriales(long totalSeriales, long serialesMesActual, long serialesConObservaciones) {
+    public record DashboardSeriales(
+            long totalSeriales,
+            long serialesMesActual,
+            long serialesConObservaciones,
+            int anioConsultado,
+            int mesConsultado,
+            String fechaInicioPeriodo,
+            String fechaFinPeriodo) {
     }
 
     public record ResultadoLote(int total, int registrados, List<String> duplicados) {

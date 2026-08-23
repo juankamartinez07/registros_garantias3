@@ -123,6 +123,39 @@
             line-height:1;
         }
 
+        .dashboard-periodo{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            margin-top:14px;
+            flex-wrap:wrap;
+        }
+
+        .dashboard-periodo input{
+            max-width:155px;
+            min-height:34px;
+            border:1px solid #cbd5e1;
+            border-radius:8px;
+            padding:5px 8px;
+            color:#0f172a;
+            background:#fff;
+        }
+
+        .dashboard-periodo button{
+            min-height:34px;
+            border-radius:8px;
+            padding:5px 10px;
+            border:1px solid #0052d4;
+            color:#0052d4;
+            background:#fff;
+            font-weight:700;
+        }
+
+        .dashboard-periodo button:hover{
+            color:#fff;
+            background:#0052d4;
+        }
+
         .garantias-resumen{
             display:none;
             margin-top:-4px;
@@ -553,8 +586,24 @@
         </div>
 
         <div class="dashboard-card">
-            <span>Seriales registrados este mes</span>
+            <span id="dashboardSerialesMesTitulo">Seriales registrados este mes</span>
             <strong id="dashboardSerialesMes">0</strong>
+            <div class="dashboard-periodo" aria-label="Filtrar seriales registrados por mes">
+                <input
+                    type="month"
+                    id="dashboardMesConsulta"
+                    aria-label="Mes a consultar">
+                <button
+                    type="button"
+                    onclick="cargarDashboard()">
+                    Consultar
+                </button>
+                <button
+                    type="button"
+                    onclick="restablecerMesDashboard()">
+                    Este mes
+                </button>
+            </div>
         </div>
 
         <div
@@ -1178,10 +1227,67 @@ function mostrarToast(mensaje, tipo = "info"){
 
 }
 
+function mesActualDashboard(){
+    const fecha = new Date();
+    fecha.setMinutes(fecha.getMinutes() - fecha.getTimezoneOffset());
+    return fecha.toISOString().slice(0, 7);
+}
+
+function nombreMesDashboard(anio, mes){
+    const fecha = new Date(Number(anio), Number(mes) - 1, 1);
+    return fecha.toLocaleDateString("es-CO", {
+        month:"long",
+        year:"numeric"
+    });
+}
+
+function inicializarMesDashboard(){
+    const input = document.getElementById("dashboardMesConsulta");
+
+    if(input && !input.value){
+        input.value = mesActualDashboard();
+    }
+}
+
+function restablecerMesDashboard(){
+    const input = document.getElementById("dashboardMesConsulta");
+
+    if(input){
+        input.value = mesActualDashboard();
+    }
+
+    cargarDashboard();
+}
+
+function construirUrlDashboard(){
+    const input = document.getElementById("dashboardMesConsulta");
+
+    if(!input || !input.value){
+        return "/equipos/dashboard";
+    }
+
+    const partes = input.value.split("-");
+
+    if(partes.length !== 2){
+        return "/equipos/dashboard";
+    }
+
+    return `/equipos/dashboard?anio=${encodeURIComponent(partes[0])}&mes=${encodeURIComponent(partes[1])}`;
+}
+
 function cargarDashboard(){
 
-    fetch("/equipos/dashboard")
-    .then(response => response.json())
+    inicializarMesDashboard();
+
+    fetch(construirUrlDashboard())
+    .then(response => {
+        if(!response.ok){
+            return response.text().then(texto => {
+                throw new Error(texto || "No se pudieron cargar los indicadores del dashboard.");
+            });
+        }
+        return response.json();
+    })
     .then(data => {
 
         document.getElementById("dashboardTotalSeriales").innerText =
@@ -1190,12 +1296,23 @@ function cargarDashboard(){
         document.getElementById("dashboardSerialesMes").innerText =
             data.serialesMesActual || 0;
 
+        const tituloMes = document.getElementById("dashboardSerialesMesTitulo");
+        const inputMes = document.getElementById("dashboardMesConsulta");
+
+        if(tituloMes && inputMes && inputMes.value){
+            const partes = inputMes.value.split("-");
+            const periodo = nombreMesDashboard(partes[0], partes[1]);
+            tituloMes.innerText = inputMes.value === mesActualDashboard()
+                ? "Seriales registrados este mes"
+                : `Seriales registrados en ${periodo}`;
+        }
+
         document.getElementById("dashboardObservaciones").innerText =
             data.serialesConObservaciones || 0;
 
     })
-    .catch(() => {
-        mostrarToast("No se pudieron cargar los indicadores del dashboard.", "warning");
+    .catch(error => {
+        mostrarToast(error.message || "No se pudieron cargar los indicadores del dashboard.", "warning");
     });
 
 }
