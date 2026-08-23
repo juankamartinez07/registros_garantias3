@@ -12,7 +12,11 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 
     Optional<Equipo> findBySerial(String serial);
 
+    Optional<Equipo> findBySerialIgnoreCase(String serial);
+
     boolean existsBySerial(String serial);
+
+    boolean existsBySerialIgnoreCase(String serial);
 
     Page<Equipo> findBySerialContainingIgnoreCase(String serial, Pageable pageable);
 

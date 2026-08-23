@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/sedes")
@@ -38,6 +39,7 @@ public class SedeController {
     public Sede guardar(
             @RequestBody Sede sede){
 
+        sede.setNombre(mayuscula(sede.getNombre()));
         return repository.save(sede);
 
     }
@@ -57,7 +59,7 @@ public class SedeController {
                 .orElseThrow(() -> new RuntimeException(
                         "Sede no encontrada"));
 
-        existente.setNombre(sede.getNombre());
+        existente.setNombre(mayuscula(sede.getNombre()));
 
         return repository.save(existente);
 
@@ -74,6 +76,14 @@ public class SedeController {
 
         repository.deleteById(id);
 
+    }
+
+    private String mayuscula(String valor) {
+        if (valor == null) {
+            return null;
+        }
+        String limpio = valor.trim();
+        return limpio.isEmpty() ? null : limpio.toUpperCase(Locale.ROOT);
     }
 
 }

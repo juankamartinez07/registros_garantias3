@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/tipos")
@@ -30,7 +31,9 @@ public class TipoProductoController {
 public TipoProducto guardar(
         @RequestBody TipoProducto tipo){
 
-    if(repository.findByNombre(
+    tipo.setNombre(mayuscula(tipo.getNombre()));
+
+    if(repository.findByNombreIgnoreCase(
             tipo.getNombre()
     ).isPresent()){
 
@@ -55,7 +58,7 @@ public TipoProducto actualizar(
             .orElseThrow(() -> new RuntimeException(
                     "Tipo o marca no encontrado"));
 
-    existente.setNombre(tipo.getNombre());
+    existente.setNombre(mayuscula(tipo.getNombre()));
 
     return repository.save(existente);
 
@@ -68,6 +71,14 @@ public void eliminar(
 
     repository.deleteById(id);
 
+}
+
+private String mayuscula(String valor) {
+    if (valor == null) {
+        return null;
+    }
+    String limpio = valor.trim();
+    return limpio.isEmpty() ? null : limpio.toUpperCase(Locale.ROOT);
 }
 
 }

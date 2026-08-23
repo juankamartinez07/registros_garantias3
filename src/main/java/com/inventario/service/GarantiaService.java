@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -163,7 +164,7 @@ public class GarantiaService {
     public Garantia actualizar(Long id, GarantiaDTO dto) {
         validarPuedeGestionarGarantias();
         Garantia garantia = obtener(id);
-        String serialDto = limpiar(dto.getSerial());
+        String serialDto = mayuscula(dto.getSerial());
         if (serialDto != null && !serialDto.equalsIgnoreCase(garantia.getSerial())) {
             throw new RuntimeException("No se permite cambiar el serial de una garantia existente.");
         }
@@ -192,12 +193,12 @@ public class GarantiaService {
     }
 
     private Equipo obtenerEquipoApto(String serial) {
-        String serialLimpio = limpiar(serial);
+        String serialLimpio = mayuscula(serial);
         if (serialLimpio == null) {
             throw new RuntimeException("El serial es obligatorio.");
         }
 
-        Equipo equipo = equipoRepository.findBySerial(serialLimpio)
+        Equipo equipo = equipoRepository.findBySerialIgnoreCase(serialLimpio)
                 .orElseThrow(() -> new RuntimeException("No se puede tramitar garantia de un serial inexistente."));
 
         if (!estaEnGarantia(equipo)) {
@@ -234,7 +235,7 @@ public class GarantiaService {
 
         validarEstados(estadoGeneral, estadoEspecifico);
 
-        String motivoNoAplica = limpiar(dto.getMotivoNoAplicaGarantia());
+        String motivoNoAplica = mayuscula(dto.getMotivoNoAplicaGarantia());
         if (ESTADO_GENERAL_CERRADO.equals(estadoGeneral)
                 && ESTADO_NO_APLICO.equals(estadoEspecifico)
                 && motivoNoAplica == null) {
@@ -252,10 +253,10 @@ public class GarantiaService {
         garantia.setFacturaProveedor(valorBase(dto.getFacturaProveedor(), equipo == null ? null : equipo.getFactura()));
         garantia.setFechaIngresoSerial(dto.getFechaIngresoSerial() != null ? dto.getFechaIngresoSerial() : parseFecha(equipo == null ? null : equipo.getFecha()));
         garantia.setFechaIngresoGarantia(dto.getFechaIngresoGarantia() != null ? dto.getFechaIngresoGarantia() : LocalDate.now());
-        garantia.setMotivosGarantia(limpiar(dto.getMotivosGarantia()));
-        garantia.setNumeroCasoProveedor(limpiar(dto.getNumeroCasoProveedor()));
+        garantia.setMotivosGarantia(mayuscula(dto.getMotivosGarantia()));
+        garantia.setNumeroCasoProveedor(mayuscula(dto.getNumeroCasoProveedor()));
         garantia.setMotivoNoAplicaGarantia(motivoNoAplica);
-        garantia.setObservaciones(limpiar(dto.getObservaciones()));
+        garantia.setObservaciones(mayuscula(dto.getObservaciones()));
         garantia.setEstadoGeneral(estadoGeneral);
         garantia.setEstadoEspecifico(estadoEspecifico);
         garantia.setEstado(estadoEspecifico);
@@ -455,8 +456,13 @@ public class GarantiaService {
     }
 
     private String valorBase(String valorDto, String valorEquipo) {
-        String limpio = limpiar(valorDto);
-        return limpio == null ? limpiar(valorEquipo) : limpio;
+        String limpio = mayuscula(valorDto);
+        return limpio == null ? mayuscula(valorEquipo) : limpio;
+    }
+
+    private String mayuscula(String valor) {
+        String limpio = limpiar(valor);
+        return limpio == null ? null : limpio.toUpperCase(Locale.ROOT);
     }
 
     private String limpiar(String valor) {

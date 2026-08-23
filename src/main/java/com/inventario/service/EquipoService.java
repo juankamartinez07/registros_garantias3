@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -159,7 +160,8 @@ public class EquipoService {
     }
 
     public Equipo buscarPorSerial(String serial) {
-        return equipoRepository.findBySerial(serial).orElse(null);
+        String serialLimpio = limpiar(serial);
+        return serialLimpio == null ? null : equipoRepository.findBySerialIgnoreCase(serialLimpio).orElse(null);
     }
 
     public Equipo obtenerPorId(Long id) {
@@ -176,7 +178,7 @@ public class EquipoService {
             throw new RuntimeException("El serial es obligatorio");
         }
 
-        if (equipoRepository.existsBySerial(serial)) {
+        if (equipoRepository.existsBySerialIgnoreCase(serial)) {
             throw new RuntimeException("Este serial ya ha sido registrado, verifique la información.");
         }
 
@@ -228,7 +230,7 @@ public class EquipoService {
 
         Set<String> existentes = new LinkedHashSet<>();
         for (String serial : serialesUnicos) {
-            if (equipoRepository.existsBySerial(serial)) {
+            if (equipoRepository.existsBySerialIgnoreCase(serial)) {
                 existentes.add(serial);
             }
         }
@@ -270,7 +272,7 @@ public class EquipoService {
         String serial = limpiar(dto.getSerial());
 
         if (serial != null && !serial.equals(equipo.getSerial())) {
-            if (equipoRepository.existsBySerial(serial)) {
+            if (equipoRepository.existsBySerialIgnoreCase(serial)) {
                 throw new RuntimeException("Este serial ya ha sido registrado, verifique la información.");
             }
             equipo.setSerial(serial);
@@ -431,7 +433,7 @@ public class EquipoService {
         for (FilaExcel fila : filas) {
             try {
                 String serial = limpiar(fila.dto().getSerial());
-                if (serial != null && equipoRepository.existsBySerial(serial)) {
+                if (serial != null && equipoRepository.existsBySerialIgnoreCase(serial)) {
                     duplicados.add(serial);
                     continue;
                 }
@@ -557,7 +559,7 @@ public class EquipoService {
             return null;
         }
 
-        return tipoProductoRepository.findByNombre(valor)
+        return tipoProductoRepository.findByNombreIgnoreCase(valor)
                 .orElseThrow(() -> new RuntimeException("El tipo o marca no existe: " + valor));
     }
 
@@ -567,7 +569,7 @@ public class EquipoService {
             return null;
         }
 
-        return proveedorRepository.findByNombre(valor)
+        return proveedorRepository.findByNombreIgnoreCase(valor)
                 .orElseThrow(() -> new RuntimeException("El proveedor no existe: " + valor));
     }
 
@@ -577,10 +579,15 @@ public class EquipoService {
             return null;
         }
 
-        return productoRepository.findByNombre(valor)
+        return productoRepository.findByNombreIgnoreCase(valor)
                 .map(producto -> {
                     if (producto.getTipo() == null && tipo != null) {
+                        producto.setNombre(valor);
                         producto.setTipo(tipo);
+                        return productoRepository.save(producto);
+                    }
+                    if (!valor.equals(producto.getNombre())) {
+                        producto.setNombre(valor);
                         return productoRepository.save(producto);
                     }
                     return producto;
@@ -614,7 +621,7 @@ public class EquipoService {
             return null;
         }
         String limpio = valor.trim();
-        return limpio.isEmpty() ? null : limpio;
+        return limpio.isEmpty() ? null : limpio.toUpperCase(Locale.ROOT);
     }
 
     private String valor(String valor) {
