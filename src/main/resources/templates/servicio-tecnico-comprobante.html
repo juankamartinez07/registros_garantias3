@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprobante de garantia</title>
+    <title>Comprobante de servicio tecnico</title>
 
     <style>
         *{
@@ -72,15 +72,11 @@
             box-shadow:0 18px 48px rgba(15,23,42,0.18);
         }
 
-        .encabezado{
+        .encabezado,
+        .titulo,
+        .pie{
             text-align:center;
             font-weight:700;
-        }
-
-        .titulo{
-            text-align:center;
-            font-weight:700;
-            margin:8px 0;
         }
 
         .linea{
@@ -110,8 +106,6 @@
         }
 
         .pie{
-            text-align:center;
-            font-weight:700;
             margin-top:7px;
         }
 
@@ -153,7 +147,7 @@
 <body>
     <div class="acciones no-print">
         <button type="button" class="principal" onclick="window.print()">Imprimir</button>
-        <a href="/garantias">Volver</a>
+        <a href="/servicio-tecnico">Volver</a>
     </div>
 
     <div class="nota no-print">
@@ -168,13 +162,31 @@
 
         <div class="linea"></div>
 
-        <div class="titulo">COMPROBANTE DE GARANTIA</div>
+        <div class="titulo">
+            <div>COMPROBANTE DE INGRESO</div>
+            <div>SERVICIO TÉCNICO</div>
+        </div>
 
         <div class="linea"></div>
 
         <div class="campo">
-            <span class="campo-label">Fecha ingreso equipo:</span>
-            <span class="campo-valor" th:text="${fechaIngresoEquipo}">No registrado</span>
+            <span class="campo-label">Fecha ingreso:</span>
+            <span class="campo-valor" th:text="${fechaIngreso}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">No. ticket:</span>
+            <span class="campo-valor" th:text="${ticket}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">Cliente:</span>
+            <span class="campo-valor" th:text="${cliente}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">Teléfono:</span>
+            <span class="campo-valor" th:text="${telefono}">No registrado</span>
         </div>
 
         <div class="campo">
@@ -183,13 +195,18 @@
         </div>
 
         <div class="campo">
-            <span class="campo-label">No. ticket:</span>
-            <span class="campo-valor" th:text="${numeroTicket}">No registrado</span>
+            <span class="campo-label">Equipo:</span>
+            <span class="campo-valor" th:text="${productoReferencia}">No registrado</span>
         </div>
 
         <div class="campo">
-            <span class="campo-label">Motivos de garantia:</span>
-            <span class="campo-valor" th:text="${motivosGarantia}">No registrado</span>
+            <span class="campo-label">Motivo revisión:</span>
+            <span class="campo-valor" th:text="${motivoRevision}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">Estado físico:</span>
+            <span class="campo-valor" th:text="${estadoFisico}">No registrado</span>
         </div>
 
         <div class="campo">
@@ -204,7 +221,11 @@
 
         <div class="linea"></div>
 
-        <div class="pie">Conserve este comprobante.</div>
+        <div class="pie">
+            <div>Este comprobante certifica la recepción</div>
+            <div>del equipo para revisión técnica.</div>
+            <div>No representa aprobación de garantía.</div>
+        </div>
     </main>
 </body>
 

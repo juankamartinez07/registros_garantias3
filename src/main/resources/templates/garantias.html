@@ -344,12 +344,6 @@
             <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-outline-secondary" onclick="limpiarFormulario()">Limpiar</button>
                 <button class="btn btn-success">Guardar garantia</button>
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                    data-accion="guardar-imprimir">
-                    Guardar e imprimir
-                </button>
             </div>
         </form>
     </div>
@@ -492,15 +486,7 @@
                 <h3 class="h5 mb-1">Detalles de garantia</h3>
                 <div id="detalleTitulo" class="text-muted"></div>
             </div>
-            <div class="d-flex gap-2 flex-wrap">
-                <a
-                    id="detalleImprimir"
-                    href="#"
-                    class="btn btn-primary btn-sm">
-                    Imprimir
-                </a>
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
-            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
         </div>
         <div id="contenidoDetalles" class="modal-detalles-cuerpo"></div>
     </div>
@@ -842,8 +828,6 @@ function datosFormulario(){
 function guardarGarantia(event){
     event.preventDefault();
 
-    const accion =
-        event.submitter?.dataset?.accion || "guardar";
     const datos = datosFormulario();
 
     if(datos.estadoGeneral === "Cerrado"
@@ -869,12 +853,7 @@ function guardarGarantia(event){
             }
             return response.json();
         })
-        .then(garantia => {
-            if(accion === "guardar-imprimir"){
-                window.location.href = `/garantias/${garantia.id}/comprobante`;
-                return;
-            }
-
+        .then(() => {
             mostrarToast("Garantia guardada correctamente.", "success");
             limpiarFormulario();
             cargarDashboardGarantiasModulo();
@@ -905,7 +884,6 @@ function mostrarDetalles(id){
             const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
             const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "");
             document.getElementById("detalleTitulo").innerText = `Ticket ${g.numeroTicket || ""} - Serial ${g.serial || ""}`;
-            document.getElementById("detalleImprimir").href = `/garantias/${g.id}/comprobante`;
             document.getElementById("contenidoDetalles").innerHTML = `
                 <div class="detalle-grid">
                     ${detalleItem("Numero de ticket", g.numeroTicket)}
@@ -1034,7 +1012,6 @@ function listarGarantias(){
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
                                     <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${g.id})">Detalles</button>
-                                    <a class="btn btn-primary btn-sm" href="/garantias/${g.id}/comprobante">Imprimir</a>
                                     <button class="btn btn-warning btn-sm" onclick="editarGarantia(${g.id})">Editar</button>
                                     ${botonEliminar}
                                 </div>
