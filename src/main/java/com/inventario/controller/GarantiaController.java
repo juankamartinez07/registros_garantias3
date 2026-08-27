@@ -4,6 +4,7 @@ import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.model.Garantia;
 import com.inventario.service.GarantiaService;
+import org.springframework.ui.Model;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,9 +23,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @Controller
 @RequestMapping("/garantias")
 public class GarantiaController {
+
+    private static final DateTimeFormatter FORMATO_FECHA_COMPROBANTE =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final GarantiaService garantiaService;
 
@@ -35,6 +42,22 @@ public class GarantiaController {
     @GetMapping
     public String vista() {
         return "garantias";
+    }
+
+    @GetMapping("/{id}/comprobante")
+    public String comprobante(
+            @PathVariable Long id,
+            Model model) {
+
+        Garantia garantia = garantiaService.obtener(id);
+
+        model.addAttribute("fechaIngresoEquipo", fechaComprobante(garantia.getFechaIngresoGarantia()));
+        model.addAttribute("serial", valorComprobante(garantia.getSerial()));
+        model.addAttribute("numeroTicket", valorComprobante(garantia.getNumeroTicket()));
+        model.addAttribute("motivosGarantia", valorComprobante(garantia.getMotivosGarantia()));
+        model.addAttribute("observaciones", valorComprobante(garantia.getObservaciones()));
+
+        return "garantia-comprobante";
     }
 
     @GetMapping("/api")
@@ -99,5 +122,16 @@ public class GarantiaController {
     @ResponseBody
     public String manejarError(RuntimeException exception) {
         return exception.getMessage();
+    }
+
+    private String fechaComprobante(LocalDate fecha) {
+        return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private String valorComprobante(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return "No registrado";
+        }
+        return valor.trim();
     }
 }

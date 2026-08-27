@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de garantia</title>
+
+    <style>
+        *{
+            box-sizing:border-box;
+        }
+
+        body{
+            margin:0;
+            min-height:100vh;
+            background:#f1f5f9;
+            color:#000;
+            font-family:Arial, sans-serif;
+        }
+
+        .acciones{
+            display:flex;
+            justify-content:center;
+            gap:10px;
+            padding:18px;
+            flex-wrap:wrap;
+        }
+
+        .acciones button,
+        .acciones a{
+            border:1px solid #0f172a;
+            border-radius:8px;
+            padding:10px 14px;
+            color:#0f172a;
+            background:#fff;
+            font-family:Arial, sans-serif;
+            font-size:14px;
+            font-weight:700;
+            text-decoration:none;
+            cursor:pointer;
+        }
+
+        .acciones .principal{
+            color:#fff;
+            background:#0052d4;
+            border-color:#0052d4;
+        }
+
+        .nota{
+            width:min(80mm, calc(100vw - 24px));
+            margin:0 auto 12px;
+            padding:10px 12px;
+            border:1px solid #cbd5e1;
+            border-radius:8px;
+            background:#fff;
+            color:#334155;
+            font-size:13px;
+            text-align:center;
+        }
+
+        .tirilla{
+            width:80mm;
+            max-width:100%;
+            margin:0 auto 28px;
+            padding:3mm;
+            background:#fff;
+            color:#000;
+            font-family:Arial, sans-serif;
+            font-size:11px;
+            line-height:1.28;
+            box-shadow:0 18px 48px rgba(15,23,42,0.18);
+        }
+
+        .encabezado{
+            text-align:center;
+            font-weight:700;
+        }
+
+        .titulo{
+            text-align:center;
+            font-weight:700;
+            margin:8px 0;
+        }
+
+        .linea{
+            margin:7px 0;
+            border-top:1px dashed #000;
+        }
+
+        .campo{
+            margin:8px 0;
+        }
+
+        .campo-label{
+            display:block;
+            font-weight:700;
+            margin-bottom:2px;
+        }
+
+        .campo-valor{
+            display:block;
+            white-space:pre-wrap;
+            overflow-wrap:anywhere;
+        }
+
+        .firma{
+            margin-top:14px;
+            font-weight:700;
+        }
+
+        .pie{
+            text-align:center;
+            font-weight:700;
+            margin-top:7px;
+        }
+
+        @media print{
+            @page{
+                size:80mm auto;
+                margin:3mm;
+            }
+
+            html,
+            body{
+                width:80mm;
+                min-height:0;
+                margin:0;
+                padding:0;
+                background:#fff;
+            }
+
+            body{
+                font-family:Arial, sans-serif;
+                font-size:11px;
+                color:#000;
+            }
+
+            .no-print{
+                display:none !important;
+            }
+
+            .tirilla{
+                width:80mm;
+                margin:0;
+                padding:0;
+                box-shadow:none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="acciones no-print">
+        <button type="button" class="principal" onclick="window.print()">Imprimir</button>
+        <a href="/garantias">Volver</a>
+    </div>
+
+    <div class="nota no-print">
+        Imprima una copia para el cliente y una copia para el equipo.
+    </div>
+
+    <main class="tirilla">
+        <div class="encabezado">
+            <div>SMD SEGURIDAD ARMENIA</div>
+            <div>318 0974067</div>
+        </div>
+
+        <div class="linea"></div>
+
+        <div class="titulo">COMPROBANTE DE GARANTIA</div>
+
+        <div class="linea"></div>
+
+        <div class="campo">
+            <span class="campo-label">Fecha ingreso equipo:</span>
+            <span class="campo-valor" th:text="${fechaIngresoEquipo}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">Serial:</span>
+            <span class="campo-valor" th:text="${serial}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">No. ticket:</span>
+            <span class="campo-valor" th:text="${numeroTicket}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">Motivos de garantia:</span>
+            <span class="campo-valor" th:text="${motivosGarantia}">No registrado</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-label">Observaciones:</span>
+            <span class="campo-valor" th:text="${observaciones}">No registrado</span>
+        </div>
+
+        <div class="linea"></div>
+
+        <div class="firma">Firma recibe: _______________</div>
+        <div class="firma">Firma cliente: _______________</div>
+
+        <div class="linea"></div>
+
+        <div class="pie">Conserve este comprobante.</div>
+    </main>
+</body>
+
+</html>
