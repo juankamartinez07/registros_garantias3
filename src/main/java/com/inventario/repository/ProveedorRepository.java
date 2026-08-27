@@ -6,4 +6,6 @@ import com.inventario.model.Proveedor;
 
 public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
     Optional<Proveedor> findByNombre(String nombre);
+
+    Optional<Proveedor> findByNombreIgnoreCase(String nombre);
 }

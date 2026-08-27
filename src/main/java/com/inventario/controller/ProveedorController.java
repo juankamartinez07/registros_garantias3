@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/proveedores")
@@ -30,6 +31,7 @@ public class ProveedorController {
     public Proveedor guardar(
             @RequestBody Proveedor proveedor){
 
+        proveedor.setNombre(mayuscula(proveedor.getNombre()));
         return repository.save(proveedor);
 
     }
@@ -45,7 +47,7 @@ public class ProveedorController {
                 .orElseThrow(() -> new RuntimeException(
                         "Proveedor no encontrado"));
 
-        existente.setNombre(proveedor.getNombre());
+        existente.setNombre(mayuscula(proveedor.getNombre()));
 
         return repository.save(existente);
 
@@ -58,6 +60,14 @@ public class ProveedorController {
 
         repository.deleteById(id);
 
+    }
+
+    private String mayuscula(String valor) {
+        if (valor == null) {
+            return null;
+        }
+        String limpio = valor.trim();
+        return limpio.isEmpty() ? null : limpio.toUpperCase(Locale.ROOT);
     }
 
 }

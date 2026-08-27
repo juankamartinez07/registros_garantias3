@@ -1,8 +1,10 @@
 package com.inventario.controller;
 
+import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.model.Garantia;
 import com.inventario.service.GarantiaService;
+import org.springframework.ui.Model;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,9 +23,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @Controller
 @RequestMapping("/garantias")
 public class GarantiaController {
+
+    private static final DateTimeFormatter FORMATO_FECHA_COMPROBANTE =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final GarantiaService garantiaService;
 
@@ -35,11 +44,30 @@ public class GarantiaController {
         return "garantias";
     }
 
+    @GetMapping("/{id}/comprobante")
+    public String comprobante(
+            @PathVariable Long id,
+            Model model) {
+
+        Garantia garantia = garantiaService.obtener(id);
+
+        model.addAttribute("fechaIngresoEquipo", fechaComprobante(garantia.getFechaIngresoGarantia()));
+        model.addAttribute("serial", valorComprobante(garantia.getSerial()));
+        model.addAttribute("numeroTicket", valorComprobante(garantia.getNumeroTicket()));
+        model.addAttribute("motivosGarantia", valorComprobante(garantia.getMotivosGarantia()));
+        model.addAttribute("observaciones", valorComprobante(garantia.getObservaciones()));
+
+        return "garantia-comprobante";
+    }
+
     @GetMapping("/api")
     @ResponseBody
     public Page<Garantia> listar(
             @RequestParam(required = false) String serial,
             @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String estadoGeneral,
+            @RequestParam(required = false) String estadoEspecifico,
+            @RequestParam(required = false) String filtro,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -48,7 +76,13 @@ public class GarantiaController {
                 Math.min(Math.max(size, 10), 50),
                 Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
 
-        return garantiaService.listar(serial, estado, pageable);
+        return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
+    }
+
+    @GetMapping("/api/dashboard")
+    @ResponseBody
+    public DashboardGarantias dashboard() {
+        return garantiaService.dashboard();
     }
 
     @GetMapping("/api/preparar")
@@ -77,10 +111,27 @@ public class GarantiaController {
         return garantiaService.actualizar(id, dto);
     }
 
+    @DeleteMapping("/api/{id}")
+    @ResponseBody
+    public void eliminar(@PathVariable Long id) {
+        garantiaService.eliminar(id);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
     public String manejarError(RuntimeException exception) {
         return exception.getMessage();
+    }
+
+    private String fechaComprobante(LocalDate fecha) {
+        return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private String valorComprobante(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return "No registrado";
+        }
+        return valor.trim();
     }
 }

@@ -6,6 +6,9 @@ public class GarantiaDTO {
 
     private Long id;
     private Long equipoId;
+    private String numeroTicket;
+    private String estadoGeneral;
+    private String estadoEspecifico;
     private String sede;
     private String referenciaProducto;
     private String serial;
@@ -17,6 +20,7 @@ public class GarantiaDTO {
     private String motivosGarantia;
     private String numeroCasoProveedor;
     private String motivoNoAplicaGarantia;
+    private String observaciones;
 
     public Long getId() {
         return id;
@@ -32,6 +36,30 @@ public class GarantiaDTO {
 
     public void setEquipoId(Long equipoId) {
         this.equipoId = equipoId;
+    }
+
+    public String getNumeroTicket() {
+        return numeroTicket;
+    }
+
+    public void setNumeroTicket(String numeroTicket) {
+        this.numeroTicket = numeroTicket;
+    }
+
+    public String getEstadoGeneral() {
+        return estadoGeneral;
+    }
+
+    public void setEstadoGeneral(String estadoGeneral) {
+        this.estadoGeneral = estadoGeneral;
+    }
+
+    public String getEstadoEspecifico() {
+        return estadoEspecifico;
+    }
+
+    public void setEstadoEspecifico(String estadoEspecifico) {
+        this.estadoEspecifico = estadoEspecifico;
     }
 
     public String getSede() {
@@ -120,5 +148,13 @@ public class GarantiaDTO {
 
     public void setMotivoNoAplicaGarantia(String motivoNoAplicaGarantia) {
         this.motivoNoAplicaGarantia = motivoNoAplicaGarantia;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 }

@@ -6,4 +6,6 @@ import com.inventario.model.Producto;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
     Optional<Producto> findByNombre(String nombre);
+
+    Optional<Producto> findByNombreIgnoreCase(String nombre);
 }

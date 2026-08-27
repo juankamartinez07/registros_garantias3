@@ -5,19 +5,13 @@
         xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
-<head>  
+<head>
 
     <meta charset="UTF-8">
-<div class="alert alert-primary">
-
-    Bienvenidos:
-
-    <strong sec:authentication="name"></strong>
-
-</div>
     <title>Sistema Inventario</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/js/sistema-ui.js" defer></script>
 
     <style>
 
@@ -53,9 +47,77 @@
 
         .titulo{
             font-weight:bold;
-        
+
             color:white;
             text-shadow:0 2px 8px rgba(0,0,0,0.45);
+        }
+
+        .usuario-bienvenida{
+            display:grid;
+            grid-template-columns:minmax(0, 1fr) minmax(260px, auto) minmax(0, 1fr);
+            align-items:center;
+            gap:16px;
+            padding:14px 18px;
+            margin-bottom:18px;
+            border-radius:12px;
+            background:rgba(255,255,255,0.9);
+            border:1px solid rgba(219,234,254,0.72);
+            box-shadow:0 14px 32px rgba(2,6,23,0.22);
+            color:#0f172a;
+            font-weight:700;
+        }
+
+        .usuario-identidad{
+            grid-column:1;
+            min-width:0;
+        }
+
+        .usuario-demo{
+            grid-column:2;
+            justify-self:center;
+            max-width:100%;
+            padding:8px 14px;
+            border-radius:10px;
+            text-align:center;
+            font-weight:800;
+        }
+
+        .usuario-demo.alert-warning{
+            color:#7c4a03;
+            background:#fff3cd;
+            border:1px solid #ffe69c;
+        }
+
+        .usuario-demo.alert-info{
+            color:#075985;
+            background:#e0f2fe;
+            border:1px solid #bae6fd;
+        }
+
+        .usuario-bienvenida strong{
+            color:#002b73;
+            font-weight:900;
+        }
+
+        .usuario-sede{
+            grid-column:3;
+            color:#334155;
+            text-align:right;
+        }
+
+        @media(max-width:700px){
+            .usuario-bienvenida{
+                align-items:flex-start;
+                grid-template-columns:1fr;
+            }
+
+            .usuario-identidad,
+            .usuario-demo,
+            .usuario-sede{
+                grid-column:1;
+                text-align:left;
+                justify-self:stretch;
+            }
         }
 
         .seccion{
@@ -87,6 +149,60 @@
             display:grid;
             grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
             gap:16px;
+        }
+
+        .dashboard-colapsable{
+            margin-bottom:24px;
+            padding:18px;
+            border-radius:14px;
+            background:rgba(255,255,255,0.9);
+            border:1px solid rgba(255,255,255,0.44);
+            box-shadow:0 16px 36px rgba(2,6,23,0.22);
+        }
+
+        .dashboard-colapsable-cabecera{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:14px;
+        }
+
+        .dashboard-colapsable-cabecera h3{
+            margin:0;
+            color:#002b73;
+            font-size:20px;
+            font-weight:900;
+        }
+
+        .dashboard-toggle{
+            border:0;
+            padding:0;
+            background:transparent;
+            color:#0052d4;
+            font-weight:900;
+            white-space:nowrap;
+        }
+
+        .dashboard-toggle:hover{
+            color:#003c9e;
+            text-decoration:underline;
+        }
+
+        .dashboard-contenido{
+            overflow:hidden;
+            max-height:1300px;
+            opacity:1;
+            transform:translateY(0);
+            transition:max-height 220ms ease, opacity 180ms ease, transform 180ms ease, margin-top 180ms ease;
+            margin-top:16px;
+        }
+
+        .dashboard-colapsable.cerrado .dashboard-contenido{
+            max-height:0;
+            opacity:0;
+            transform:translateY(-6px);
+            margin-top:0;
+            pointer-events:none;
         }
 
         .dashboard-card{
@@ -123,6 +239,121 @@
             line-height:1;
         }
 
+        .dashboard-periodo{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            margin-top:14px;
+            flex-wrap:wrap;
+        }
+
+        .dashboard-periodo input{
+            max-width:155px;
+            min-height:34px;
+            border:1px solid #cbd5e1;
+            border-radius:8px;
+            padding:5px 8px;
+            color:#0f172a;
+            background:#fff;
+        }
+
+        .dashboard-periodo button{
+            min-height:34px;
+            border-radius:8px;
+            padding:5px 10px;
+            border:1px solid #0052d4;
+            color:#0052d4;
+            background:#fff;
+            font-weight:700;
+        }
+
+        .dashboard-periodo button:hover{
+            color:#fff;
+            background:#0052d4;
+        }
+
+        .garantias-resumen{
+            margin-top:-4px;
+            margin-bottom:24px;
+            padding:18px;
+            border-radius:14px;
+            background:rgba(15,23,42,0.76);
+            border:1px solid rgba(148,163,184,0.34);
+            box-shadow:0 18px 42px rgba(2,6,23,0.28);
+        }
+
+        .garantias-resumen h3{
+            color:#e5eefb;
+        }
+
+        .garantias-resumen .dashboard-toggle{
+            color:#bfdbfe;
+        }
+
+        .garantias-resumen .dashboard-toggle:hover{
+            color:#ffffff;
+        }
+
+        .garantias-resumen-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+            gap:14px;
+        }
+
+        .garantia-resumen-card{
+            width:100%;
+            border:1px solid rgba(219,234,254,0.22);
+            border-radius:12px;
+            padding:18px;
+            text-align:left;
+            background:#17324d;
+            color:#f8fafc;
+            box-shadow:0 12px 28px rgba(2,6,23,0.22);
+            transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .garantia-resumen-card:hover{
+            transform:translateY(-2px);
+            border-color:#93c5fd;
+            box-shadow:0 16px 34px rgba(37,99,235,0.24);
+        }
+
+        .garantia-resumen-card span{
+            display:block;
+            color:#cbd5e1;
+            font-weight:800;
+            margin-bottom:8px;
+        }
+
+        .garantia-resumen-card strong{
+            display:block;
+            font-size:34px;
+            line-height:1;
+        }
+
+        .garantia-resumen-card small{
+            display:block;
+            margin-top:8px;
+            color:#dbeafe;
+            font-weight:700;
+        }
+
+        .garantia-resumen-card.cerradas{
+            background:#26384f;
+        }
+
+        .garantia-resumen-card.tiempo-normal{
+            background:#166047;
+        }
+
+        .garantia-resumen-card.tiempo-seguimiento{
+            background:#1e4f8a;
+        }
+
+        .garantia-resumen-card.tiempo-critico{
+            background:#8b1e2d;
+        }
+
         .paginacion-tabla{
             display:flex;
             align-items:center;
@@ -140,16 +371,52 @@
 
         .toast-sistema{
             position:fixed;
-            right:24px;
-            top:24px;
-            z-index:1100;
-            min-width:280px;
-            max-width:min(460px, calc(100vw - 48px));
-            display:none;
+            left:50%;
+            top:50%;
+            z-index:11000;
+            width:min(560px, calc(100vw - 32px));
+            min-height:86px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            padding:22px 26px;
+            border-radius:16px;
+            border-width:2px;
+            font-size:20px;
+            font-weight:900;
+            line-height:1.35;
+            pointer-events:none;
+            opacity:0;
+            visibility:hidden;
+            transform:translate(-50%, -44%) scale(0.96);
+            transition:opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+            box-shadow:0 26px 72px rgba(2,6,23,0.38);
         }
 
         .toast-sistema.visible{
-            display:block;
+            opacity:1;
+            visibility:visible;
+            transform:translate(-50%, -50%) scale(1);
+        }
+
+        .toast-sistema::before{
+            content:"";
+            flex:0 0 12px;
+            width:12px;
+            height:12px;
+            margin-right:12px;
+            border-radius:50%;
+            background:currentColor;
+            box-shadow:0 0 0 6px rgba(255,255,255,0.45);
+        }
+
+        @media(max-width:700px){
+            .toast-sistema{
+                font-size:17px;
+                min-height:74px;
+                padding:18px 20px;
+            }
         }
 
         .btn-success{
@@ -225,7 +492,7 @@
             display:none;
             position:fixed;
             inset:0;
-            z-index:1000;
+            z-index:10040;
             align-items:center;
             justify-content:center;
             padding:22px;
@@ -406,9 +673,35 @@
 
 <div class="container mt-4 mb-5">
 
+    <div class="usuario-bienvenida">
+        <div class="usuario-identidad">
+            Bienvenido:
+            <strong sec:authentication="name"></strong>
+        </div>
+
+        <div
+            th:if="${demoEstado != null and demoEstado.mostrarBanner}"
+            class="usuario-demo"
+            th:classappend="${demoEstado.superAdmin} ? ' alert-info' : ' alert-warning'"
+            th:text="${demoEstado.superAdmin ? (demoEstado.demoExpirada ? 'Modo demo expirado para usuarios.' : 'Modo demo activo: quedan ' + demoEstado.diasRestantes + ' dias.') : (demoEstado.diasRestantes == 1 ? 'Prueba demo activa: queda 1 dia de uso.' : 'Prueba demo activa: quedan ' + demoEstado.diasRestantes + ' dias de uso.')}">
+        </div>
+
+        <div
+            id="usuarioSedeActual"
+            class="usuario-sede">
+            Sede: Cargando...
+        </div>
+    </div>
+
     <div
         id="permisoEliminarEquipos"
         sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')"
+        style="display:none;">
+    </div>
+
+    <div
+        id="permisoTramitarGarantias"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
         style="display:none;">
     </div>
 
@@ -435,6 +728,7 @@
 </div>
 
         <a href="/garantias"
+           sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
            class="btn btn-primary me-2">
 
             Garantias en tramite
@@ -453,30 +747,111 @@
 
 
     <!-- DASHBOARD -->
-    <div class="dashboard-grid mb-4">
-
-        <div class="dashboard-card">
-            <span>Total de seriales registrados</span>
-            <strong id="dashboardTotalSeriales">0</strong>
+    <section
+        id="dashboardSeriales"
+        class="dashboard-colapsable"
+        data-dashboard-key="inicio.dashboard.seriales">
+        <div class="dashboard-colapsable-cabecera">
+            <h3>Resumen de seriales</h3>
+            <button
+                type="button"
+                class="dashboard-toggle"
+                onclick="alternarDashboard('dashboardSeriales')">
+                Ocultar ▴
+            </button>
         </div>
 
-        <div class="dashboard-card">
-            <span>Seriales registrados este mes</span>
-            <strong id="dashboardSerialesMes">0</strong>
+        <div class="dashboard-contenido">
+            <div class="dashboard-grid">
+
+                <div class="dashboard-card">
+                    <span>Total de seriales registrados</span>
+                    <strong id="dashboardTotalSeriales">0</strong>
+                </div>
+
+                <div class="dashboard-card">
+                    <span id="dashboardSerialesMesTitulo">Seriales registrados este mes</span>
+                    <strong id="dashboardSerialesMes">0</strong>
+                    <div class="dashboard-periodo" aria-label="Filtrar seriales registrados por mes">
+                        <input
+                            type="month"
+                            id="dashboardMesConsulta"
+                            aria-label="Mes a consultar">
+                        <button
+                            type="button"
+                            onclick="cargarDashboard()">
+                            Consultar
+                        </button>
+                        <button
+                            type="button"
+                            onclick="restablecerMesDashboard()">
+                            Este mes
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    id="tarjetaObservaciones"
+                    class="dashboard-card"
+                    role="button"
+                    tabindex="0"
+                    onclick="filtrarConObservaciones()"
+                    onkeydown="activarTarjetaObservaciones(event)">
+                    <span>Seriales con observaciones</span>
+                    <strong id="dashboardObservaciones">0</strong>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section
+        id="resumenGarantias"
+        class="dashboard-colapsable garantias-resumen"
+        data-dashboard-key="inicio.dashboard.garantias"
+        sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')">
+        <div class="dashboard-colapsable-cabecera">
+            <h3>Garantias</h3>
+            <button
+                type="button"
+                class="dashboard-toggle"
+                onclick="alternarDashboard('resumenGarantias')">
+                Ocultar ▴
+            </button>
         </div>
 
-        <div
-            id="tarjetaObservaciones"
-            class="dashboard-card"
-            role="button"
-            tabindex="0"
-            onclick="filtrarConObservaciones()"
-            onkeydown="activarTarjetaObservaciones(event)">
-            <span>Seriales con observaciones</span>
-            <strong id="dashboardObservaciones">0</strong>
-        </div>
+        <div class="dashboard-contenido">
+            <div class="garantias-resumen-grid">
+            <button
+                type="button"
+                class="garantia-resumen-card"
+                onclick="abrirGarantiasDashboard('/garantias?estadoGeneral=ABIERTO')">
+                <span>Casos abiertos</span>
+                <strong id="resumenGarantiasAbiertas">0</strong>
+                <small>Ver garantias abiertas</small>
+            </button>
 
-    </div>
+            <button
+                type="button"
+                class="garantia-resumen-card cerradas"
+                onclick="abrirGarantiasDashboard('/garantias?estadoGeneral=CERRADO')">
+                <span>Casos cerrados</span>
+                <strong id="resumenGarantiasCerradas">0</strong>
+                <small>Ver garantias cerradas</small>
+            </button>
+
+            <button
+                type="button"
+                id="resumenGarantiasTiempoCard"
+                class="garantia-resumen-card tiempo-normal"
+                onclick="abrirGarantiasDashboard('/garantias?filtro=tiempoAbiertas')">
+                <span id="resumenGarantiasTiempoTexto">Casos abiertos en tiempo normal</span>
+                <strong id="resumenGarantiasTiempoDias">0</strong>
+                <small>Maximo dias abierto</small>
+            </button>
+            </div>
+        </div>
+    </section>
 
 
     <!-- BUSCAR -->
@@ -787,21 +1162,6 @@
 
                     </button>
 
-                    <input
-                        type="file"
-                        id="archivoExcel"
-                        accept=".xlsx"
-                        style="display:none;"
-                        onchange="subirExcel()">
-
-                    <button
-                        class="btn btn-outline-success"
-                        onclick="document.getElementById('archivoExcel').click()">
-
-                        Subir Excel
-
-                    </button>
-
                 </div>
 
             </div>
@@ -855,7 +1215,10 @@
 
 <div
     id="toastSistema"
-    class="toast-sistema alert alert-info shadow">
+    class="toast-sistema alert alert-info shadow"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true">
 </div>
 
 <div
@@ -997,11 +1360,101 @@ let totalPaginasEquipos = 0;
 let paginaObservaciones = 0;
 let totalPaginasObservaciones = 0;
 let temporizadorToast = null;
+let contextoUsuarioActual = {
+    superUsuario:false,
+    sedeNombre:null
+};
 
 function puedeEliminarEquipos(){
 
     return document
         .getElementById("permisoEliminarEquipos") !== null;
+
+}
+
+function puedeTramitarGarantias(){
+
+    return document
+        .getElementById("permisoTramitarGarantias") !== null;
+
+}
+
+function inicializarDashboardsColapsables(){
+    document
+        .querySelectorAll("[data-dashboard-key]")
+        .forEach(seccion => {
+            let estadoGuardado =
+                localStorage.getItem(seccion.dataset.dashboardKey);
+
+            if(estadoGuardado === "cerrado"){
+                seccion.classList.add("cerrado");
+            }else{
+                seccion.classList.remove("cerrado");
+            }
+
+            actualizarTextoDashboard(seccion);
+        });
+}
+
+function alternarDashboard(id){
+    let seccion =
+        document.getElementById(id);
+
+    if(!seccion){
+        return;
+    }
+
+    seccion.classList.toggle("cerrado");
+
+    if(seccion.dataset.dashboardKey){
+        localStorage.setItem(
+            seccion.dataset.dashboardKey,
+            seccion.classList.contains("cerrado") ? "cerrado" : "abierto"
+        );
+    }
+
+    actualizarTextoDashboard(seccion);
+}
+
+function actualizarTextoDashboard(seccion){
+    let boton =
+        seccion.querySelector(".dashboard-toggle");
+
+    if(!boton){
+        return;
+    }
+
+    boton.innerText = seccion.classList.contains("cerrado")
+        ? "Mostrar ▾"
+        : "Ocultar ▴";
+}
+
+function tramitarGarantiaDesdeBusqueda(serial){
+
+    if(!puedeTramitarGarantias()){
+        mostrarToast(
+            "Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden tramitar garantias.",
+            "warning"
+        );
+        return;
+    }
+
+    window.location.href =
+        "/garantias?serial=" + encodeURIComponent(serial || "");
+
+}
+
+function abrirGarantiasDashboard(url){
+
+    if(!puedeTramitarGarantias()){
+        mostrarToast(
+            "Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden acceder al modulo de garantias.",
+            "warning"
+        );
+        return;
+    }
+
+    window.location.href = url;
 
 }
 
@@ -1024,10 +1477,67 @@ function mostrarToast(mensaje, tipo = "info"){
 
 }
 
+function mesActualDashboard(){
+    const fecha = new Date();
+    fecha.setMinutes(fecha.getMinutes() - fecha.getTimezoneOffset());
+    return fecha.toISOString().slice(0, 7);
+}
+
+function nombreMesDashboard(anio, mes){
+    const fecha = new Date(Number(anio), Number(mes) - 1, 1);
+    return fecha.toLocaleDateString("es-CO", {
+        month:"long",
+        year:"numeric"
+    });
+}
+
+function inicializarMesDashboard(){
+    const input = document.getElementById("dashboardMesConsulta");
+
+    if(input && !input.value){
+        input.value = mesActualDashboard();
+    }
+}
+
+function restablecerMesDashboard(){
+    const input = document.getElementById("dashboardMesConsulta");
+
+    if(input){
+        input.value = mesActualDashboard();
+    }
+
+    cargarDashboard();
+}
+
+function construirUrlDashboard(){
+    const input = document.getElementById("dashboardMesConsulta");
+
+    if(!input || !input.value){
+        return "/equipos/dashboard";
+    }
+
+    const partes = input.value.split("-");
+
+    if(partes.length !== 2){
+        return "/equipos/dashboard";
+    }
+
+    return `/equipos/dashboard?anio=${encodeURIComponent(partes[0])}&mes=${encodeURIComponent(partes[1])}`;
+}
+
 function cargarDashboard(){
 
-    fetch("/equipos/dashboard")
-    .then(response => response.json())
+    inicializarMesDashboard();
+
+    fetch(construirUrlDashboard())
+    .then(response => {
+        if(!response.ok){
+            return response.text().then(texto => {
+                throw new Error(texto || "No se pudieron cargar los indicadores del dashboard.");
+            });
+        }
+        return response.json();
+    })
     .then(data => {
 
         document.getElementById("dashboardTotalSeriales").innerText =
@@ -1036,21 +1546,127 @@ function cargarDashboard(){
         document.getElementById("dashboardSerialesMes").innerText =
             data.serialesMesActual || 0;
 
+        const tituloMes = document.getElementById("dashboardSerialesMesTitulo");
+        const inputMes = document.getElementById("dashboardMesConsulta");
+
+        if(tituloMes && inputMes && inputMes.value){
+            const partes = inputMes.value.split("-");
+            const periodo = nombreMesDashboard(partes[0], partes[1]);
+            tituloMes.innerText = inputMes.value === mesActualDashboard()
+                ? "Seriales registrados este mes"
+                : `Seriales registrados en ${periodo}`;
+        }
+
         document.getElementById("dashboardObservaciones").innerText =
             data.serialesConObservaciones || 0;
 
     })
+    .catch(error => {
+        mostrarToast(error.message || "No se pudieron cargar los indicadores del dashboard.", "warning");
+    });
+
+}
+
+function cargarContextoUsuario(){
+
+    fetch("/equipos/contexto")
+    .then(response => response.json())
+    .then(data => {
+        contextoUsuarioActual = {
+            superUsuario:!!data.superUsuario,
+            sedeNombre:data.sedeNombre || null
+        };
+        actualizarSedeBienvenida();
+    })
     .catch(() => {
-        mostrarToast("No se pudieron cargar los indicadores del dashboard.", "warning");
+        contextoUsuarioActual = {
+            superUsuario:false,
+            sedeNombre:null
+        };
+        actualizarSedeBienvenida();
+    });
+
+}
+
+function actualizarSedeBienvenida(){
+    const sedeElemento = document.getElementById("usuarioSedeActual");
+
+    if(!sedeElemento){
+        return;
+    }
+
+    if(contextoUsuarioActual.superUsuario){
+        sedeElemento.innerText = "Sede: Todas las sedes";
+        return;
+    }
+
+    sedeElemento.innerText = contextoUsuarioActual.sedeNombre
+        ? `Sede: ${contextoUsuarioActual.sedeNombre}`
+        : "Sede: Sin sede asignada";
+}
+
+function cargarDashboardGarantias(){
+
+    let contenedor =
+        document.getElementById("resumenGarantias");
+
+    if(!contenedor){
+        return;
+    }
+
+    fetch("/garantias/api/dashboard")
+    .then(response => {
+        if(!response.ok){
+            throw new Error("No se pudo cargar el resumen de garantias.");
+        }
+        return response.json();
+    })
+    .then(data => {
+        contenedor.style.display = "block";
+
+        document.getElementById("resumenGarantiasAbiertas").innerText =
+            data.abiertas || 0;
+
+        document.getElementById("resumenGarantiasCerradas").innerText =
+            data.cerradas || 0;
+
+        document.getElementById("resumenGarantiasTiempoTexto").innerText =
+            data.textoTiempoAbiertas || "Casos abiertos en tiempo normal";
+
+        document.getElementById("resumenGarantiasTiempoDias").innerText =
+            data.maxDiasAbierta || 0;
+
+        let tarjetaTiempo =
+            document.getElementById("resumenGarantiasTiempoCard");
+
+        tarjetaTiempo.classList.remove(
+            "tiempo-normal",
+            "tiempo-seguimiento",
+            "tiempo-critico"
+        );
+
+        tarjetaTiempo.classList.add(
+            data.estadoTiempoAbiertas === "critico"
+                ? "tiempo-critico"
+                : data.estadoTiempoAbiertas === "seguimiento"
+                    ? "tiempo-seguimiento"
+                    : "tiempo-normal"
+        );
+    })
+    .catch(() => {
+        contenedor.style.display = "none";
     });
 
 }
 
 window.onload = function(){
 
+    inicializarDashboardsColapsables();
     cargarTipos();
     cargarProveedores();
+    cargarContextoUsuario();
     cargarDashboard();
+    cargarDashboardGarantias();
     listarEquipos();
     marcarCampoLoteObligatorio();
     activarLimpiezaCamposObligatorios();
@@ -1068,6 +1684,15 @@ window.onload = function(){
         .addEventListener("keydown", event => {
             if(event.key === "Enter"){
                 filtrarTabla();
+            }
+        });
+
+    document
+        .getElementById("serialBuscar")
+        .addEventListener("keydown", event => {
+            if(event.key === "Enter"){
+                event.preventDefault();
+                buscarEquipo();
             }
         });
 
@@ -2356,11 +2981,27 @@ function activarTarjetaObservaciones(event){
 function abrirModalObservaciones(){
 
     paginaObservaciones = 0;
+    let modal =
+        document.getElementById("modalObservaciones");
+    let contenido =
+        modal.querySelector(".modal-excel-contenido");
 
-    document
-        .getElementById("modalObservaciones")
-        .classList
-        .add("visible");
+    modal.classList.add("visible");
+
+    if(contenido){
+        contenido.setAttribute("tabindex", "-1");
+    }
+
+    requestAnimationFrame(() => {
+        modal.scrollIntoView({
+            behavior:"smooth",
+            block:"center"
+        });
+
+        if(contenido){
+            contenido.focus({preventScroll:true});
+        }
+    });
 
     cargarObservaciones();
 
@@ -2697,6 +3338,20 @@ function buscarEquipo(){
 
         let garantia = "";
         let botonGarantia = "";
+        let avisoOtraSede = "";
+
+        if(
+            !contextoUsuarioActual.superUsuario &&
+            contextoUsuarioActual.sedeNombre &&
+            data.sede?.nombre &&
+            data.sede.nombre !== contextoUsuarioActual.sedeNombre
+        ){
+            avisoOtraSede = `
+                <div class="alert alert-info mt-3 mb-0">
+                    Este serial se encuentra registrado en la sede ${escaparHtml(data.sede.nombre)}.
+                </div>
+            `;
+        }
 
         let diasGarantia = 365;
 
@@ -2743,7 +3398,8 @@ function buscarEquipo(){
 
                 <button
                     class="btn btn-success"
-                    onclick="window.location.href='/garantias?serial=${encodeURIComponent(data.serial || '')}'">
+                    data-serial="${escaparHtml(data.serial || '')}"
+                    onclick="tramitarGarantiaDesdeBusqueda(this.dataset.serial)">
                     Tramitar garantia
                 </button>
 
@@ -2831,6 +3487,8 @@ function buscarEquipo(){
 
                 ${botonGarantia}
 
+                ${avisoOtraSede}
+
             </div>
 
         `;
@@ -2847,6 +3505,8 @@ console.log(error);
 }
 
 </script>
+
+<script src="/js/inactividad.js"></script>
 
 </body>
 </html>

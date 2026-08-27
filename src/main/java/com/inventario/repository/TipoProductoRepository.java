@@ -9,4 +9,6 @@ public interface TipoProductoRepository extends JpaRepository<TipoProducto, Long
 
     Optional<TipoProducto> findByNombre(String nombre);
 
+    Optional<TipoProducto> findByNombreIgnoreCase(String nombre);
+
 }
