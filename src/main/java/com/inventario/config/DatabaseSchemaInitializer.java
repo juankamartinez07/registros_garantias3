@@ -145,6 +145,63 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         if (existeIndiceTicket == null || existeIndiceTicket == 0) {
             jdbcTemplate.execute("create unique index uk_garantias_numero_ticket on garantias (numero_ticket)");
         }
+
+        jdbcTemplate.execute(
+                """
+                create table if not exists servicio_tecnico (
+                    id bigint not null auto_increment,
+                    ticket varchar(5) not null,
+                    fecha_ingreso date not null,
+                    sede varchar(255) null,
+                    cliente varchar(255) not null,
+                    telefono varchar(80) not null,
+                    serial varchar(255) not null,
+                    producto_referencia varchar(255) not null,
+                    marca varchar(255) null,
+                    motivo_revision text not null,
+                    estado_fisico text not null,
+                    observaciones text null,
+                    usuario_recibe varchar(255) null,
+                    estado_servicio varchar(80) not null,
+                    fecha_creacion datetime null,
+                    fecha_actualizacion datetime null,
+                    primary key (id),
+                    unique index uk_servicio_tecnico_ticket (ticket),
+                    index idx_servicio_tecnico_serial (serial),
+                    index idx_servicio_tecnico_estado (estado_servicio),
+                    index idx_servicio_tecnico_sede (sede)
+                )
+                """);
+
+        agregarColumnaSiFalta("servicio_tecnico", "ticket", "alter table servicio_tecnico add column ticket varchar(5) not null after id");
+        agregarColumnaSiFalta("servicio_tecnico", "fecha_ingreso", "alter table servicio_tecnico add column fecha_ingreso date not null after ticket");
+        agregarColumnaSiFalta("servicio_tecnico", "sede", "alter table servicio_tecnico add column sede varchar(255) null after fecha_ingreso");
+        agregarColumnaSiFalta("servicio_tecnico", "cliente", "alter table servicio_tecnico add column cliente varchar(255) not null after sede");
+        agregarColumnaSiFalta("servicio_tecnico", "telefono", "alter table servicio_tecnico add column telefono varchar(80) not null after cliente");
+        agregarColumnaSiFalta("servicio_tecnico", "serial", "alter table servicio_tecnico add column serial varchar(255) not null after telefono");
+        agregarColumnaSiFalta("servicio_tecnico", "producto_referencia", "alter table servicio_tecnico add column producto_referencia varchar(255) not null after serial");
+        agregarColumnaSiFalta("servicio_tecnico", "marca", "alter table servicio_tecnico add column marca varchar(255) null after producto_referencia");
+        agregarColumnaSiFalta("servicio_tecnico", "motivo_revision", "alter table servicio_tecnico add column motivo_revision text not null after marca");
+        agregarColumnaSiFalta("servicio_tecnico", "estado_fisico", "alter table servicio_tecnico add column estado_fisico text not null after motivo_revision");
+        agregarColumnaSiFalta("servicio_tecnico", "observaciones", "alter table servicio_tecnico add column observaciones text null after estado_fisico");
+        agregarColumnaSiFalta("servicio_tecnico", "usuario_recibe", "alter table servicio_tecnico add column usuario_recibe varchar(255) null after observaciones");
+        agregarColumnaSiFalta("servicio_tecnico", "estado_servicio", "alter table servicio_tecnico add column estado_servicio varchar(80) not null after usuario_recibe");
+        agregarColumnaSiFalta("servicio_tecnico", "fecha_creacion", "alter table servicio_tecnico add column fecha_creacion datetime null after estado_servicio");
+        agregarColumnaSiFalta("servicio_tecnico", "fecha_actualizacion", "alter table servicio_tecnico add column fecha_actualizacion datetime null after fecha_creacion");
+
+        Integer existeIndiceServicioTicket = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.statistics
+                where table_schema = database()
+                  and table_name = 'servicio_tecnico'
+                  and index_name = 'uk_servicio_tecnico_ticket'
+                """,
+                Integer.class);
+
+        if (existeIndiceServicioTicket == null || existeIndiceServicioTicket == 0) {
+            jdbcTemplate.execute("create unique index uk_servicio_tecnico_ticket on servicio_tecnico (ticket)");
+        }
     }
 
     private void agregarColumnaSiFalta(String tabla, String columna, String sql) {

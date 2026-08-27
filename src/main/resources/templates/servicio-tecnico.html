@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Servicio tecnico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/js/sistema-ui.js" defer></script>
+
+    <style>
+        body{
+            min-height:100vh;
+            background:
+                linear-gradient(90deg, rgba(248,250,252,0.92) 0%, rgba(248,250,252,0.72) 42%, rgba(248,250,252,0.9) 100%),
+                url('/img/fondo-proceso-garantia.png')
+                center top / cover
+                fixed
+                no-repeat;
+        }
+
+        .page-shell{
+            max-width:1220px;
+            margin:0 auto;
+            padding:28px 16px 48px;
+        }
+
+        .toolbar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            flex-wrap:wrap;
+            margin-bottom:22px;
+        }
+
+        .panel{
+            background:#fff;
+            border:1px solid #e5e7eb;
+            border-radius:8px;
+            box-shadow:0 10px 26px rgba(15,23,42,0.08);
+            padding:22px;
+            margin-bottom:20px;
+        }
+
+        .panel-formulario{
+            background:#e2e8f0;
+            border-color:#cbd5e1;
+            box-shadow:0 14px 32px rgba(15,23,42,0.12);
+        }
+
+        .estado-pill{
+            display:inline-flex;
+            align-items:center;
+            border-radius:999px;
+            padding:4px 10px;
+            font-size:12px;
+            font-weight:800;
+            background:#dbeafe;
+            color:#1d4ed8;
+        }
+
+        .estado-pill.cerrado{
+            background:#dcfce7;
+            color:#166534;
+        }
+
+        .toast-sistema{
+            position:fixed;
+            top:50%;
+            left:50%;
+            z-index:1200;
+            min-width:280px;
+            max-width:460px;
+            display:none;
+            transform:translate(-50%, -50%);
+            box-shadow:0 24px 70px rgba(15,23,42,0.25);
+        }
+
+        .toast-sistema.visible{
+            display:block;
+        }
+
+        .modal-detalles{
+            position:fixed;
+            inset:0;
+            z-index:1100;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:22px;
+            background:rgba(15,23,42,0.62);
+        }
+
+        .modal-detalles.visible{
+            display:flex;
+        }
+
+        .modal-detalles-contenido{
+            width:min(980px, 100%);
+            max-height:88vh;
+            overflow:auto;
+            background:#fff;
+            border-radius:10px;
+            box-shadow:0 26px 70px rgba(0,0,0,0.32);
+        }
+
+        .modal-detalles-cabecera{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            gap:14px;
+            padding:22px 24px 14px;
+            border-bottom:1px solid #e5e7eb;
+        }
+
+        .modal-detalles-cuerpo{
+            padding:20px 24px 24px;
+        }
+
+        .detalle-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+            gap:12px;
+        }
+
+        .detalle-item{
+            border:1px solid #e5e7eb;
+            border-radius:8px;
+            padding:12px;
+            background:#f8fafc;
+        }
+
+        .detalle-item span{
+            display:block;
+            color:#64748b;
+            font-size:12px;
+            font-weight:800;
+            text-transform:uppercase;
+            margin-bottom:4px;
+        }
+
+        .detalle-item strong,
+        .detalle-item p{
+            color:#0f172a;
+            margin:0;
+            white-space:pre-wrap;
+        }
+
+        textarea{
+            resize:vertical;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page-shell">
+    <div
+        th:if="${demoEstado != null and demoEstado.mostrarBanner}"
+        class="alert mb-4"
+        th:classappend="${demoEstado.superAdmin} ? ' alert-info' : ' alert-warning'"
+        th:text="${demoEstado.superAdmin ? (demoEstado.demoExpirada ? 'Modo demo expirado para usuarios. Como SUPERADMIN puedes administrar la configuracion.' : 'Modo demo activo para usuarios: quedan ' + demoEstado.diasRestantes + ' dias.') : (demoEstado.diasRestantes == 1 ? 'Prueba demo activa: queda 1 dia de uso.' : 'Prueba demo activa: quedan ' + demoEstado.diasRestantes + ' dias de uso.')}">
+    </div>
+
+    <div id="permisoEliminarServicioTecnico" sec:authorize="hasRole('SUPER_ADMIN')" style="display:none;"></div>
+
+    <div class="toolbar">
+        <div>
+            <h1 class="h3 mb-1">Servicio tecnico</h1>
+            <div class="text-muted">Recepcion fisica de equipos para revision tecnica.</div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-outline-secondary">Volver</a>
+            <button class="btn btn-primary" onclick="limpiarFormulario()">Nuevo ingreso</button>
+        </div>
+    </div>
+
+    <div class="panel panel-formulario">
+        <h2 class="h5 mb-3">Ingreso a servicio tecnico</h2>
+
+        <form id="formServicioTecnico" onsubmit="guardarServicioTecnico(event)">
+            <input type="hidden" id="servicioId">
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">No. ticket</label>
+                    <input id="ticket" class="form-control" readonly placeholder="Se genera al guardar">
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Fecha ingreso</label>
+                    <input id="fechaIngreso" type="date" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Estado del servicio</label>
+                    <select id="estadoServicio" class="form-select" required>
+                        <option value="Recibido">Recibido</option>
+                        <option value="En revision">En revision</option>
+                        <option value="Listo para entregar">Listo para entregar</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="No reparado">No reparado</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Cliente</label>
+                    <input id="cliente" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Telefono del cliente</label>
+                    <input id="telefono" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Serial</label>
+                    <input id="serial" class="form-control" required>
+                </div>
+
+                <div class="col-md-8 mb-3">
+                    <label class="form-label">Producto / referencia / equipo</label>
+                    <input id="productoReferencia" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Marca</label>
+                    <input id="marca" class="form-control">
+                </div>
+
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Motivo de revision</label>
+                    <textarea id="motivoRevision" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Estado fisico del equipo al recibirlo</label>
+                    <textarea id="estadoFisico" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Observaciones</label>
+                    <textarea id="observaciones" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary" onclick="limpiarFormulario()">Limpiar</button>
+                <button class="btn btn-success">Guardar</button>
+                <button type="submit" class="btn btn-primary" data-accion="guardar-imprimir">Guardar e imprimir</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h2 class="h5 mb-1">Listado de servicio tecnico</h2>
+                <div class="text-muted">Consulta, edicion e impresion de ingresos recibidos.</div>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-md-6">
+                <input
+                    id="busqueda"
+                    class="form-control"
+                    placeholder="Buscar por serial, ticket o cliente"
+                    onkeydown="buscarConEnter(event)">
+            </div>
+            <div class="col-md-3">
+                <select id="filtroEstado" class="form-select" onchange="filtrarServicioTecnico()">
+                    <option value="">Todos los estados</option>
+                    <option value="Recibido">Recibido</option>
+                    <option value="En revision">En revision</option>
+                    <option value="Listo para entregar">Listo para entregar</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="No reparado">No reparado</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button class="btn btn-outline-primary" onclick="filtrarServicioTecnico()">Buscar</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Fecha ingreso</th>
+                    <th>Cliente</th>
+                    <th>Telefono</th>
+                    <th>Serial</th>
+                    <th>Equipo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody id="tablaServicioTecnico">
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">Cargando ingresos...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div id="estadoPaginacion" class="text-muted fw-bold">Cargando ingresos...</div>
+            <div class="d-flex gap-2">
+                <button id="btnAnterior" class="btn btn-outline-secondary btn-sm" onclick="cambiarPagina(-1)">Anterior</button>
+                <button id="btnSiguiente" class="btn btn-outline-secondary btn-sm" onclick="cambiarPagina(1)">Siguiente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toastSistema" class="alert toast-sistema" role="alert"></div>
+
+<div id="modalDetalles" class="modal-detalles" onclick="cerrarDetallesDesdeFondo(event)">
+    <div class="modal-detalles-contenido">
+        <div class="modal-detalles-cabecera">
+            <div>
+                <h3 class="h5 mb-1">Detalles del ingreso</h3>
+                <div id="detalleTitulo" class="text-muted"></div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a id="detalleImprimir" href="#" class="btn btn-primary btn-sm">Imprimir</a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
+            </div>
+        </div>
+        <div id="contenidoDetalles" class="modal-detalles-cuerpo"></div>
+    </div>
+</div>
+
+<script>
+let paginaActual = 0;
+let totalPaginas = 1;
+
+function fechaHoy(){
+    return new Date().toISOString().slice(0, 10);
+}
+
+function puedeEliminarServicioTecnico(){
+    return !!document.getElementById("permisoEliminarServicioTecnico");
+}
+
+function datosFormulario(){
+    return {
+        fechaIngreso:document.getElementById("fechaIngreso").value,
+        cliente:document.getElementById("cliente").value,
+        telefono:document.getElementById("telefono").value,
+        serial:document.getElementById("serial").value,
+        productoReferencia:document.getElementById("productoReferencia").value,
+        marca:document.getElementById("marca").value,
+        motivoRevision:document.getElementById("motivoRevision").value,
+        estadoFisico:document.getElementById("estadoFisico").value,
+        observaciones:document.getElementById("observaciones").value,
+        estadoServicio:document.getElementById("estadoServicio").value
+    };
+}
+
+function limpiarFormulario(){
+    document.getElementById("formServicioTecnico").reset();
+    document.getElementById("servicioId").value = "";
+    document.getElementById("ticket").value = "";
+    document.getElementById("fechaIngreso").value = fechaHoy();
+    document.getElementById("estadoServicio").value = "Recibido";
+}
+
+function guardarServicioTecnico(event){
+    event.preventDefault();
+
+    const accion = event.submitter?.dataset?.accion || "guardar";
+    const id = document.getElementById("servicioId").value;
+    const url = id ? `/servicio-tecnico/api/${id}` : "/servicio-tecnico/api";
+    const metodo = id ? "PUT" : "POST";
+
+    fetch(url, {
+        method:metodo,
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(datosFormulario())
+    })
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo guardar el ingreso.");
+                });
+            }
+            return response.json();
+        })
+        .then(servicio => {
+            if(accion === "guardar-imprimir"){
+                window.location.href = `/servicio-tecnico/${servicio.id}/comprobante`;
+                return;
+            }
+
+            mostrarToast("Ingreso de servicio tecnico guardado correctamente.", "success");
+            limpiarFormulario();
+            listarServicioTecnico();
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function filtrarServicioTecnico(){
+    paginaActual = 0;
+    listarServicioTecnico();
+}
+
+function buscarConEnter(event){
+    if(event.key === "Enter"){
+        event.preventDefault();
+        filtrarServicioTecnico();
+    }
+}
+
+function cambiarPagina(delta){
+    const nuevaPagina = paginaActual + delta;
+    if(nuevaPagina < 0 || nuevaPagina >= totalPaginas){
+        return;
+    }
+    paginaActual = nuevaPagina;
+    listarServicioTecnico();
+}
+
+function listarServicioTecnico(){
+    const params = new URLSearchParams();
+    params.set("page", paginaActual);
+    params.set("size", 10);
+
+    const busqueda = document.getElementById("busqueda").value.trim();
+    const estado = document.getElementById("filtroEstado").value;
+
+    if(busqueda){
+        params.set("busqueda", busqueda);
+    }
+    if(estado){
+        params.set("estadoServicio", estado);
+    }
+
+    fetch(`/servicio-tecnico/api?${params.toString()}`)
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo cargar el listado de servicio tecnico.");
+                });
+            }
+            return response.json();
+        })
+        .then(pagina => {
+            const servicios = pagina.content || [];
+            totalPaginas = pagina.totalPages || 1;
+            paginaActual = pagina.number || 0;
+
+            document.getElementById("tablaServicioTecnico").innerHTML = servicios.length === 0
+                ? `<tr><td colspan="8" class="text-center text-muted py-4">No hay ingresos para mostrar.</td></tr>`
+                : servicios.map(servicio => {
+                    const botonEliminar = puedeEliminarServicioTecnico()
+                        ? `<button class="btn btn-danger btn-sm" onclick="eliminarServicioTecnico(${servicio.id})">Eliminar</button>`
+                        : "";
+                    const estado = servicio.estadoServicio || "";
+                    const estadoClase = ["Entregado", "No reparado"].includes(estado) ? " cerrado" : "";
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">${escaparHtml(servicio.ticket || "")}</td>
+                            <td>${escaparHtml(servicio.fechaIngreso || "")}</td>
+                            <td>${escaparHtml(servicio.cliente || "")}</td>
+                            <td>${escaparHtml(servicio.telefono || "")}</td>
+                            <td>${escaparHtml(servicio.serial || "")}</td>
+                            <td>${escaparHtml(servicio.productoReferencia || "")}</td>
+                            <td><span class="estado-pill${estadoClase}">${escaparHtml(estado)}</span></td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${servicio.id})">Detalles</button>
+                                    <button class="btn btn-warning btn-sm" onclick="editarServicioTecnico(${servicio.id})">Editar</button>
+                                    <a class="btn btn-primary btn-sm" href="/servicio-tecnico/${servicio.id}/comprobante">Imprimir</a>
+                                    ${botonEliminar}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+
+            document.getElementById("estadoPaginacion").innerText =
+                servicios.length === 0
+                    ? "No hay ingresos para mostrar."
+                    : `Pagina ${paginaActual + 1} de ${totalPaginas || 1} - ${pagina.totalElements || servicios.length} ingresos`;
+
+            document.getElementById("btnAnterior").disabled = paginaActual <= 0;
+            document.getElementById("btnSiguiente").disabled = paginaActual >= totalPaginas - 1;
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function editarServicioTecnico(id){
+    fetch(`/servicio-tecnico/api/${id}`)
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo cargar el ingreso.");
+                });
+            }
+            return response.json();
+        })
+        .then(servicio => {
+            document.getElementById("servicioId").value = servicio.id || "";
+            document.getElementById("ticket").value = servicio.ticket || "";
+            document.getElementById("fechaIngreso").value = servicio.fechaIngreso || fechaHoy();
+            document.getElementById("cliente").value = servicio.cliente || "";
+            document.getElementById("telefono").value = servicio.telefono || "";
+            document.getElementById("serial").value = servicio.serial || "";
+            document.getElementById("productoReferencia").value = servicio.productoReferencia || "";
+            document.getElementById("marca").value = servicio.marca || "";
+            document.getElementById("motivoRevision").value = servicio.motivoRevision || "";
+            document.getElementById("estadoFisico").value = servicio.estadoFisico || "";
+            document.getElementById("observaciones").value = servicio.observaciones || "";
+            document.getElementById("estadoServicio").value = servicio.estadoServicio || "Recibido";
+            document.getElementById("formServicioTecnico").scrollIntoView({behavior:"smooth", block:"start"});
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function mostrarDetalles(id){
+    fetch(`/servicio-tecnico/api/${id}`)
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo cargar el detalle.");
+                });
+            }
+            return response.json();
+        })
+        .then(servicio => {
+            document.getElementById("detalleTitulo").innerText =
+                `Ticket ${servicio.ticket || ""} - Serial ${servicio.serial || ""}`;
+            document.getElementById("detalleImprimir").href = `/servicio-tecnico/${servicio.id}/comprobante`;
+            document.getElementById("contenidoDetalles").innerHTML = `
+                <div class="detalle-grid">
+                    ${detalleItem("Ticket", servicio.ticket)}
+                    ${detalleItem("Fecha ingreso", servicio.fechaIngreso)}
+                    ${detalleItem("Cliente", servicio.cliente)}
+                    ${detalleItem("Telefono", servicio.telefono)}
+                    ${detalleItem("Serial", servicio.serial)}
+                    ${detalleItem("Equipo", servicio.productoReferencia)}
+                    ${detalleItem("Marca", servicio.marca)}
+                    ${detalleItem("Motivo de revision", servicio.motivoRevision, true)}
+                    ${detalleItem("Estado fisico", servicio.estadoFisico, true)}
+                    ${detalleItem("Observaciones", servicio.observaciones, true)}
+                    ${detalleItem("Usuario que recibe", servicio.usuarioRecibe)}
+                    ${detalleItem("Estado del servicio", servicio.estadoServicio)}
+                    ${detalleItem("Fecha creacion", servicio.fechaCreacion)}
+                    ${detalleItem("Fecha actualizacion", servicio.fechaActualizacion)}
+                </div>
+            `;
+            document.getElementById("modalDetalles").classList.add("visible");
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function eliminarServicioTecnico(id){
+    if(!puedeEliminarServicioTecnico()){
+        mostrarToast("Permisos insuficientes. Solo los usuarios SUPER_ADMIN pueden eliminar ingresos de servicio tecnico.", "warning");
+        return;
+    }
+
+    if(!confirm("¿Desea eliminar este ingreso de servicio tecnico?")){
+        return;
+    }
+
+    fetch(`/servicio-tecnico/api/${id}`, {method:"DELETE"})
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo eliminar el ingreso.");
+                });
+            }
+            mostrarToast("Ingreso eliminado correctamente.", "success");
+            listarServicioTecnico();
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function detalleItem(titulo, valor, multilinea){
+    const contenido = escaparHtml(valor || "No registrado");
+    return `
+        <div class="detalle-item">
+            <span>${escaparHtml(titulo)}</span>
+            ${multilinea ? `<p>${contenido}</p>` : `<strong>${contenido}</strong>`}
+        </div>
+    `;
+}
+
+function cerrarDetalles(){
+    document.getElementById("modalDetalles").classList.remove("visible");
+}
+
+function cerrarDetallesDesdeFondo(event){
+    if(event.target.id === "modalDetalles"){
+        cerrarDetalles();
+    }
+}
+
+function mostrarToast(mensaje, tipo){
+    const toast = document.getElementById("toastSistema");
+    toast.className = `alert alert-${tipo || "info"} toast-sistema visible`;
+    toast.innerText = mensaje;
+    clearTimeout(window.toastServicioTecnicoTimeout);
+    window.toastServicioTecnicoTimeout = setTimeout(() => {
+        toast.classList.remove("visible");
+    }, 4200);
+}
+
+function escaparHtml(valor){
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    limpiarFormulario();
+    listarServicioTecnico();
+});
+</script>
+
+</body>
+
+</html>

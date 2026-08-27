@@ -734,6 +734,14 @@
             Garantias en tramite
 
         </a>
+
+        <a href="/servicio-tecnico"
+           sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
+           class="btn btn-success me-2">
+
+            Servicio tecnico
+
+        </a>
         
         <button class="btn btn-danger">
 

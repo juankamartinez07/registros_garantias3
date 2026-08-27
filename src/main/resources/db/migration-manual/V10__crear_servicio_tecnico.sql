@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS servicio_tecnico (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    ticket VARCHAR(5) NOT NULL,
+    fecha_ingreso DATE NOT NULL,
+    sede VARCHAR(255) NULL,
+    cliente VARCHAR(255) NOT NULL,
+    telefono VARCHAR(80) NOT NULL,
+    serial VARCHAR(255) NOT NULL,
+    producto_referencia VARCHAR(255) NOT NULL,
+    marca VARCHAR(255) NULL,
+    motivo_revision TEXT NOT NULL,
+    estado_fisico TEXT NOT NULL,
+    observaciones TEXT NULL,
+    usuario_recibe VARCHAR(255) NULL,
+    estado_servicio VARCHAR(80) NOT NULL,
+    fecha_creacion DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_servicio_tecnico_ticket (ticket),
+    INDEX idx_servicio_tecnico_serial (serial),
+    INDEX idx_servicio_tecnico_estado (estado_servicio),
+    INDEX idx_servicio_tecnico_sede (sede)
+);

@@ -74,6 +74,11 @@ public class SecurityConfig {
 
                 .requestMatchers(
                         HttpMethod.DELETE,
+                        "/servicio-tecnico/**")
+                .hasRole("SUPER_ADMIN")
+
+                .requestMatchers(
+                        HttpMethod.DELETE,
                         "/garantias/**")
                 .hasRole("SUPER_ADMIN")
 
@@ -89,6 +94,7 @@ public class SecurityConfig {
                 .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
+                        "/servicio-tecnico/**",
                         "/garantias/**")
                 .hasAnyRole("SUPER_ADMIN", "ADMIN", "TECNICO")
 
