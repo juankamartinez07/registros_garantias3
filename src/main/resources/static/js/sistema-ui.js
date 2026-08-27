@@ -45,6 +45,29 @@
             background:#fecaca;
             box-shadow:0 0 0 5px rgba(254,202,202,0.28);
         }
+
+        .footer-global-aplicacion{
+            position:fixed;
+            left:0;
+            right:0;
+            bottom:0;
+            z-index:10030;
+            padding:7px 12px;
+            text-align:center;
+            color:#e5e7eb;
+            background:rgba(15,23,42,0.88);
+            font-size:12px;
+            font-weight:700;
+            letter-spacing:0;
+            box-shadow:0 -8px 24px rgba(15,23,42,0.18);
+            pointer-events:none;
+        }
+
+        @media print{
+            .footer-global-aplicacion{
+                display:none !important;
+            }
+        }
     `;
     document.head.appendChild(estilos);
 
@@ -104,6 +127,7 @@
     function activarTransiciones() {
         document.body.classList.add("ui-listo");
         marcarConexion(navigator.onLine);
+        insertarFooterGlobal();
         activarMayusculasAutomaticas();
 
         document.addEventListener("click", (evento) => {
@@ -133,6 +157,18 @@
                 window.location.href = enlace.href;
             }, 180);
         });
+    }
+
+    function insertarFooterGlobal() {
+        if (document.getElementById("footerGlobalAplicacion")) {
+            return;
+        }
+
+        const footer = document.createElement("footer");
+        footer.id = "footerGlobalAplicacion";
+        footer.className = "footer-global-aplicacion";
+        footer.textContent = "© 2026  DESARROLLO JCGM - Todos los derechos reservados | Versión 3.0";
+        document.body.appendChild(footer);
     }
 
     function debeConvertirAMayusculas(elemento) {

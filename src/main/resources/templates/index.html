@@ -705,51 +705,43 @@
         style="display:none;">
     </div>
 
-   <div class="d-flex justify-content-between align-items-center mb-4">
+   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
     <h1 class="titulo">
         Sistema de Registro de Seriales
     </h1>
 
-    <form action="/logout" method="post">
+    <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
 
-        
-        <div sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')">
-
-    <a href="/configuracion"
-       class="btn btn-dark me-2">
-
-        Configuración
- </a>
-    </a>
-    </a>
-    
-
-</div>
+        <a href="/configuracion"
+           sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN')"
+           class="btn btn-dark">
+            Configuración
+        </a>
 
         <a href="/garantias"
            sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
-           class="btn btn-primary me-2">
+           class="btn btn-primary">
 
             Garantias en tramite
 
         </a>
 
         <a href="/servicio-tecnico"
-           sec:authorize="hasAnyRole('SUPER_ADMIN','ADMIN','TECNICO')"
-           class="btn btn-success me-2">
+           sec:authorize="hasAnyRole('SUPER_ADMIN','TECNICO')"
+           class="btn btn-success">
 
             Servicio tecnico
 
         </a>
-        
-        <button class="btn btn-danger">
 
-            Cerrar sesión
+        <form action="/logout" method="post" class="m-0">
+            <button class="btn btn-danger">
+                Cerrar sesión
+            </button>
+        </form>
 
-        </button>
-
-    </form>
+    </div>
 
 </div>
 
