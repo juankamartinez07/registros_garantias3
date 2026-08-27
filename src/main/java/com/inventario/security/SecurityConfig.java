@@ -94,7 +94,10 @@ public class SecurityConfig {
                 .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
-                        "/servicio-tecnico/**",
+                        "/servicio-tecnico/**")
+                .hasAnyRole("SUPER_ADMIN", "TECNICO")
+
+                .requestMatchers(
                         "/garantias/**")
                 .hasAnyRole("SUPER_ADMIN", "ADMIN", "TECNICO")
 

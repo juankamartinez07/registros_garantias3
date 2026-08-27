@@ -203,8 +203,8 @@ public class ServicioTecnicoService {
     }
 
     private void validarPuedeUsarModulo() {
-        if (!tieneRol("SUPER_ADMIN") && !tieneRol("ADMIN") && !tieneRol("TECNICO")) {
-            throw new RuntimeException("Permisos insuficientes. Solo los usuarios TECNICO, ADMIN o SUPER_ADMIN pueden usar servicio tecnico.");
+        if (!tieneRol("SUPER_ADMIN") && !tieneRol("TECNICO")) {
+            throw new RuntimeException("Permisos insuficientes. Solo los usuarios TECNICO o SUPER_ADMIN pueden usar servicio tecnico.");
         }
     }
 
