@@ -328,7 +328,7 @@
                 <div id="detalleTitulo" class="text-muted"></div>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a id="detalleImprimir" href="#" class="btn btn-primary btn-sm">Imprimir</a>
+                <button type="button" id="detalleImprimir" class="btn btn-primary btn-sm">Imprimir</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
             </div>
         </div>
@@ -336,9 +336,35 @@
     </div>
 </div>
 
+<div id="modalImpresion" class="modal-detalles" onclick="cerrarSelectorImpresionDesdeFondo(event)">
+    <div class="modal-detalles-contenido" style="width:min(520px, 100%);">
+        <div class="modal-detalles-cabecera">
+            <div>
+                <h3 class="h5 mb-1">Seleccione formato de impresion</h3>
+                <div class="text-muted">Elija como desea generar el comprobante.</div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarSelectorImpresion()">Cancelar</button>
+        </div>
+        <div class="modal-detalles-cuerpo">
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" onclick="abrirComprobanteServicioTecnico('pos')">
+                    Tirilla POS 80 mm
+                </button>
+                <button type="button" class="btn btn-dark" onclick="abrirComprobanteServicioTecnico('a4')">
+                    PDF / Hoja convencional
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="cerrarSelectorImpresion()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let paginaActual = 0;
 let totalPaginas = 1;
+let servicioTecnicoImpresionId = null;
 
 function fechaHoy(){
     return new Date().toISOString().slice(0, 10);
@@ -394,7 +420,9 @@ function guardarServicioTecnico(event){
         })
         .then(servicio => {
             if(accion === "guardar-imprimir"){
-                window.location.href = `/servicio-tecnico/${servicio.id}/comprobante`;
+                servicioTecnicoImpresionId = servicio.id;
+                listarServicioTecnico();
+                mostrarSelectorImpresion();
                 return;
             }
 
@@ -477,7 +505,7 @@ function listarServicioTecnico(){
                                 <div class="d-flex gap-1 flex-wrap">
                                     <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${servicio.id})">Detalles</button>
                                     <button class="btn btn-warning btn-sm" onclick="editarServicioTecnico(${servicio.id})">Editar</button>
-                                    <a class="btn btn-primary btn-sm" href="/servicio-tecnico/${servicio.id}/comprobante">Imprimir</a>
+                                    <button class="btn btn-primary btn-sm" onclick="seleccionarImpresionServicioTecnico(${servicio.id})">Imprimir</button>
                                     ${botonEliminar}
                                 </div>
                             </td>
@@ -537,7 +565,7 @@ function mostrarDetalles(id){
         .then(servicio => {
             document.getElementById("detalleTitulo").innerText =
                 `Ticket ${servicio.ticket || ""} - Serial ${servicio.serial || ""}`;
-            document.getElementById("detalleImprimir").href = `/servicio-tecnico/${servicio.id}/comprobante`;
+            document.getElementById("detalleImprimir").onclick = () => seleccionarImpresionServicioTecnico(servicio.id);
             document.getElementById("contenidoDetalles").innerHTML = `
                 <div class="detalle-grid">
                     ${detalleItem("Ticket", servicio.ticket)}
@@ -602,6 +630,34 @@ function cerrarDetallesDesdeFondo(event){
     if(event.target.id === "modalDetalles"){
         cerrarDetalles();
     }
+}
+
+function seleccionarImpresionServicioTecnico(id){
+    servicioTecnicoImpresionId = id;
+    mostrarSelectorImpresion();
+}
+
+function mostrarSelectorImpresion(){
+    document.getElementById("modalImpresion").classList.add("visible");
+}
+
+function cerrarSelectorImpresion(){
+    document.getElementById("modalImpresion").classList.remove("visible");
+}
+
+function cerrarSelectorImpresionDesdeFondo(event){
+    if(event.target.id === "modalImpresion"){
+        cerrarSelectorImpresion();
+    }
+}
+
+function abrirComprobanteServicioTecnico(formato){
+    if(!servicioTecnicoImpresionId){
+        mostrarToast("No se encontro el ingreso para imprimir.", "warning");
+        return;
+    }
+
+    window.location.href = `/servicio-tecnico/${servicioTecnicoImpresionId}/comprobante?formato=${encodeURIComponent(formato)}`;
 }
 
 function mostrarToast(mensaje, tipo){

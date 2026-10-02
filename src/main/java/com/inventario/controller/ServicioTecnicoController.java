@@ -44,9 +44,16 @@ public class ServicioTecnicoController {
     }
 
     @GetMapping("/{id}/comprobante")
-    public String comprobante(@PathVariable Long id, Model model) {
+    public String comprobante(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "pos") String formato,
+            Model model) {
         ServicioTecnico servicio = servicioTecnicoService.obtener(id);
 
+        model.addAttribute("formato", formatoComprobante(formato));
+        model.addAttribute("id", servicio.getId());
+        model.addAttribute("sedeComprobante", valorComprobante(servicioTecnicoService.sedeComprobante(servicio)));
+        model.addAttribute("telefonoEncabezado", "2222222222");
         model.addAttribute("fechaIngreso", fechaComprobante(servicio.getFechaIngreso()));
         model.addAttribute("ticket", valorComprobante(servicio.getTicket()));
         model.addAttribute("cliente", valorComprobante(servicio.getCliente()));
@@ -111,6 +118,10 @@ public class ServicioTecnicoController {
 
     private String fechaComprobante(LocalDate fecha) {
         return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private String formatoComprobante(String formato) {
+        return "a4".equalsIgnoreCase(formato) ? "a4" : "pos";
     }
 
     private String valorComprobante(String valor) {

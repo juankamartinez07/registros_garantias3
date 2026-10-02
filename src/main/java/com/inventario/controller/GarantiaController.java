@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +23,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @Controller
 @RequestMapping("/garantias")
 public class GarantiaController {
+
+    private static final DateTimeFormatter FORMATO_FECHA_COMPROBANTE =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final GarantiaService garantiaService;
 
@@ -35,6 +42,30 @@ public class GarantiaController {
     @GetMapping
     public String vista() {
         return "garantias";
+    }
+
+    @GetMapping("/{id}/comprobante")
+    public String comprobante(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "pos") String formato,
+            Model model) {
+
+        Garantia garantia = garantiaService.obtener(id);
+
+        model.addAttribute("formato", formatoComprobante(formato));
+        model.addAttribute("id", garantia.getId());
+        model.addAttribute("sedeComprobante", valorComprobante(garantiaService.sedeComprobante(garantia)));
+        model.addAttribute("telefonoEncabezado", "2222222222");
+        model.addAttribute("fechaIngresoEquipo", fechaComprobante(garantia.getFechaIngresoGarantia()));
+        model.addAttribute("ticket", valorComprobante(garantia.getNumeroTicket()));
+        model.addAttribute("serial", valorComprobante(garantia.getSerial()));
+        model.addAttribute("productoReferencia", valorComprobante(garantia.getReferenciaProducto()));
+        model.addAttribute("motivoGarantia", valorComprobante(garantia.getMotivosGarantia()));
+        model.addAttribute("observaciones", valorComprobante(garantia.getObservaciones()));
+        model.addAttribute("estadoActual", valorComprobante(
+                garantia.getEstadoEspecifico() == null ? garantia.getEstado() : garantia.getEstadoEspecifico()));
+
+        return "garantia-comprobante";
     }
 
     @GetMapping("/api")
@@ -99,5 +130,20 @@ public class GarantiaController {
     @ResponseBody
     public String manejarError(RuntimeException exception) {
         return exception.getMessage();
+    }
+
+    private String fechaComprobante(LocalDate fecha) {
+        return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private String formatoComprobante(String formato) {
+        return "a4".equalsIgnoreCase(formato) ? "a4" : "pos";
+    }
+
+    private String valorComprobante(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return "No registrado";
+        }
+        return valor.trim();
     }
 }

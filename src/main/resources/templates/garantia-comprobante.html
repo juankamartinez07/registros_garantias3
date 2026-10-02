@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprobante de servicio tecnico</title>
+    <title>Comprobante de garantia</title>
 
     <style>
         *{ box-sizing:border-box; }
@@ -173,11 +173,6 @@
             text-align:center;
         }
 
-        @page{
-            size:80mm auto;
-            margin:3mm;
-        }
-
         @media print{
             .no-print{ display:none !important; }
 
@@ -222,9 +217,9 @@
 <body th:class="${formato == 'a4'} ? 'formato-a4' : 'formato-pos'">
     <div class="acciones no-print">
         <button type="button" class="principal" onclick="window.print()">Imprimir</button>
-        <a href="/servicio-tecnico">Volver</a>
-        <a th:href="@{|/servicio-tecnico/${id}/comprobante?formato=pos|}">POS 80 mm</a>
-        <a th:href="@{|/servicio-tecnico/${id}/comprobante?formato=a4|}">PDF / Hoja</a>
+        <a href="/garantias">Volver</a>
+        <a th:href="@{|/garantias/${id}/comprobante?formato=pos|}">POS 80 mm</a>
+        <a th:href="@{|/garantias/${id}/comprobante?formato=a4|}">PDF / Hoja</a>
     </div>
 
     <div
@@ -244,15 +239,15 @@
 
         <div class="titulo">
             <div>COMPROBANTE DE INGRESO</div>
-            <div>SERVICIO TÉCNICO</div>
+            <div>GARANTÍA EN TRÁMITE</div>
         </div>
 
         <div class="linea"></div>
 
         <div class="campos">
             <div class="campo">
-                <span class="campo-label">Fecha ingreso:</span>
-                <span class="campo-valor" th:text="${fechaIngreso}">No registrado</span>
+                <span class="campo-label">Fecha ingreso equipo:</span>
+                <span class="campo-valor" th:text="${fechaIngresoEquipo}">No registrado</span>
             </div>
 
             <div class="campo">
@@ -261,38 +256,28 @@
             </div>
 
             <div class="campo">
-                <span class="campo-label">Cliente:</span>
-                <span class="campo-valor" th:text="${cliente}">No registrado</span>
-            </div>
-
-            <div class="campo">
-                <span class="campo-label">Teléfono:</span>
-                <span class="campo-valor" th:text="${telefono}">No registrado</span>
-            </div>
-
-            <div class="campo">
                 <span class="campo-label">Serial:</span>
                 <span class="campo-valor" th:text="${serial}">No registrado</span>
             </div>
 
             <div class="campo">
-                <span class="campo-label">Equipo:</span>
+                <span class="campo-label">Producto / referencia:</span>
                 <span class="campo-valor" th:text="${productoReferencia}">No registrado</span>
             </div>
 
             <div class="campo texto-largo">
-                <span class="campo-label">Motivo revisión:</span>
-                <span class="campo-valor" th:text="${motivoRevision}">No registrado</span>
-            </div>
-
-            <div class="campo texto-largo">
-                <span class="campo-label">Estado físico:</span>
-                <span class="campo-valor" th:text="${estadoFisico}">No registrado</span>
+                <span class="campo-label">Motivo de garantía:</span>
+                <span class="campo-valor" th:text="${motivoGarantia}">No registrado</span>
             </div>
 
             <div class="campo texto-largo">
                 <span class="campo-label">Observaciones:</span>
                 <span class="campo-valor" th:text="${observaciones}">No registrado</span>
+            </div>
+
+            <div class="campo texto-largo">
+                <span class="campo-label">Estado actual:</span>
+                <span class="campo-valor" th:text="${estadoActual}">No registrado</span>
             </div>
         </div>
 
@@ -300,15 +285,14 @@
 
         <div class="firmas">
             <div class="firma">Firma recibe: _______________</div>
-            <div class="firma">Firma cliente: _______________</div>
+            <div class="firma">Firma responsable: _______________</div>
         </div>
 
         <div class="linea"></div>
 
         <div class="pie">
-            <div>Este comprobante certifica la recepción</div>
-            <div>del equipo para revisión técnica.</div>
-            <div>No representa aprobación de garantía.</div>
+            <div>Comprobante para control interno</div>
+            <div>del proceso de garantía en trámite.</div>
         </div>
     </main>
 </body>

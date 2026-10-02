@@ -48,6 +48,16 @@ public class UsuarioContextService {
         return sede == null ? null : sede.getNombre();
     }
 
+    public String sedeNombreDeUsuario(String username) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+        return usuarioRepository.findByUsername(username.trim())
+                .map(Usuario::getSede)
+                .map(Sede::getNombre)
+                .orElse(null);
+    }
+
     public void validarMismaSede(Long sedeIdRegistro) {
         if (esSuperUsuario()) {
             return;
