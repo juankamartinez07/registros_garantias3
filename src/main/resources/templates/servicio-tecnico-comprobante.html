@@ -222,6 +222,7 @@
 <body th:class="${formato == 'a4'} ? 'formato-a4' : 'formato-pos'">
     <div class="acciones no-print">
         <button type="button" class="principal" onclick="window.print()">Imprimir</button>
+        <a class="principal" th:href="@{|/servicio-tecnico/${id}/pdf|}" download>Guardar como PDF</a>
         <a href="/servicio-tecnico">Volver</a>
         <a th:href="@{|/servicio-tecnico/${id}/comprobante?formato=pos|}">POS 80 mm</a>
         <a th:href="@{|/servicio-tecnico/${id}/comprobante?formato=a4|}">PDF / Hoja</a>

@@ -2993,11 +2993,6 @@ function abrirModalObservaciones(){
     }
 
     requestAnimationFrame(() => {
-        modal.scrollIntoView({
-            behavior:"smooth",
-            block:"center"
-        });
-
         if(contenido){
             contenido.focus({preventScroll:true});
         }
