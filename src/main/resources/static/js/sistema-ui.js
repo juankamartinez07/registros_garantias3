@@ -3,18 +3,15 @@
     estilos.textContent = `
         body{
             opacity:0;
-            transform:translateY(8px);
-            transition:opacity 180ms ease, transform 180ms ease;
+            transition:opacity 180ms ease;
         }
 
         body.ui-listo{
             opacity:1;
-            transform:translateY(0);
         }
 
         body.ui-saliendo{
             opacity:0;
-            transform:translateY(6px);
         }
 
         .indicador-conexion{
@@ -90,6 +87,21 @@
             overscroll-behavior:contain;
         }
 
+        .modal-detalles-cabecera,
+        .modal-excel-cabecera{
+            position:sticky;
+            top:0;
+            z-index:2;
+            background:#fff;
+        }
+
+        .modal-excel-pie{
+            position:sticky;
+            bottom:0;
+            z-index:2;
+            background:#fff;
+        }
+
         @media(max-width:640px){
             .modal-detalles,
             .modal-excel{
@@ -104,6 +116,10 @@
         }
 
         @media print{
+            body{
+                opacity:1 !important;
+            }
+
             .footer-global-aplicacion{
                 display:none !important;
             }
