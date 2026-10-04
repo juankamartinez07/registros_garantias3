@@ -1,10 +1,14 @@
 package com.inventario.service;
 
 import com.inventario.dto.DashboardGarantias;
+import com.inventario.dto.GarantiaActualizacionDTO;
 import com.inventario.dto.GarantiaDTO;
+import com.inventario.dto.GarantiaHistorialDTO;
 import com.inventario.model.Equipo;
 import com.inventario.model.Garantia;
+import com.inventario.model.GarantiaHistorial;
 import com.inventario.repository.EquipoRepository;
+import com.inventario.repository.GarantiaHistorialRepository;
 import com.inventario.repository.GarantiaRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
@@ -15,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -23,7 +28,7 @@ public class GarantiaService {
 
     public static final String ESTADO_GENERAL_ABIERTO = "Abierto";
     public static final String ESTADO_GENERAL_CERRADO = "Cerrado";
-    public static final String ESTADO_EN_TRAMITE = "En tramite";
+    public static final String ESTADO_PENDIENTE_GESTION = "Pendiente de gestion";
     public static final String ESTADO_REVISION_INTERNA = "En revision interna";
     public static final String ESTADO_ENVIADO_PROVEEDOR = "Enviado a proveedor";
     public static final String ESTADO_REPARADO = "Reparado";
@@ -37,7 +42,7 @@ public class GarantiaService {
             ESTADO_GENERAL_CERRADO
     );
     private static final Set<String> ESTADOS_ABIERTOS_VALIDOS = Set.of(
-            ESTADO_EN_TRAMITE,
+            ESTADO_PENDIENTE_GESTION,
             ESTADO_REVISION_INTERNA,
             ESTADO_ENVIADO_PROVEEDOR
     );
@@ -49,14 +54,17 @@ public class GarantiaService {
     );
 
     private final GarantiaRepository garantiaRepository;
+    private final GarantiaHistorialRepository garantiaHistorialRepository;
     private final EquipoRepository equipoRepository;
     private final UsuarioContextService usuarioContextService;
 
     public GarantiaService(
             GarantiaRepository garantiaRepository,
+            GarantiaHistorialRepository garantiaHistorialRepository,
             EquipoRepository equipoRepository,
             UsuarioContextService usuarioContextService) {
         this.garantiaRepository = garantiaRepository;
+        this.garantiaHistorialRepository = garantiaHistorialRepository;
         this.equipoRepository = equipoRepository;
         this.usuarioContextService = usuarioContextService;
     }
@@ -121,7 +129,7 @@ public class GarantiaService {
         dashboard.setAbiertasMas10Dias(sedeNombre == null
                 ? garantiaRepository.contarAbiertasMas10Dias(fechaLimite10Dias)
                 : garantiaRepository.contarAbiertasMas10DiasPorSede(sedeNombre, fechaLimite10Dias));
-        dashboard.setEnTramite(contarPorEstadoEspecifico(sedeNombre, ESTADO_EN_TRAMITE));
+        dashboard.setEnTramite(contarPorEstadoEspecifico(sedeNombre, ESTADO_PENDIENTE_GESTION));
         dashboard.setEnRevisionInterna(contarPorEstadoEspecifico(sedeNombre, ESTADO_REVISION_INTERNA));
         dashboard.setEnviadoAProveedor(contarPorEstadoEspecifico(sedeNombre, ESTADO_ENVIADO_PROVEEDOR));
         dashboard.setReparado(contarPorEstadoEspecifico(sedeNombre, ESTADO_REPARADO));
@@ -161,12 +169,22 @@ public class GarantiaService {
         garantia.setNumeroTicket(generarNumeroTicket());
         garantia.setUsuarioCreacion(nombreUsuarioActual());
         aplicarDatos(garantia, dto, equipo);
-        return garantiaRepository.save(garantia);
+        Garantia guardada = garantiaRepository.save(garantia);
+        registrarHistorial(
+                guardada,
+                null,
+                guardada.getEstadoGeneral(),
+                null,
+                guardada.getEstadoEspecifico(),
+                guardada.getNumeroCasoProveedor(),
+                "Ticket creado.",
+                "CREACION");
+        return guardada;
     }
 
     @Transactional
     public Garantia actualizar(Long id, GarantiaDTO dto) {
-        validarPuedeGestionarGarantias();
+        validarPuedeEditarGarantias();
         Garantia garantia = obtener(id);
         String serialDto = mayuscula(dto.getSerial());
         if (serialDto != null && !serialDto.equalsIgnoreCase(garantia.getSerial())) {
@@ -176,6 +194,66 @@ public class GarantiaService {
         Equipo equipo = garantia.getEquipo();
         aplicarDatos(garantia, dto, equipo);
         return garantiaRepository.save(garantia);
+    }
+
+    @Transactional
+    public Garantia actualizarProceso(Long id, GarantiaActualizacionDTO dto) {
+        validarPuedeGestionarGarantias();
+        Garantia garantia = obtener(id);
+
+        String estadoGeneralAnterior = garantia.getEstadoGeneral();
+        String estadoEspecificoAnterior = garantia.getEstadoEspecifico();
+
+        String estadoGeneralNuevo = normalizarEstadoGeneral(dto.getEstadoGeneral());
+        String estadoEspecificoNuevo = normalizarEstadoEspecifico(dto.getEstadoEspecifico());
+        if (estadoGeneralNuevo == null) {
+            estadoGeneralNuevo = estadoGeneralAnterior;
+        }
+        if (estadoEspecificoNuevo == null) {
+            estadoEspecificoNuevo = estadoEspecificoAnterior;
+        }
+
+        validarEstados(estadoGeneralNuevo, estadoEspecificoNuevo);
+
+        String motivoNoAplica = mayuscula(dto.getMotivoNoAplicaGarantia());
+        if (ESTADO_GENERAL_CERRADO.equals(estadoGeneralNuevo)
+                && ESTADO_NO_APLICO.equals(estadoEspecificoNuevo)
+                && motivoNoAplica == null) {
+            throw new RuntimeException("Debe ingresar el motivo por el cual no aplico la garantia.");
+        }
+
+        if (!ESTADO_NO_APLICO.equals(estadoEspecificoNuevo)) {
+            motivoNoAplica = null;
+        }
+
+        String numeroCasoProveedor = mayuscula(dto.getNumeroCasoProveedor());
+        if (numeroCasoProveedor != null) {
+            garantia.setNumeroCasoProveedor(numeroCasoProveedor);
+        }
+        garantia.setMotivoNoAplicaGarantia(motivoNoAplica);
+        garantia.setEstadoGeneral(estadoGeneralNuevo);
+        garantia.setEstadoEspecifico(estadoEspecificoNuevo);
+        garantia.setEstado(estadoEspecificoNuevo);
+
+        Garantia guardada = garantiaRepository.save(garantia);
+        registrarHistorial(
+                guardada,
+                estadoGeneralAnterior,
+                estadoGeneralNuevo,
+                estadoEspecificoAnterior,
+                estadoEspecificoNuevo,
+                guardada.getNumeroCasoProveedor(),
+                mayuscula(dto.getObservacion()),
+                ESTADO_GENERAL_CERRADO.equals(estadoGeneralNuevo) ? "CIERRE" : "ACTUALIZACION");
+        return guardada;
+    }
+
+    public List<GarantiaHistorialDTO> historial(Long id) {
+        obtener(id);
+        return garantiaHistorialRepository.findByGarantiaIdOrderByFechaHoraDesc(id)
+                .stream()
+                .map(this::aDto)
+                .toList();
     }
 
     @Transactional
@@ -234,7 +312,7 @@ public class GarantiaService {
         }
 
         if (estadoEspecifico == null) {
-            estadoEspecifico = garantia.getEstadoEspecifico() == null ? ESTADO_EN_TRAMITE : garantia.getEstadoEspecifico();
+            estadoEspecifico = garantia.getEstadoEspecifico() == null ? ESTADO_PENDIENTE_GESTION : garantia.getEstadoEspecifico();
         }
 
         validarEstados(estadoGeneral, estadoEspecifico);
@@ -274,8 +352,8 @@ public class GarantiaService {
         dto.setReferenciaProducto(equipo.getProducto() == null ? "" : equipo.getProducto().getNombre());
         dto.setSerial(equipo.getSerial());
         dto.setEstadoGeneral(ESTADO_GENERAL_ABIERTO);
-        dto.setEstadoEspecifico(ESTADO_EN_TRAMITE);
-        dto.setEstado(ESTADO_EN_TRAMITE);
+        dto.setEstadoEspecifico(ESTADO_PENDIENTE_GESTION);
+        dto.setEstado(ESTADO_PENDIENTE_GESTION);
         dto.setProveedor(equipo.getProveedor() == null ? "" : equipo.getProveedor().getNombre());
         dto.setFacturaProveedor(equipo.getFactura());
         dto.setFechaIngresoSerial(parseFecha(equipo.getFecha()));
@@ -415,7 +493,7 @@ public class GarantiaService {
         }
 
         return switch (limpio.toUpperCase()) {
-            case "EN_TRAMITE" -> ESTADO_EN_TRAMITE;
+            case "EN_TRAMITE", "PENDIENTE_GESTION" -> ESTADO_PENDIENTE_GESTION;
             case "EN_REVISION_INTERNA" -> ESTADO_REVISION_INTERNA;
             case "ENVIADO_A_PROVEEDOR" -> ESTADO_ENVIADO_PROVEEDOR;
             case "REPARADO" -> ESTADO_REPARADO;
@@ -444,6 +522,12 @@ public class GarantiaService {
         }
     }
 
+    private void validarPuedeEditarGarantias() {
+        if (!tieneRol("SUPER_ADMIN")) {
+            throw new RuntimeException("Permisos insuficientes.");
+        }
+    }
+
     private void validarPuedeEliminarGarantias() {
         if (!tieneRol("SUPER_ADMIN")) {
             throw new RuntimeException("Permisos insuficientes. Solo los usuarios SUPER_ADMIN pueden eliminar garantias.");
@@ -463,6 +547,44 @@ public class GarantiaService {
     private String nombreUsuarioActual() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication == null ? null : authentication.getName();
+    }
+
+    private void registrarHistorial(
+            Garantia garantia,
+            String estadoGeneralAnterior,
+            String estadoGeneralNuevo,
+            String estadoEspecificoAnterior,
+            String estadoEspecificoNuevo,
+            String numeroCasoProveedor,
+            String observacion,
+            String tipoEvento) {
+
+        GarantiaHistorial historial = new GarantiaHistorial();
+        historial.setGarantia(garantia);
+        historial.setUsuario(nombreUsuarioActual());
+        historial.setEstadoGeneralAnterior(estadoGeneralAnterior);
+        historial.setEstadoGeneralNuevo(estadoGeneralNuevo);
+        historial.setEstadoEspecificoAnterior(estadoEspecificoAnterior);
+        historial.setEstadoEspecificoNuevo(estadoEspecificoNuevo);
+        historial.setNumeroCasoProveedor(numeroCasoProveedor);
+        historial.setObservacion(observacion);
+        historial.setTipoEvento(tipoEvento);
+        garantiaHistorialRepository.save(historial);
+    }
+
+    private GarantiaHistorialDTO aDto(GarantiaHistorial historial) {
+        GarantiaHistorialDTO dto = new GarantiaHistorialDTO();
+        dto.setId(historial.getId());
+        dto.setFechaHora(historial.getFechaHora());
+        dto.setUsuario(historial.getUsuario());
+        dto.setEstadoGeneralAnterior(historial.getEstadoGeneralAnterior());
+        dto.setEstadoGeneralNuevo(historial.getEstadoGeneralNuevo());
+        dto.setEstadoEspecificoAnterior(historial.getEstadoEspecificoAnterior());
+        dto.setEstadoEspecificoNuevo(historial.getEstadoEspecificoNuevo());
+        dto.setNumeroCasoProveedor(historial.getNumeroCasoProveedor());
+        dto.setObservacion(historial.getObservacion());
+        dto.setTipoEvento(historial.getTipoEvento());
+        return dto;
     }
 
     private LocalDate parseFecha(String fecha) {

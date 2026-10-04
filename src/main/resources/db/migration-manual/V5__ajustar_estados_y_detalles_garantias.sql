@@ -13,5 +13,5 @@ END
 WHERE estado_general IS NULL;
 
 UPDATE garantias
-SET estado_especifico = COALESCE(estado_especifico, estado, 'En tramite')
+SET estado_especifico = COALESCE(estado_especifico, estado, 'Pendiente de gestion')
 WHERE estado_especifico IS NULL;

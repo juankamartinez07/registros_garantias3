@@ -1,7 +1,9 @@
 package com.inventario.controller;
 
 import com.inventario.dto.DashboardGarantias;
+import com.inventario.dto.GarantiaActualizacionDTO;
 import com.inventario.dto.GarantiaDTO;
+import com.inventario.dto.GarantiaHistorialDTO;
 import com.inventario.model.Garantia;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.GarantiaService;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Controller
 @RequestMapping("/garantias")
@@ -124,6 +127,12 @@ public class GarantiaController {
         return garantiaService.obtener(id);
     }
 
+    @GetMapping("/api/{id}/historial")
+    @ResponseBody
+    public List<GarantiaHistorialDTO> historial(@PathVariable Long id) {
+        return garantiaService.historial(id);
+    }
+
     @PostMapping("/api")
     @ResponseBody
     public Garantia crear(@RequestBody GarantiaDTO dto) {
@@ -136,6 +145,14 @@ public class GarantiaController {
             @PathVariable Long id,
             @RequestBody GarantiaDTO dto) {
         return garantiaService.actualizar(id, dto);
+    }
+
+    @PostMapping("/api/{id}/actualizaciones")
+    @ResponseBody
+    public Garantia actualizarProceso(
+            @PathVariable Long id,
+            @RequestBody GarantiaActualizacionDTO dto) {
+        return garantiaService.actualizarProceso(id, dto);
     }
 
     @DeleteMapping("/api/{id}")

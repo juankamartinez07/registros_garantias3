@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -224,6 +224,61 @@
             margin:12px 0 10px;
         }
 
+        .estado-ayuda{
+            margin-top:8px;
+            padding:9px 12px;
+            border-left:4px solid #2563eb;
+            border-radius:6px;
+            background:#eff6ff;
+            color:#1e3a8a;
+            font-size:13px;
+            font-weight:700;
+        }
+
+        .historial-timeline{
+            position:relative;
+            display:grid;
+            gap:14px;
+            margin-top:14px;
+        }
+
+        .historial-item{
+            position:relative;
+            border-left:3px solid #bfdbfe;
+            padding:0 0 0 18px;
+        }
+
+        .historial-item::before{
+            content:"";
+            position:absolute;
+            left:-8px;
+            top:4px;
+            width:13px;
+            height:13px;
+            border-radius:50%;
+            background:#2563eb;
+            box-shadow:0 0 0 4px #dbeafe;
+        }
+
+        .historial-card{
+            border:1px solid #dbe3ef;
+            border-radius:8px;
+            padding:12px;
+            background:#f8fafc;
+        }
+
+        .historial-card strong{
+            display:block;
+            color:#0f172a;
+            margin-bottom:4px;
+        }
+
+        .historial-card small{
+            display:block;
+            color:#64748b;
+            font-weight:800;
+        }
+
         textarea{
             resize:vertical;
         }
@@ -241,6 +296,7 @@
     </div>
 
     <div id="permisoEliminarGarantias" sec:authorize="hasRole('SUPER_ADMIN')" style="display:none;"></div>
+    <div id="permisoEditarGarantias" sec:authorize="hasRole('SUPER_ADMIN')" style="display:none;"></div>
 
     <div class="toolbar">
         <div>
@@ -322,7 +378,8 @@
 
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Estado especifico</label>
-                    <select id="estadoEspecifico" class="form-select" required onchange="actualizarMotivoNoAplica()"></select>
+                    <select id="estadoEspecifico" class="form-select" required onchange="actualizarMotivoNoAplica(); actualizarAyudaEstadoFormulario()"></select>
+                    <div id="ayudaEstadoEspecifico" class="estado-ayuda"></div>
                 </div>
 
                 <div class="col-md-12 mb-3">
@@ -392,8 +449,8 @@
 
         <div class="dashboard-subtitulo">Estados abiertos</div>
         <div class="dashboard-garantias">
-            <button class="dashboard-garantia-card" data-filtro-card="especifico:EN_TRAMITE" onclick="aplicarFiltroDashboard('estadoEspecifico', 'EN_TRAMITE')">
-                <span>En tramite</span>
+            <button class="dashboard-garantia-card" data-filtro-card="especifico:PENDIENTE_GESTION" onclick="aplicarFiltroDashboard('estadoEspecifico', 'PENDIENTE_GESTION')">
+                <span>Pendiente de gestion</span>
                 <strong id="dgEnTramite">0</strong>
             </button>
             <button class="dashboard-garantia-card" data-filtro-card="especifico:EN_REVISION_INTERNA" onclick="aplicarFiltroDashboard('estadoEspecifico', 'EN_REVISION_INTERNA')">
@@ -435,7 +492,7 @@
                     <option value="">Todos los estados</option>
                     <option>Abierto</option>
                     <option>Cerrado</option>
-                    <option>En tramite</option>
+                    <option>Pendiente de gestion</option>
                     <option>En revision interna</option>
                     <option>Enviado a proveedor</option>
                     <option>Reparado</option>
@@ -495,6 +552,65 @@
     </div>
 </div>
 
+<div id="modalActualizacion" class="modal-detalles" onclick="cerrarActualizacionDesdeFondo(event)">
+    <div class="modal-detalles-contenido" style="width:min(760px, 100%);">
+        <div class="modal-detalles-cabecera">
+            <div>
+                <h3 class="h5 mb-1">Actualizar garantia</h3>
+                <div id="actualizacionTitulo" class="text-muted"></div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarActualizacion()">Cancelar</button>
+        </div>
+        <div class="modal-detalles-cuerpo">
+            <form id="formActualizacionGarantia" onsubmit="guardarActualizacionGarantia(event)">
+                <input type="hidden" id="actualizacionGarantiaId">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">No. ticket</label>
+                        <input id="actualizacionTicket" class="form-control" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Serial</label>
+                        <input id="actualizacionSerial" class="form-control" readonly>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Estado actual</label>
+                        <input id="actualizacionEstadoActual" class="form-control" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nuevo estado general</label>
+                        <select id="actualizacionEstadoGeneral" class="form-select" required onchange="actualizarEstadosEspecificosActualizacion()">
+                            <option value="Abierto">Abierto</option>
+                            <option value="Cerrado">Cerrado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nuevo estado especifico</label>
+                        <select id="actualizacionEstadoEspecifico" class="form-select" required onchange="actualizarAyudaEstadoActualizacion()"></select>
+                        <div id="ayudaEstadoActualizacion" class="estado-ayuda"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Numero caso proveedor</label>
+                        <input id="actualizacionNumeroCasoProveedor" class="form-control">
+                    </div>
+                    <div id="grupoActualizacionMotivoNoAplica" class="col-md-12 mb-3" style="display:none;">
+                        <label class="form-label">Motivo por el cual no aplico la garantia</label>
+                        <textarea id="actualizacionMotivoNoAplica" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Observacion de actualizacion</label>
+                        <textarea id="actualizacionObservacion" class="form-control" rows="4" required></textarea>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="cerrarActualizacion()">Cancelar</button>
+                    <button class="btn btn-success">Guardar actualizacion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div id="modalImpresion" class="modal-detalles" onclick="cerrarSelectorImpresionDesdeFondo(event)">
     <div class="modal-detalles-contenido" style="width:min(520px, 100%);">
         <div class="modal-detalles-cabecera">
@@ -523,10 +639,15 @@
 <div id="toastSistema" class="toast-sistema alert alert-info shadow"></div>
 
 <script>
-const ESTADOS_ABIERTOS = ["En tramite", "En revision interna", "Enviado a proveedor"];
+const ESTADOS_ABIERTOS = ["Pendiente de gestion", "En revision interna", "Enviado a proveedor"];
 const ESTADOS_CERRADOS = ["Reparado", "No aplico garantia", "Cambio por equipo nuevo", "Nota credito"];
+const AYUDAS_ESTADO_ABIERTO = {
+    "Pendiente de gestion":"Caso recibido y pendiente de revision o gestion inicial.",
+    "En revision interna":"El equipo esta siendo revisado por personal interno antes de definir el siguiente paso.",
+    "Enviado a proveedor":"El equipo o caso fue enviado al proveedor y esta pendiente de su gestion o respuesta."
+};
 const ESTADOS_API = {
-    "En tramite":"En tramite",
+    "Pendiente de gestion":"Pendiente de gestion",
     "En revision interna":"En revision interna",
     "Enviado a proveedor":"Enviado a proveedor",
     "Reparado":"Reparado",
@@ -535,7 +656,8 @@ const ESTADOS_API = {
     "Nota credito":"Nota credito"
 };
 const ESTADOS_ESPECIFICOS_URL = {
-    "EN_TRAMITE":"En tramite",
+    "EN_TRAMITE":"Pendiente de gestion",
+    "PENDIENTE_GESTION":"Pendiente de gestion",
     "EN_REVISION_INTERNA":"En revision interna",
     "ENVIADO_A_PROVEEDOR":"Enviado a proveedor",
     "REPARADO":"Reparado",
@@ -546,7 +668,7 @@ const ESTADOS_ESPECIFICOS_URL = {
 const TEXTOS_FILTRO = {
     "estadoGeneral:ABIERTO":"Mostrando garantias abiertas.",
     "estadoGeneral:CERRADO":"Mostrando garantias cerradas.",
-    "estadoEspecifico:EN_TRAMITE":"Mostrando garantias en tramite.",
+    "estadoEspecifico:PENDIENTE_GESTION":"Mostrando garantias pendientes de gestion.",
     "estadoEspecifico:EN_REVISION_INTERNA":"Mostrando garantias en revision interna.",
     "estadoEspecifico:ENVIADO_A_PROVEEDOR":"Mostrando garantias enviadas a proveedor.",
     "estadoEspecifico:REPARADO":"Mostrando garantias reparadas.",
@@ -571,7 +693,7 @@ let garantiaImpresionId = null;
 
 window.onload = function(){
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
-    actualizarEstadosEspecificos("En tramite");
+    actualizarEstadosEspecificos("Pendiente de gestion");
 
     const params = new URLSearchParams(window.location.search);
     const serial = params.get("serial");
@@ -610,6 +732,10 @@ function puedeEliminarGarantias(){
     return document.getElementById("permisoEliminarGarantias") !== null;
 }
 
+function puedeEditarGarantias(){
+    return document.getElementById("permisoEditarGarantias") !== null;
+}
+
 function cargarDashboardGarantiasModulo(){
     fetch("/garantias/api/dashboard")
         .then(response => response.json())
@@ -634,6 +760,12 @@ function cargarDashboardGarantiasModulo(){
 function aplicarFiltrosDesdeUrl(params){
     filtroDashboard.estadoGeneral = params.get("estadoGeneral");
     filtroDashboard.estadoEspecifico = params.get("estadoEspecifico");
+    if(filtroDashboard.estadoEspecifico === "EN_TRAMITE"){
+        filtroDashboard.estadoEspecifico = "PENDIENTE_GESTION";
+        const nuevosParams = new URLSearchParams(window.location.search);
+        nuevosParams.set("estadoEspecifico", "PENDIENTE_GESTION");
+        history.replaceState({}, "", `/garantias?${nuevosParams.toString()}`);
+    }
     filtroDashboard.filtro = params.get("filtro");
     actualizarFiltroActivo();
 }
@@ -769,7 +901,7 @@ function actualizarEstadosEspecificos(valorSeleccionado = null){
     const seleccionado = valorSeleccionado ? normalizarEstado(valorSeleccionado) : select.value;
 
     select.innerHTML = opciones
-        .map(estado => `<option value="${escaparHtml(estado)}">${escaparHtml(estado)}</option>`)
+        .map(estado => `<option value="${escaparHtml(estado)}" title="${escaparHtml(AYUDAS_ESTADO_ABIERTO[estado] || "")}">${escaparHtml(estado)}</option>`)
         .join("");
 
     if(opciones.includes(seleccionado)){
@@ -777,6 +909,16 @@ function actualizarEstadosEspecificos(valorSeleccionado = null){
     }
 
     actualizarMotivoNoAplica();
+    actualizarAyudaEstadoFormulario();
+}
+
+function actualizarAyudaEstadoFormulario(){
+    const ayuda = document.getElementById("ayudaEstadoEspecifico");
+    const estado = document.getElementById("estadoEspecifico").value;
+    const general = document.getElementById("estadoGeneral").value;
+    const texto = general === "Abierto" ? AYUDAS_ESTADO_ABIERTO[estado] : "";
+    ayuda.style.display = texto ? "block" : "none";
+    ayuda.innerText = texto || "";
 }
 
 function prepararGarantiaDesdeSerial(){
@@ -810,7 +952,7 @@ function prepararGarantiaDesdeSerial(){
 
 function llenarFormulario(data){
     const estadoGeneral = data.estadoGeneral || estadoGeneralDesdeEstado(data.estadoEspecifico || data.estado);
-    const estadoEspecifico = normalizarEstado(data.estadoEspecifico || data.estado || "En tramite");
+    const estadoEspecifico = normalizarEstado(data.estadoEspecifico || data.estado || "Pendiente de gestion");
 
     document.getElementById("garantiaId").value = data.id || "";
     document.getElementById("equipoId").value = data.equipoId || data.equipo?.id_equipo || "";
@@ -901,15 +1043,25 @@ function editarGarantia(id){
 }
 
 function mostrarDetalles(id){
-    fetch(`/garantias/api/${id}`)
-        .then(async response => {
-            if(!response.ok){
-                const mensaje = await response.text();
-                throw new Error(mensaje || "No se pudo cargar el detalle.");
-            }
-            return response.json();
-        })
-        .then(g => {
+    Promise.all([
+        fetch(`/garantias/api/${id}`)
+            .then(async response => {
+                if(!response.ok){
+                    const mensaje = await response.text();
+                    throw new Error(mensaje || "No se pudo cargar el detalle.");
+                }
+                return response.json();
+            }),
+        fetch(`/garantias/api/${id}/historial`)
+            .then(async response => {
+                if(!response.ok){
+                    const mensaje = await response.text();
+                    throw new Error(mensaje || "No se pudo cargar la bitacora.");
+                }
+                return response.json();
+            })
+    ])
+        .then(([g, historial]) => {
             const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
             const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "");
             document.getElementById("detalleTitulo").innerText = `Ticket ${g.numeroTicket || ""} - Serial ${g.serial || ""}`;
@@ -934,10 +1086,42 @@ function mostrarDetalles(id){
                     ${detalleTexto("Motivo no aplico garantia", g.motivoNoAplicaGarantia)}
                     ${detalleTexto("Observaciones", g.observaciones)}
                 </div>
+                <div class="mt-4">
+                    <h4 class="h6 mb-2">Bitacora</h4>
+                    ${historialGarantia(historial)}
+                </div>
             `;
             document.getElementById("modalDetalles").classList.add("visible");
         })
         .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function historialGarantia(historial){
+    if(!historial || historial.length === 0){
+        return `<div class="alert alert-light border mb-0">No existen actualizaciones registradas para este ticket.</div>`;
+    }
+
+    return `
+        <div class="historial-timeline">
+            ${historial.map(item => {
+                const fecha = item.fechaHora ? new Date(item.fechaHora).toLocaleString("es-CO") : "Fecha no registrada";
+                const anterior = [item.estadoGeneralAnterior, item.estadoEspecificoAnterior].filter(Boolean).join(" - ");
+                const nuevo = [item.estadoGeneralNuevo, item.estadoEspecificoNuevo].filter(Boolean).join(" - ");
+                return `
+                    <div class="historial-item">
+                        <div class="historial-card">
+                            <strong>${escaparHtml(fecha)} - ${escaparHtml(item.tipoEvento || "ACTUALIZACION")}</strong>
+                            <small>Usuario: ${escaparHtml(item.usuario || "No registrado")}</small>
+                            <small>Estado anterior: ${escaparHtml(anterior || "Sin estado anterior")}</small>
+                            <small>Estado nuevo: ${escaparHtml(nuevo || "Sin estado nuevo")}</small>
+                            ${item.numeroCasoProveedor ? `<small>Caso proveedor: ${escaparHtml(item.numeroCasoProveedor)}</small>` : ""}
+                            <p class="mt-2 mb-0">${escaparHtml(item.observacion || "Sin observacion")}</p>
+                        </div>
+                    </div>
+                `;
+            }).join("")}
+        </div>
+    `;
 }
 
 function detalleItem(titulo, valor){
@@ -988,6 +1172,113 @@ function abrirComprobanteGarantia(formato){
     }
 
     window.location.href = `/garantias/${garantiaImpresionId}/comprobante?formato=${encodeURIComponent(formato)}`;
+}
+
+function abrirActualizacionGarantia(id){
+    fetch(`/garantias/api/${id}`)
+        .then(async response => {
+            if(!response.ok){
+                const mensaje = await response.text();
+                throw new Error(mensaje || "No se pudo cargar la garantia.");
+            }
+            return response.json();
+        })
+        .then(g => {
+            const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
+            const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "Pendiente de gestion");
+            document.getElementById("actualizacionGarantiaId").value = g.id;
+            document.getElementById("actualizacionTicket").value = g.numeroTicket || "";
+            document.getElementById("actualizacionSerial").value = g.serial || "";
+            document.getElementById("actualizacionEstadoActual").value = `${estadoGeneral} - ${estadoEspecifico}`;
+            document.getElementById("actualizacionEstadoGeneral").value = estadoGeneral;
+            document.getElementById("actualizacionNumeroCasoProveedor").value = g.numeroCasoProveedor || "";
+            document.getElementById("actualizacionMotivoNoAplica").value = g.motivoNoAplicaGarantia || "";
+            document.getElementById("actualizacionObservacion").value = "";
+            document.getElementById("actualizacionTitulo").innerText = `Ticket ${g.numeroTicket || ""} - Serial ${g.serial || ""}`;
+            actualizarEstadosEspecificosActualizacion(estadoEspecifico);
+            document.getElementById("modalActualizacion").classList.add("visible");
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function actualizarEstadosEspecificosActualizacion(valorSeleccionado = null){
+    const general = document.getElementById("actualizacionEstadoGeneral").value;
+    const select = document.getElementById("actualizacionEstadoEspecifico");
+    const opciones = general === "Cerrado" ? ESTADOS_CERRADOS : ESTADOS_ABIERTOS;
+    const seleccionado = valorSeleccionado ? normalizarEstado(valorSeleccionado) : select.value;
+
+    select.innerHTML = opciones
+        .map(estado => `<option value="${escaparHtml(estado)}" title="${escaparHtml(AYUDAS_ESTADO_ABIERTO[estado] || "")}">${escaparHtml(estado)}</option>`)
+        .join("");
+
+    if(opciones.includes(seleccionado)){
+        select.value = seleccionado;
+    }
+
+    actualizarAyudaEstadoActualizacion();
+}
+
+function actualizarAyudaEstadoActualizacion(){
+    const general = document.getElementById("actualizacionEstadoGeneral").value;
+    const estado = document.getElementById("actualizacionEstadoEspecifico").value;
+    const ayuda = document.getElementById("ayudaEstadoActualizacion");
+    const texto = general === "Abierto" ? AYUDAS_ESTADO_ABIERTO[estado] : "";
+    ayuda.style.display = texto ? "block" : "none";
+    ayuda.innerText = texto || "";
+
+    const noAplica = general === "Cerrado" && estado === "No aplico garantia";
+    document.getElementById("grupoActualizacionMotivoNoAplica").style.display = noAplica ? "block" : "none";
+    document.getElementById("actualizacionMotivoNoAplica").required = noAplica;
+}
+
+function guardarActualizacionGarantia(event){
+    event.preventDefault();
+
+    const id = document.getElementById("actualizacionGarantiaId").value;
+    const datos = {
+        estadoGeneral: document.getElementById("actualizacionEstadoGeneral").value,
+        estadoEspecifico: document.getElementById("actualizacionEstadoEspecifico").value,
+        numeroCasoProveedor: document.getElementById("actualizacionNumeroCasoProveedor").value,
+        motivoNoAplicaGarantia: document.getElementById("actualizacionMotivoNoAplica").value,
+        observacion: document.getElementById("actualizacionObservacion").value
+    };
+
+    if(datos.estadoGeneral === "Cerrado"
+            && datos.estadoEspecifico === "No aplico garantia"
+            && !datos.motivoNoAplicaGarantia.trim()){
+        mostrarToast("Debe ingresar el motivo por el cual no aplico la garantia.", "warning");
+        return;
+    }
+
+    fetch(`/garantias/api/${id}/actualizaciones`, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(datos)
+    })
+        .then(async response => {
+            if(!response.ok){
+                const mensaje = await response.text();
+                throw new Error(mensaje || "No se pudo registrar la actualizacion.");
+            }
+            return response.json();
+        })
+        .then(() => {
+            mostrarToast("Actualizacion registrada correctamente.", "success");
+            cerrarActualizacion();
+            cargarDashboardGarantiasModulo();
+            listarGarantias();
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function cerrarActualizacion(){
+    document.getElementById("modalActualizacion").classList.remove("visible");
+}
+
+function cerrarActualizacionDesdeFondo(event){
+    if(event.target.id === "modalActualizacion"){
+        cerrarActualizacion();
+    }
 }
 
 function eliminarGarantia(id){
@@ -1052,6 +1343,9 @@ function listarGarantias(){
                 garantias.map(g => {
                     const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
                     const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "");
+                    const botonEditar = puedeEditarGarantias()
+                        ? `<button class="btn btn-warning btn-sm" onclick="editarGarantia(${g.id})">Editar</button>`
+                        : "";
                     const botonEliminar = puedeEliminarGarantias()
                         ? `<button class="btn btn-danger btn-sm" onclick="eliminarGarantia(${g.id})">Eliminar</button>`
                         : "";
@@ -1070,7 +1364,8 @@ function listarGarantias(){
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
                                     <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${g.id})">Detalles</button>
-                                    <button class="btn btn-warning btn-sm" onclick="editarGarantia(${g.id})">Editar</button>
+                                    <button class="btn btn-success btn-sm" onclick="abrirActualizacionGarantia(${g.id})">Actualizar</button>
+                                    ${botonEditar}
                                     <button class="btn btn-primary btn-sm" onclick="seleccionarImpresionGarantia(${g.id})">Imprimir</button>
                                     ${botonEliminar}
                                 </div>
@@ -1126,7 +1421,7 @@ function limpiarFormulario(){
     document.getElementById("numeroTicket").value = "";
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
     document.getElementById("estadoGeneral").value = "Abierto";
-    actualizarEstadosEspecificos("En tramite");
+    actualizarEstadosEspecificos("Pendiente de gestion");
 }
 </script>
 
