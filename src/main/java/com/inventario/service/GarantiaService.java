@@ -169,6 +169,7 @@ public class GarantiaService {
         garantia.setNumeroTicket(generarNumeroTicket());
         garantia.setUsuarioCreacion(nombreUsuarioActual());
         aplicarDatos(garantia, dto, equipo);
+        garantia.setSede(obtenerSedeGestionActual());
         Garantia guardada = garantiaRepository.save(garantia);
         registrarHistorial(
                 guardada,
@@ -287,8 +288,6 @@ public class GarantiaService {
             throw new RuntimeException("No se puede tramitar garantia porque el serial esta fuera del periodo de garantia.");
         }
 
-        usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
-
         return equipo;
     }
 
@@ -348,7 +347,7 @@ public class GarantiaService {
         GarantiaDTO dto = new GarantiaDTO();
         dto.setEquipoId(equipo.getId_equipo());
         dto.setNumeroTicket("");
-        dto.setSede(equipo.getSede() == null ? "" : equipo.getSede().getNombre());
+        dto.setSede(obtenerSedeGestionActual());
         dto.setReferenciaProducto(equipo.getProducto() == null ? "" : equipo.getProducto().getNombre());
         dto.setSerial(equipo.getSerial());
         dto.setEstadoGeneral(ESTADO_GENERAL_ABIERTO);
@@ -359,6 +358,14 @@ public class GarantiaService {
         dto.setFechaIngresoSerial(parseFecha(equipo.getFecha()));
         dto.setFechaIngresoGarantia(LocalDate.now());
         return dto;
+    }
+
+    private String obtenerSedeGestionActual() {
+        String sede = limpiar(usuarioContextService.sedeNombreActual());
+        if (sede == null) {
+            throw new RuntimeException("No se puede tramitar garantia porque el usuario no tiene una sede asignada.");
+        }
+        return sede;
     }
 
     private String generarNumeroTicket() {
