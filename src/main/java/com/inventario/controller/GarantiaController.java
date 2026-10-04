@@ -98,13 +98,14 @@ public class GarantiaController {
             @RequestParam(required = false) String estadoGeneral,
             @RequestParam(required = false) String estadoEspecifico,
             @RequestParam(required = false) String filtro,
+            @RequestParam(defaultValue = "asc") String ordenTicket,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 10), 50),
-                Sort.by(Sort.Direction.ASC, "numeroTicket"));
+                Sort.by(direccionTicket(ordenTicket), "numeroTicket"));
 
         return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
     }
@@ -170,6 +171,12 @@ public class GarantiaController {
 
     private String fechaComprobante(LocalDate fecha) {
         return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private Sort.Direction direccionTicket(String ordenTicket) {
+        return "desc".equalsIgnoreCase(ordenTicket)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
     }
 
     private String formatoComprobante(String formato) {

@@ -94,13 +94,14 @@ public class ServicioTecnicoController {
     public Page<ServicioTecnico> listar(
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) String estadoServicio,
+            @RequestParam(defaultValue = "asc") String ordenTicket,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 10), 50),
-                Sort.by(Sort.Direction.ASC, "ticket"));
+                Sort.by(direccionTicket(ordenTicket), "ticket"));
 
         return servicioTecnicoService.listar(busqueda, estadoServicio, pageable);
     }
@@ -154,6 +155,12 @@ public class ServicioTecnicoController {
 
     private String fechaComprobante(LocalDate fecha) {
         return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private Sort.Direction direccionTicket(String ordenTicket) {
+        return "desc".equalsIgnoreCase(ordenTicket)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
     }
 
     private String formatoComprobante(String formato) {

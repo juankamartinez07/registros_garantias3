@@ -310,7 +310,7 @@
         </div>
 
         <div class="row g-2 mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <input
                     id="busqueda"
                     class="form-control"
@@ -327,7 +327,13 @@
                     <option value="No reparado">No reparado</option>
                 </select>
             </div>
-            <div class="col-md-3 d-grid">
+            <div class="col-md-3">
+                <select id="ordenTicket" class="form-select" onchange="filtrarServicioTecnico()">
+                    <option value="asc">Ticket: ascendente</option>
+                    <option value="desc">Ticket: descendente</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
                 <button class="btn btn-outline-primary" onclick="filtrarServicioTecnico()">Buscar</button>
             </div>
         </div>
@@ -551,6 +557,7 @@ function listarServicioTecnico(){
 
     const busqueda = document.getElementById("busqueda").value.trim();
     const estado = document.getElementById("filtroEstado").value;
+    const ordenTicket = document.getElementById("ordenTicket").value;
 
     if(busqueda){
         params.set("busqueda", busqueda);
@@ -558,6 +565,7 @@ function listarServicioTecnico(){
     if(estado){
         params.set("estadoServicio", estado);
     }
+    params.set("ordenTicket", ordenTicket);
 
     fetch(`/servicio-tecnico/api?${params.toString()}`)
         .then(response => {

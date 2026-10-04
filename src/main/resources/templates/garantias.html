@@ -500,6 +500,10 @@
                     <option>Cambio por equipo nuevo</option>
                     <option>Nota credito</option>
                 </select>
+                <select id="ordenTicket" class="form-select" style="max-width:220px;" onchange="filtrarGarantias()">
+                    <option value="asc">Ticket: ascendente</option>
+                    <option value="desc">Ticket: descendente</option>
+                </select>
                 <button class="btn btn-primary" onclick="filtrarGarantias()">Buscar</button>
             </div>
         </div>
@@ -1326,6 +1330,7 @@ function listarGarantias(){
 
     const serial = document.getElementById("filtroSerial").value.trim();
     const estado = document.getElementById("filtroEstado").value;
+    const ordenTicket = document.getElementById("ordenTicket").value;
 
     if(serial !== ""){
         params.append("serial", serial);
@@ -1334,6 +1339,8 @@ function listarGarantias(){
     if(estado !== ""){
         params.append("estado", ESTADOS_API[estado] || estado);
     }
+
+    params.append("ordenTicket", ordenTicket);
 
     if(filtroDashboard.estadoGeneral){
         params.append("estadoGeneral", filtroDashboard.estadoGeneral);
