@@ -1,5 +1,6 @@
 package com.inventario.service;
 
+import com.inventario.config.TiempoColombiaConfig;
 import com.inventario.dto.ServicioTecnicoDTO;
 import com.inventario.model.ServicioTecnico;
 import com.inventario.repository.ServicioTecnicoRepository;
@@ -130,7 +131,7 @@ public class ServicioTecnicoService {
             throw new RuntimeException("Debe seleccionar un estado del servicio.");
         }
 
-        servicio.setFechaIngreso(dto.getFechaIngreso() == null ? LocalDate.now() : dto.getFechaIngreso());
+        servicio.setFechaIngreso(dto.getFechaIngreso() == null ? TiempoColombiaConfig.hoy() : dto.getFechaIngreso());
         servicio.setCliente(cliente);
         servicio.setTelefono(telefono);
         servicio.setSerial(serial);

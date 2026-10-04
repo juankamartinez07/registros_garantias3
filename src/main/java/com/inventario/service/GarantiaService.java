@@ -4,6 +4,7 @@ import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaActualizacionDTO;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.dto.GarantiaHistorialDTO;
+import com.inventario.config.TiempoColombiaConfig;
 import com.inventario.model.Equipo;
 import com.inventario.model.Garantia;
 import com.inventario.model.GarantiaHistorial;
@@ -77,7 +78,7 @@ public class GarantiaService {
             String filtro,
             Pageable pageable) {
 
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = TiempoColombiaConfig.hoy();
         LocalDate inicioMes = hoy.withDayOfMonth(1);
         LocalDate finMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
         LocalDate fechaLimite10Dias = hoy.minusDays(10);
@@ -105,7 +106,7 @@ public class GarantiaService {
     }
 
     public DashboardGarantias dashboard() {
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = TiempoColombiaConfig.hoy();
         LocalDate inicioMes = hoy.withDayOfMonth(1);
         LocalDate finMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
         LocalDate fechaLimite10Dias = hoy.minusDays(10);
@@ -268,10 +269,11 @@ public class GarantiaService {
 
     public boolean estaEnGarantia(Equipo equipo) {
         LocalDate fecha = parseFecha(equipo == null ? null : equipo.getFecha());
-        if (fecha == null || fecha.isAfter(LocalDate.now())) {
+        LocalDate hoy = TiempoColombiaConfig.hoy();
+        if (fecha == null || fecha.isAfter(hoy)) {
             return false;
         }
-        long dias = ChronoUnit.DAYS.between(fecha, LocalDate.now());
+        long dias = ChronoUnit.DAYS.between(fecha, hoy);
         return dias <= DIAS_GARANTIA;
     }
 
@@ -333,7 +335,7 @@ public class GarantiaService {
         garantia.setProveedor(valorBase(dto.getProveedor(), equipo == null || equipo.getProveedor() == null ? null : equipo.getProveedor().getNombre()));
         garantia.setFacturaProveedor(valorBase(dto.getFacturaProveedor(), equipo == null ? null : equipo.getFactura()));
         garantia.setFechaIngresoSerial(dto.getFechaIngresoSerial() != null ? dto.getFechaIngresoSerial() : parseFecha(equipo == null ? null : equipo.getFecha()));
-        garantia.setFechaIngresoGarantia(dto.getFechaIngresoGarantia() != null ? dto.getFechaIngresoGarantia() : LocalDate.now());
+        garantia.setFechaIngresoGarantia(dto.getFechaIngresoGarantia() != null ? dto.getFechaIngresoGarantia() : TiempoColombiaConfig.hoy());
         garantia.setMotivosGarantia(mayuscula(dto.getMotivosGarantia()));
         garantia.setNumeroCasoProveedor(mayuscula(dto.getNumeroCasoProveedor()));
         garantia.setMotivoNoAplicaGarantia(motivoNoAplica);
@@ -356,7 +358,7 @@ public class GarantiaService {
         dto.setProveedor(equipo.getProveedor() == null ? "" : equipo.getProveedor().getNombre());
         dto.setFacturaProveedor(equipo.getFactura());
         dto.setFechaIngresoSerial(parseFecha(equipo.getFecha()));
-        dto.setFechaIngresoGarantia(LocalDate.now());
+        dto.setFechaIngresoGarantia(TiempoColombiaConfig.hoy());
         return dto;
     }
 

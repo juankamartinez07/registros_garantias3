@@ -1080,8 +1080,8 @@ function mostrarDetalles(id){
                     ${detalleItem("Estado especifico", estadoEspecifico)}
                     ${detalleItem("Numero caso proveedor", g.numeroCasoProveedor)}
                     ${detalleItem("Usuario que creo", g.usuarioCreacion)}
-                    ${detalleItem("Fecha creacion", g.fechaCreacion)}
-                    ${detalleItem("Ultima actualizacion", g.fechaActualizacion)}
+                    ${detalleItem("Fecha creacion", formatearFechaHoraColombia(g.fechaCreacion))}
+                    ${detalleItem("Ultima actualizacion", formatearFechaHoraColombia(g.fechaActualizacion))}
                     ${detalleTexto("Motivo de garantia", g.motivosGarantia)}
                     ${detalleTexto("Motivo no aplico garantia", g.motivoNoAplicaGarantia)}
                     ${detalleTexto("Observaciones", g.observaciones)}
@@ -1104,7 +1104,7 @@ function historialGarantia(historial){
     return `
         <div class="historial-timeline">
             ${historial.map(item => {
-                const fecha = item.fechaHora ? new Date(item.fechaHora).toLocaleString("es-CO") : "Fecha no registrada";
+                const fecha = formatearFechaHoraColombia(item.fechaHora, "Fecha no registrada");
                 const anterior = [item.estadoGeneralAnterior, item.estadoEspecificoAnterior].filter(Boolean).join(" - ");
                 const nuevo = [item.estadoGeneralNuevo, item.estadoEspecificoNuevo].filter(Boolean).join(" - ");
                 return `
@@ -1140,6 +1140,20 @@ function detalleTexto(titulo, valor){
             <p>${escaparHtml(valor || "Sin informacion")}</p>
         </div>
     `;
+}
+
+function formatearFechaHoraColombia(valor, valorVacio = "Sin informacion"){
+    if(!valor){
+        return valorVacio;
+    }
+
+    const coincidencia = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})(?:T|\s)(\d{2}):(\d{2})/);
+    if(!coincidencia){
+        return String(valor);
+    }
+
+    const [, anio, mes, dia, hora, minuto] = coincidencia;
+    return `${dia}/${mes}/${anio} ${hora}:${minuto}`;
 }
 
 function cerrarDetalles(){

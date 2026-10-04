@@ -1,5 +1,6 @@
 package com.inventario.model;
 
+import com.inventario.config.TiempoColombiaConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -78,14 +79,14 @@ public class Garantia {
 
     @PrePersist
     public void prePersist() {
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = TiempoColombiaConfig.ahora();
         fechaCreacion = ahora;
         fechaActualizacion = ahora;
     }
 
     @PreUpdate
     public void preUpdate() {
-        fechaActualizacion = LocalDateTime.now();
+        fechaActualizacion = TiempoColombiaConfig.ahora();
     }
 
     public Long getId() {

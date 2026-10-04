@@ -1,5 +1,6 @@
 package com.inventario.controller;
 
+import com.inventario.config.TiempoColombiaConfig;
 import com.inventario.model.Sede;
 import com.inventario.model.Usuario;
 import com.inventario.repository.SedeRepository;
@@ -150,7 +151,7 @@ public class UsuarioController {
             usuario.setDiasDemoIndividual(null);
         } else {
             LocalDate fechaInicio = solicitud.getFechaInicioDemoIndividual() == null
-                    ? LocalDate.now()
+                    ? TiempoColombiaConfig.hoy()
                     : solicitud.getFechaInicioDemoIndividual();
             Integer diasDemo = solicitud.getDiasDemoIndividual();
 

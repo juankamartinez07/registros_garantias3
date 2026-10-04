@@ -580,8 +580,8 @@ function mostrarDetalles(id){
                     ${detalleItem("Observaciones", servicio.observaciones, true)}
                     ${detalleItem("Usuario que recibe", servicio.usuarioRecibe)}
                     ${detalleItem("Estado del servicio", servicio.estadoServicio)}
-                    ${detalleItem("Fecha creacion", servicio.fechaCreacion)}
-                    ${detalleItem("Fecha actualizacion", servicio.fechaActualizacion)}
+                    ${detalleItem("Fecha creacion", formatearFechaHoraColombia(servicio.fechaCreacion))}
+                    ${detalleItem("Fecha actualizacion", formatearFechaHoraColombia(servicio.fechaActualizacion))}
                 </div>
             `;
             document.getElementById("modalDetalles").classList.add("visible");
@@ -620,6 +620,20 @@ function detalleItem(titulo, valor, multilinea){
             ${multilinea ? `<p>${contenido}</p>` : `<strong>${contenido}</strong>`}
         </div>
     `;
+}
+
+function formatearFechaHoraColombia(valor){
+    if(!valor){
+        return "No registrado";
+    }
+
+    const coincidencia = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})(?:T|\s)(\d{2}):(\d{2})/);
+    if(!coincidencia){
+        return String(valor);
+    }
+
+    const [, anio, mes, dia, hora, minuto] = coincidencia;
+    return `${dia}/${mes}/${anio} ${hora}:${minuto}`;
 }
 
 function cerrarDetalles(){

@@ -1,5 +1,6 @@
 package com.inventario.model;
 
+import com.inventario.config.TiempoColombiaConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -54,7 +55,7 @@ public class GarantiaHistorial {
     @PrePersist
     public void prePersist() {
         if (fechaHora == null) {
-            fechaHora = LocalDateTime.now();
+            fechaHora = TiempoColombiaConfig.ahora();
         }
     }
 
