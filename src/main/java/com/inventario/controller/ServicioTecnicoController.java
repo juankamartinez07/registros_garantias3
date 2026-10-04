@@ -1,6 +1,8 @@
 package com.inventario.controller;
 
 import com.inventario.dto.ServicioTecnicoDTO;
+import com.inventario.dto.ServicioTecnicoActualizacionDTO;
+import com.inventario.dto.ServicioTecnicoHistorialDTO;
 import com.inventario.model.ServicioTecnico;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.ServicioTecnicoService;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Controller
 @RequestMapping("/servicio-tecnico")
@@ -108,6 +111,12 @@ public class ServicioTecnicoController {
         return servicioTecnicoService.obtener(id);
     }
 
+    @GetMapping("/api/{id}/historial")
+    @ResponseBody
+    public List<ServicioTecnicoHistorialDTO> historial(@PathVariable Long id) {
+        return servicioTecnicoService.historial(id);
+    }
+
     @PostMapping("/api")
     @ResponseBody
     public ServicioTecnico crear(@RequestBody ServicioTecnicoDTO dto) {
@@ -120,6 +129,14 @@ public class ServicioTecnicoController {
             @PathVariable Long id,
             @RequestBody ServicioTecnicoDTO dto) {
         return servicioTecnicoService.actualizar(id, dto);
+    }
+
+    @PostMapping("/api/{id}/actualizaciones")
+    @ResponseBody
+    public ServicioTecnico actualizarProceso(
+            @PathVariable Long id,
+            @RequestBody ServicioTecnicoActualizacionDTO dto) {
+        return servicioTecnicoService.actualizarProceso(id, dto);
     }
 
     @DeleteMapping("/api/{id}")

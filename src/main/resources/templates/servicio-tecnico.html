@@ -148,6 +148,51 @@
             white-space:pre-wrap;
         }
 
+        .historial-timeline{
+            position:relative;
+            padding-left:28px;
+        }
+
+        .historial-timeline::before{
+            content:"";
+            position:absolute;
+            top:8px;
+            bottom:8px;
+            left:8px;
+            width:2px;
+            background:#cbd5e1;
+        }
+
+        .historial-item{
+            position:relative;
+            margin-bottom:14px;
+        }
+
+        .historial-item::before{
+            content:"";
+            position:absolute;
+            top:15px;
+            left:-25px;
+            width:12px;
+            height:12px;
+            border:3px solid #2563eb;
+            border-radius:50%;
+            background:#fff;
+        }
+
+        .historial-card{
+            border:1px solid #dbe3ee;
+            border-radius:8px;
+            background:#f8fafc;
+            padding:12px;
+        }
+
+        .historial-card small{
+            display:block;
+            color:#475569;
+            margin-top:3px;
+        }
+
         textarea{
             resize:vertical;
         }
@@ -165,6 +210,7 @@
     </div>
 
     <div id="permisoEliminarServicioTecnico" sec:authorize="hasRole('SUPER_ADMIN')" style="display:none;"></div>
+    <div id="permisoEditarServicioTecnico" sec:authorize="hasRole('SUPER_ADMIN')" style="display:none;"></div>
 
     <div class="toolbar">
         <div>
@@ -328,11 +374,51 @@
                 <div id="detalleTitulo" class="text-muted"></div>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                <button type="button" id="detalleActualizar" class="btn btn-success btn-sm">Actualizar</button>
                 <button type="button" id="detalleImprimir" class="btn btn-primary btn-sm">Imprimir</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
             </div>
         </div>
         <div id="contenidoDetalles" class="modal-detalles-cuerpo"></div>
+    </div>
+</div>
+
+<div id="modalActualizacionServicio" class="modal-detalles" onclick="cerrarActualizacionServicioDesdeFondo(event)">
+    <div class="modal-detalles-contenido" style="width:min(680px, 100%);">
+        <div class="modal-detalles-cabecera">
+            <div>
+                <h3 class="h5 mb-1">Actualizar servicio tecnico</h3>
+                <div id="actualizacionServicioResumen" class="text-muted"></div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarActualizacionServicio()">Cancelar</button>
+        </div>
+        <form class="modal-detalles-cuerpo" onsubmit="guardarActualizacionServicio(event)">
+            <input type="hidden" id="actualizacionServicioId">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Estado actual</label>
+                    <input id="actualizacionEstadoActual" class="form-control" readonly>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nuevo estado</label>
+                    <select id="actualizacionEstadoNuevo" class="form-select" required>
+                        <option value="Recibido">Recibido</option>
+                        <option value="En revision">En revision</option>
+                        <option value="Listo para entregar">Listo para entregar</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="No reparado">No reparado</option>
+                    </select>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label">Observacion de actualizacion</label>
+                    <textarea id="actualizacionObservacion" class="form-control" rows="4" placeholder="Describa el avance del servicio."></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="cerrarActualizacionServicio()">Cancelar</button>
+                <button type="submit" class="btn btn-success">Guardar actualizacion</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -372,6 +458,10 @@ function fechaHoy(){
 
 function puedeEliminarServicioTecnico(){
     return !!document.getElementById("permisoEliminarServicioTecnico");
+}
+
+function puedeEditarServicioTecnico(){
+    return !!document.getElementById("permisoEditarServicioTecnico");
 }
 
 function datosFormulario(){
@@ -489,6 +579,9 @@ function listarServicioTecnico(){
                     const botonEliminar = puedeEliminarServicioTecnico()
                         ? `<button class="btn btn-danger btn-sm" onclick="eliminarServicioTecnico(${servicio.id})">Eliminar</button>`
                         : "";
+                    const botonEditar = puedeEditarServicioTecnico()
+                        ? `<button class="btn btn-warning btn-sm" onclick="editarServicioTecnico(${servicio.id})">Editar</button>`
+                        : "";
                     const estado = servicio.estadoServicio || "";
                     const estadoClase = ["Entregado", "No reparado"].includes(estado) ? " cerrado" : "";
 
@@ -504,7 +597,8 @@ function listarServicioTecnico(){
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
                                     <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${servicio.id})">Detalles</button>
-                                    <button class="btn btn-warning btn-sm" onclick="editarServicioTecnico(${servicio.id})">Editar</button>
+                                    <button class="btn btn-success btn-sm" onclick="abrirActualizacionServicio(${servicio.id})">Actualizar</button>
+                                    ${botonEditar}
                                     <button class="btn btn-primary btn-sm" onclick="seleccionarImpresionServicioTecnico(${servicio.id})">Imprimir</button>
                                     ${botonEliminar}
                                 </div>
@@ -553,19 +647,31 @@ function editarServicioTecnico(id){
 }
 
 function mostrarDetalles(id){
-    fetch(`/servicio-tecnico/api/${id}`)
-        .then(response => {
-            if(!response.ok){
-                return response.text().then(texto => {
-                    throw new Error(texto || "No se pudo cargar el detalle.");
-                });
-            }
-            return response.json();
-        })
-        .then(servicio => {
+    Promise.all([
+        fetch(`/servicio-tecnico/api/${id}`)
+            .then(response => {
+                if(!response.ok){
+                    return response.text().then(texto => {
+                        throw new Error(texto || "No se pudo cargar el detalle.");
+                    });
+                }
+                return response.json();
+            }),
+        fetch(`/servicio-tecnico/api/${id}/historial`)
+            .then(response => {
+                if(!response.ok){
+                    return response.text().then(texto => {
+                        throw new Error(texto || "No se pudo cargar la bitacora.");
+                    });
+                }
+                return response.json();
+            })
+    ])
+        .then(([servicio, historial]) => {
             document.getElementById("detalleTitulo").innerText =
                 `Ticket ${servicio.ticket || ""} - Serial ${servicio.serial || ""}`;
             document.getElementById("detalleImprimir").onclick = () => seleccionarImpresionServicioTecnico(servicio.id);
+            document.getElementById("detalleActualizar").onclick = () => abrirActualizacionServicio(servicio.id);
             document.getElementById("contenidoDetalles").innerHTML = `
                 <div class="detalle-grid">
                     ${detalleItem("Ticket", servicio.ticket)}
@@ -583,10 +689,101 @@ function mostrarDetalles(id){
                     ${detalleItem("Fecha creacion", formatearFechaHoraColombia(servicio.fechaCreacion))}
                     ${detalleItem("Fecha actualizacion", formatearFechaHoraColombia(servicio.fechaActualizacion))}
                 </div>
+                <div class="mt-4">
+                    <h4 class="h6 mb-2">Bitacora</h4>
+                    ${historialServicioTecnico(historial)}
+                </div>
             `;
             document.getElementById("modalDetalles").classList.add("visible");
         })
         .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function historialServicioTecnico(historial){
+    if(!historial || historial.length === 0){
+        return `<div class="alert alert-light border mb-0">No existen actualizaciones registradas para este servicio.</div>`;
+    }
+
+    return `
+        <div class="historial-timeline">
+            ${historial.map(item => {
+                const fecha = formatearFechaHoraColombia(item.fechaHora, "Fecha no registrada");
+                return `
+                    <div class="historial-item">
+                        <div class="historial-card">
+                            <strong>${escaparHtml(fecha)} - ${escaparHtml(item.tipoEvento || "ACTUALIZACION")}</strong>
+                            <small>Usuario: ${escaparHtml(item.usuario || "No registrado")}</small>
+                            <small>Estado anterior: ${escaparHtml(item.estadoAnterior || "Sin estado anterior")}</small>
+                            <small>Estado nuevo: ${escaparHtml(item.estadoNuevo || "Sin estado nuevo")}</small>
+                            <p class="mt-2 mb-0">${escaparHtml(item.observacion || "Sin observacion")}</p>
+                        </div>
+                    </div>
+                `;
+            }).join("")}
+        </div>
+    `;
+}
+
+function abrirActualizacionServicio(id){
+    fetch(`/servicio-tecnico/api/${id}`)
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo cargar el ingreso.");
+                });
+            }
+            return response.json();
+        })
+        .then(servicio => {
+            document.getElementById("actualizacionServicioId").value = servicio.id;
+            document.getElementById("actualizacionServicioResumen").innerText =
+                `Ticket ${servicio.ticket || ""} - ${servicio.cliente || ""} - ${servicio.serial || ""}`;
+            document.getElementById("actualizacionEstadoActual").value = servicio.estadoServicio || "";
+            document.getElementById("actualizacionEstadoNuevo").value = servicio.estadoServicio || "Recibido";
+            document.getElementById("actualizacionObservacion").value = "";
+            cerrarDetalles();
+            document.getElementById("modalActualizacionServicio").classList.add("visible");
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function guardarActualizacionServicio(event){
+    event.preventDefault();
+    const id = document.getElementById("actualizacionServicioId").value;
+    const datos = {
+        estadoServicio: document.getElementById("actualizacionEstadoNuevo").value,
+        observacion: document.getElementById("actualizacionObservacion").value
+    };
+
+    fetch(`/servicio-tecnico/api/${id}/actualizaciones`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(datos)
+    })
+        .then(response => {
+            if(!response.ok){
+                return response.text().then(texto => {
+                    throw new Error(texto || "No se pudo registrar la actualizacion.");
+                });
+            }
+            return response.json();
+        })
+        .then(() => {
+            cerrarActualizacionServicio();
+            mostrarToast("Actualizacion registrada correctamente.", "success");
+            listarServicioTecnico();
+        })
+        .catch(error => mostrarToast(error.message, "danger"));
+}
+
+function cerrarActualizacionServicio(){
+    document.getElementById("modalActualizacionServicio").classList.remove("visible");
+}
+
+function cerrarActualizacionServicioDesdeFondo(event){
+    if(event.target.id === "modalActualizacionServicio"){
+        cerrarActualizacionServicio();
+    }
 }
 
 function eliminarServicioTecnico(id){

@@ -239,6 +239,26 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         if (existeIndiceServicioTicket == null || existeIndiceServicioTicket == 0) {
             jdbcTemplate.execute("create unique index uk_servicio_tecnico_ticket on servicio_tecnico (ticket)");
         }
+
+        jdbcTemplate.execute(
+                """
+                create table if not exists servicio_tecnico_historial (
+                    id bigint not null auto_increment,
+                    servicio_tecnico_id bigint not null,
+                    fecha_hora datetime null,
+                    usuario varchar(255) null,
+                    estado_anterior varchar(80) null,
+                    estado_nuevo varchar(80) null,
+                    observacion text null,
+                    tipo_evento varchar(40) null,
+                    primary key (id),
+                    index idx_servicio_tecnico_historial_servicio (servicio_tecnico_id),
+                    constraint fk_servicio_tecnico_historial_servicio
+                        foreign key (servicio_tecnico_id)
+                        references servicio_tecnico (id)
+                        on delete cascade
+                )
+                """);
     }
 
     private void agregarColumnaSiFalta(String tabla, String columna, String sql) {
