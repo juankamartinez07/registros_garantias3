@@ -139,6 +139,10 @@ public class GarantiaService {
         return garantia;
     }
 
+    public String sedeComprobante(Garantia garantia) {
+        return sedeEfectiva(garantia);
+    }
+
     public GarantiaDTO preparar(String serial) {
         validarPuedeGestionarGarantias();
         Equipo equipo = obtenerEquipoApto(serial);
@@ -369,10 +373,25 @@ public class GarantiaService {
             return;
         }
         String sedeUsuario = limpiar(usuarioContextService.sedeNombreActual());
-        String sedeGarantia = limpiar(garantia.getSede());
+        String sedeGarantia = limpiar(sedeEfectiva(garantia));
         if (sedeUsuario == null || sedeGarantia == null || !sedeUsuario.equalsIgnoreCase(sedeGarantia)) {
             throw new RuntimeException("No tiene permisos para modificar registros de otra sede.");
         }
+    }
+
+    private String sedeEfectiva(Garantia garantia) {
+        String sedeRegistro = limpiar(garantia == null ? null : garantia.getSede());
+        if (sedeRegistro != null) {
+            return sedeRegistro;
+        }
+
+        String sedeUsuarioCreacion = usuarioContextService.sedeNombreDeUsuario(
+                garantia == null ? null : garantia.getUsuarioCreacion());
+        if (limpiar(sedeUsuarioCreacion) != null) {
+            return limpiar(sedeUsuarioCreacion);
+        }
+
+        return limpiar(usuarioContextService.sedeNombreActual());
     }
 
     private String normalizarEstadoGeneral(String estadoGeneral) {

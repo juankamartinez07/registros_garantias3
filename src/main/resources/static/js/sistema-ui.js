@@ -3,18 +3,15 @@
     estilos.textContent = `
         body{
             opacity:0;
-            transform:translateY(8px);
-            transition:opacity 180ms ease, transform 180ms ease;
+            transition:opacity 180ms ease;
         }
 
         body.ui-listo{
             opacity:1;
-            transform:translateY(0);
         }
 
         body.ui-saliendo{
             opacity:0;
-            transform:translateY(6px);
         }
 
         .indicador-conexion{
@@ -63,7 +60,66 @@
             pointer-events:none;
         }
 
+        body.modal-global-abierto{
+            overflow:hidden;
+        }
+
+        .modal-detalles,
+        .modal-excel{
+            position:fixed !important;
+            inset:0 !important;
+            z-index:10040 !important;
+            align-items:center !important;
+            justify-content:center !important;
+            padding:22px !important;
+            overflow-y:auto !important;
+        }
+
+        .modal-detalles.visible,
+        .modal-excel.visible{
+            display:flex !important;
+        }
+
+        .modal-detalles-contenido,
+        .modal-excel-contenido{
+            max-height:calc(100vh - 44px);
+            overflow:auto;
+            overscroll-behavior:contain;
+        }
+
+        .modal-detalles-cabecera,
+        .modal-excel-cabecera{
+            position:sticky;
+            top:0;
+            z-index:2;
+            background:#fff;
+        }
+
+        .modal-excel-pie{
+            position:sticky;
+            bottom:0;
+            z-index:2;
+            background:#fff;
+        }
+
+        @media(max-width:640px){
+            .modal-detalles,
+            .modal-excel{
+                padding:12px !important;
+            }
+
+            .modal-detalles-contenido,
+            .modal-excel-contenido{
+                max-height:calc(100vh - 24px);
+                width:100% !important;
+            }
+        }
+
         @media print{
+            body{
+                opacity:1 !important;
+            }
+
             .footer-global-aplicacion{
                 display:none !important;
             }
@@ -129,6 +185,7 @@
         marcarConexion(navigator.onLine);
         insertarFooterGlobal();
         activarMayusculasAutomaticas();
+        activarModalesGlobales();
 
         document.addEventListener("click", (evento) => {
             const enlace = evento.target.closest("a[href]");
@@ -222,6 +279,69 @@
         });
 
         document.querySelectorAll("input, textarea").forEach(convertirValorAMayusculas);
+    }
+
+    function esModalDelSistema(elemento) {
+        if (!elemento || !elemento.classList) {
+            return false;
+        }
+
+        return elemento.classList.contains("modal-detalles")
+            || elemento.classList.contains("modal-excel");
+    }
+
+    function esModalVisible(elemento) {
+        return esModalDelSistema(elemento) && elemento.classList.contains("visible");
+    }
+
+    function actualizarBloqueoScrollModal() {
+        const hayModalVisible = Boolean(document.querySelector(".modal-detalles.visible, .modal-excel.visible"));
+        document.body.classList.toggle("modal-global-abierto", hayModalVisible);
+    }
+
+    function enfocarModalVisible(modal) {
+        if (!esModalVisible(modal)) {
+            actualizarBloqueoScrollModal();
+            return;
+        }
+
+        modal.setAttribute("tabindex", "-1");
+
+        const contenido = modal.querySelector(".modal-detalles-contenido, .modal-excel-contenido");
+        if (contenido) {
+            contenido.scrollTop = 0;
+        }
+
+        requestAnimationFrame(() => {
+            const objetivoFoco = modal.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+            const objetivo = objetivoFoco || modal;
+
+            if (typeof objetivo.focus === "function") {
+                objetivo.focus({ preventScroll: true });
+            }
+        });
+
+        actualizarBloqueoScrollModal();
+    }
+
+    function activarModalesGlobales() {
+        const observador = new MutationObserver((mutaciones) => {
+            mutaciones.forEach((mutacion) => {
+                const elemento = mutacion.target;
+                if (mutacion.attributeName === "class" && elemento instanceof HTMLElement && esModalDelSistema(elemento)) {
+                    enfocarModalVisible(elemento);
+                }
+            });
+        });
+
+        observador.observe(document.body, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ["class"]
+        });
+
+        document.querySelectorAll(".modal-detalles.visible, .modal-excel.visible").forEach(enfocarModalVisible);
+        actualizarBloqueoScrollModal();
     }
 
     window.addEventListener("online", () => marcarConexion(true));

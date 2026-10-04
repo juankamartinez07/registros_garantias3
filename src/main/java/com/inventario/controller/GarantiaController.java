@@ -3,13 +3,19 @@ package com.inventario.controller;
 import com.inventario.dto.DashboardGarantias;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.model.Garantia;
+import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.GarantiaService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,19 +28,63 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @Controller
 @RequestMapping("/garantias")
 public class GarantiaController {
 
-    private final GarantiaService garantiaService;
+    private static final DateTimeFormatter FORMATO_FECHA_COMPROBANTE =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    public GarantiaController(GarantiaService garantiaService) {
+    private final GarantiaService garantiaService;
+    private final ComprobantePdfService comprobantePdfService;
+
+    public GarantiaController(
+            GarantiaService garantiaService,
+            ComprobantePdfService comprobantePdfService) {
         this.garantiaService = garantiaService;
+        this.comprobantePdfService = comprobantePdfService;
     }
 
     @GetMapping
     public String vista() {
         return "garantias";
+    }
+
+    @GetMapping("/{id}/comprobante")
+    public String comprobante(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "pos") String formato,
+            Model model) {
+
+        Garantia garantia = garantiaService.obtener(id);
+
+        model.addAttribute("formato", formatoComprobante(formato));
+        model.addAttribute("id", garantia.getId());
+        model.addAttribute("sedeComprobante", valorComprobante(garantiaService.sedeComprobante(garantia)));
+        model.addAttribute("telefonoEncabezado", "318 0974067");
+        model.addAttribute("fechaIngresoEquipo", fechaComprobante(garantia.getFechaIngresoGarantia()));
+        model.addAttribute("ticket", valorComprobante(garantia.getNumeroTicket()));
+        model.addAttribute("serial", valorComprobante(garantia.getSerial()));
+        model.addAttribute("productoReferencia", valorComprobante(garantia.getReferenciaProducto()));
+        model.addAttribute("motivoGarantia", valorComprobante(garantia.getMotivosGarantia()));
+        model.addAttribute("observaciones", valorComprobante(garantia.getObservaciones()));
+        model.addAttribute("estadoActual", valorComprobante(
+                garantia.getEstadoEspecifico() == null ? garantia.getEstado() : garantia.getEstadoEspecifico()));
+
+        return "garantia-comprobante";
+    }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
+        Garantia garantia = garantiaService.obtener(id);
+        byte[] pdf = comprobantePdfService.garantia(
+                garantia,
+                garantiaService.sedeComprobante(garantia));
+        return respuestaPdf(pdf, comprobantePdfService.nombreArchivoGarantia(garantia));
     }
 
     @GetMapping("/api")
@@ -99,5 +149,31 @@ public class GarantiaController {
     @ResponseBody
     public String manejarError(RuntimeException exception) {
         return exception.getMessage();
+    }
+
+    private String fechaComprobante(LocalDate fecha) {
+        return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private String formatoComprobante(String formato) {
+        return "a4".equalsIgnoreCase(formato) ? "a4" : "pos";
+    }
+
+    private String valorComprobante(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return "No registrado";
+        }
+        return valor.trim();
+    }
+
+    private ResponseEntity<byte[]> respuestaPdf(byte[] pdf, String nombreArchivo) {
+        ContentDisposition disposicion = ContentDisposition.attachment()
+                .filename(nombreArchivo, StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposicion.toString())
+                .body(pdf);
     }
 }

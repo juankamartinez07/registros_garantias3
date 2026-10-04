@@ -67,6 +67,10 @@ public class ServicioTecnicoService {
         return servicio;
     }
 
+    public String sedeComprobante(ServicioTecnico servicio) {
+        return sedeEfectiva(servicio);
+    }
+
     @Transactional
     public ServicioTecnico crear(ServicioTecnicoDTO dto) {
         validarPuedeUsarModulo();
@@ -174,10 +178,25 @@ public class ServicioTecnicoService {
             return;
         }
         String sedeUsuario = limpiar(usuarioContextService.sedeNombreActual());
-        String sedeServicio = limpiar(servicio.getSede());
+        String sedeServicio = limpiar(sedeEfectiva(servicio));
         if (sedeUsuario == null || sedeServicio == null || !sedeUsuario.equalsIgnoreCase(sedeServicio)) {
             throw new RuntimeException("No tiene permisos para modificar registros de otra sede.");
         }
+    }
+
+    private String sedeEfectiva(ServicioTecnico servicio) {
+        String sedeRegistro = limpiar(servicio == null ? null : servicio.getSede());
+        if (sedeRegistro != null) {
+            return sedeRegistro;
+        }
+
+        String sedeUsuarioRecibe = usuarioContextService.sedeNombreDeUsuario(
+                servicio == null ? null : servicio.getUsuarioRecibe());
+        if (limpiar(sedeUsuarioRecibe) != null) {
+            return limpiar(sedeUsuarioRecibe);
+        }
+
+        return limpiar(usuarioContextService.sedeNombreActual());
     }
 
     private String normalizarEstado(String estado) {

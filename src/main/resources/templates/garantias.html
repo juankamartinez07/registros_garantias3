@@ -486,9 +486,37 @@
                 <h3 class="h5 mb-1">Detalles de garantia</h3>
                 <div id="detalleTitulo" class="text-muted"></div>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" id="detalleImprimir" class="btn btn-primary btn-sm">Imprimir</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarDetalles()">Cerrar</button>
+            </div>
         </div>
         <div id="contenidoDetalles" class="modal-detalles-cuerpo"></div>
+    </div>
+</div>
+
+<div id="modalImpresion" class="modal-detalles" onclick="cerrarSelectorImpresionDesdeFondo(event)">
+    <div class="modal-detalles-contenido" style="width:min(520px, 100%);">
+        <div class="modal-detalles-cabecera">
+            <div>
+                <h3 class="h5 mb-1">Seleccione formato de impresion</h3>
+                <div class="text-muted">Elija como desea generar el comprobante.</div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarSelectorImpresion()">Cancelar</button>
+        </div>
+        <div class="modal-detalles-cuerpo">
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" onclick="abrirComprobanteGarantia('pos')">
+                    Tirilla POS 80 mm
+                </button>
+                <button type="button" class="btn btn-dark" onclick="abrirComprobanteGarantia('a4')">
+                    PDF / Hoja convencional
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="cerrarSelectorImpresion()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -539,6 +567,7 @@ let filtroDashboard = {
     estadoEspecifico:null,
     filtro:null
 };
+let garantiaImpresionId = null;
 
 window.onload = function(){
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
@@ -884,6 +913,7 @@ function mostrarDetalles(id){
             const estadoGeneral = g.estadoGeneral || estadoGeneralDesdeEstado(g.estadoEspecifico || g.estado);
             const estadoEspecifico = normalizarEstado(g.estadoEspecifico || g.estado || "");
             document.getElementById("detalleTitulo").innerText = `Ticket ${g.numeroTicket || ""} - Serial ${g.serial || ""}`;
+            document.getElementById("detalleImprimir").onclick = () => seleccionarImpresionGarantia(g.id);
             document.getElementById("contenidoDetalles").innerHTML = `
                 <div class="detalle-grid">
                     ${detalleItem("Numero de ticket", g.numeroTicket)}
@@ -930,6 +960,34 @@ function detalleTexto(titulo, valor){
 
 function cerrarDetalles(){
     document.getElementById("modalDetalles").classList.remove("visible");
+}
+
+function seleccionarImpresionGarantia(id){
+    garantiaImpresionId = id;
+    mostrarSelectorImpresion();
+}
+
+function mostrarSelectorImpresion(){
+    document.getElementById("modalImpresion").classList.add("visible");
+}
+
+function cerrarSelectorImpresion(){
+    document.getElementById("modalImpresion").classList.remove("visible");
+}
+
+function cerrarSelectorImpresionDesdeFondo(event){
+    if(event.target.id === "modalImpresion"){
+        cerrarSelectorImpresion();
+    }
+}
+
+function abrirComprobanteGarantia(formato){
+    if(!garantiaImpresionId){
+        mostrarToast("No se encontro la garantia para imprimir.", "warning");
+        return;
+    }
+
+    window.location.href = `/garantias/${garantiaImpresionId}/comprobante?formato=${encodeURIComponent(formato)}`;
 }
 
 function eliminarGarantia(id){
@@ -1013,6 +1071,7 @@ function listarGarantias(){
                                 <div class="d-flex gap-1 flex-wrap">
                                     <button class="btn btn-info btn-sm" onclick="mostrarDetalles(${g.id})">Detalles</button>
                                     <button class="btn btn-warning btn-sm" onclick="editarGarantia(${g.id})">Editar</button>
+                                    <button class="btn btn-primary btn-sm" onclick="seleccionarImpresionGarantia(${g.id})">Imprimir</button>
                                     ${botonEliminar}
                                 </div>
                             </td>

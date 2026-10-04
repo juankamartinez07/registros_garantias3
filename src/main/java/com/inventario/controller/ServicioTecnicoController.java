@@ -2,12 +2,17 @@ package com.inventario.controller;
 
 import com.inventario.dto.ServicioTecnicoDTO;
 import com.inventario.model.ServicioTecnico;
+import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.ServicioTecnicoService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -33,9 +39,13 @@ public class ServicioTecnicoController {
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ServicioTecnicoService servicioTecnicoService;
+    private final ComprobantePdfService comprobantePdfService;
 
-    public ServicioTecnicoController(ServicioTecnicoService servicioTecnicoService) {
+    public ServicioTecnicoController(
+            ServicioTecnicoService servicioTecnicoService,
+            ComprobantePdfService comprobantePdfService) {
         this.servicioTecnicoService = servicioTecnicoService;
+        this.comprobantePdfService = comprobantePdfService;
     }
 
     @GetMapping
@@ -44,9 +54,16 @@ public class ServicioTecnicoController {
     }
 
     @GetMapping("/{id}/comprobante")
-    public String comprobante(@PathVariable Long id, Model model) {
+    public String comprobante(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "pos") String formato,
+            Model model) {
         ServicioTecnico servicio = servicioTecnicoService.obtener(id);
 
+        model.addAttribute("formato", formatoComprobante(formato));
+        model.addAttribute("id", servicio.getId());
+        model.addAttribute("sedeComprobante", valorComprobante(servicioTecnicoService.sedeComprobante(servicio)));
+        model.addAttribute("telefonoEncabezado", "318 0974067");
         model.addAttribute("fechaIngreso", fechaComprobante(servicio.getFechaIngreso()));
         model.addAttribute("ticket", valorComprobante(servicio.getTicket()));
         model.addAttribute("cliente", valorComprobante(servicio.getCliente()));
@@ -58,6 +75,15 @@ public class ServicioTecnicoController {
         model.addAttribute("observaciones", valorComprobante(servicio.getObservaciones()));
 
         return "servicio-tecnico-comprobante";
+    }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
+        ServicioTecnico servicio = servicioTecnicoService.obtener(id);
+        byte[] pdf = comprobantePdfService.servicioTecnico(
+                servicio,
+                servicioTecnicoService.sedeComprobante(servicio));
+        return respuestaPdf(pdf, comprobantePdfService.nombreArchivoServicioTecnico(servicio));
     }
 
     @GetMapping("/api")
@@ -113,10 +139,25 @@ public class ServicioTecnicoController {
         return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
     }
 
+    private String formatoComprobante(String formato) {
+        return "a4".equalsIgnoreCase(formato) ? "a4" : "pos";
+    }
+
     private String valorComprobante(String valor) {
         if (valor == null || valor.isBlank()) {
             return "No registrado";
         }
         return valor.trim();
+    }
+
+    private ResponseEntity<byte[]> respuestaPdf(byte[] pdf, String nombreArchivo) {
+        ContentDisposition disposicion = ContentDisposition.attachment()
+                .filename(nombreArchivo, StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposicion.toString())
+                .body(pdf);
     }
 }
