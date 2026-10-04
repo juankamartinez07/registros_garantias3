@@ -100,7 +100,7 @@ public class ServicioTecnicoController {
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 10), 50),
-                Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
+                Sort.by(Sort.Direction.ASC, "ticket"));
 
         return servicioTecnicoService.listar(busqueda, estadoServicio, pageable);
     }

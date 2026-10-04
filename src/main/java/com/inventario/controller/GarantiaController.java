@@ -104,7 +104,7 @@ public class GarantiaController {
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 10), 50),
-                Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
+                Sort.by(Sort.Direction.ASC, "numeroTicket"));
 
         return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
     }
