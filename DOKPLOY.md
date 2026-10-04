@@ -7,6 +7,7 @@ Variables recomendadas:
 ```env
 DATABASE_URL=mariadb://seriales_user:valor_de_la_contrasena_en_dokploy@control-seriales-db-edwb4g:3306/control_seriales
 PORT=8080
+TZ=America/Bogota
 ```
 
 La aplicacion convierte automaticamente `DATABASE_URL` al formato JDBC que
@@ -19,6 +20,7 @@ SPRING_DATASOURCE_URL=jdbc:mariadb://control-seriales-db-edwb4g:3306/control_ser
 SPRING_DATASOURCE_USERNAME=seriales_user
 SPRING_DATASOURCE_PASSWORD=valor_de_la_contrasena_en_dokploy
 PORT=8080
+TZ=America/Bogota
 ```
 
 Tambien se pueden usar las variables antiguas:
@@ -30,6 +32,7 @@ DB_NAME=control_seriales
 DB_USER=seriales_user
 DB_PASSWORD=valor_de_la_contrasena_en_dokploy
 PORT=8080
+TZ=America/Bogota
 ```
 
 Si Dokploy entrega variables con prefijo `MYSQL_`, la aplicacion tambien las
@@ -42,7 +45,12 @@ MYSQL_DATABASE=control_seriales
 MYSQL_USER=seriales_user
 MYSQL_PASSWORD=valor_de_la_contrasena_en_dokploy
 PORT=8080
+TZ=America/Bogota
 ```
+
+La aplicacion ya fija internamente la zona horaria de negocio en
+`America/Bogota`. Definir tambien `TZ=America/Bogota` en Dokploy mantiene
+alineados el contenedor, los registros de proceso y la aplicacion.
 
 No uses la URL interna en formato `mariadb://usuario:contrasena@host:puerto/base`
 directamente en `SPRING_DATASOURCE_URL`. Spring Boot necesita formato JDBC:

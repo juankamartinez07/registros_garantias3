@@ -1,5 +1,6 @@
 package com.inventario.service;
 
+import com.inventario.config.TiempoColombiaConfig;
 import com.inventario.dto.EquipoDTO;
 import com.inventario.model.Equipo;
 import com.inventario.model.Producto;
@@ -128,7 +129,7 @@ public class EquipoService {
     }
 
     public DashboardSeriales obtenerDashboard(Integer anio, Integer mes) {
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = TiempoColombiaConfig.hoy();
         int anioConsulta = anio == null ? hoy.getYear() : anio;
         int mesConsulta = mes == null ? hoy.getMonthValue() : mes;
 

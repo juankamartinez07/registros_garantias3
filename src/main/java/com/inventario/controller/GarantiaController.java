@@ -1,7 +1,9 @@
 package com.inventario.controller;
 
 import com.inventario.dto.DashboardGarantias;
+import com.inventario.dto.GarantiaActualizacionDTO;
 import com.inventario.dto.GarantiaDTO;
+import com.inventario.dto.GarantiaHistorialDTO;
 import com.inventario.model.Garantia;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.GarantiaService;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Controller
 @RequestMapping("/garantias")
@@ -95,13 +98,14 @@ public class GarantiaController {
             @RequestParam(required = false) String estadoGeneral,
             @RequestParam(required = false) String estadoEspecifico,
             @RequestParam(required = false) String filtro,
+            @RequestParam(defaultValue = "asc") String ordenTicket,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 10), 50),
-                Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
+                Sort.by(direccionTicket(ordenTicket), "numeroTicket"));
 
         return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
     }
@@ -124,6 +128,12 @@ public class GarantiaController {
         return garantiaService.obtener(id);
     }
 
+    @GetMapping("/api/{id}/historial")
+    @ResponseBody
+    public List<GarantiaHistorialDTO> historial(@PathVariable Long id) {
+        return garantiaService.historial(id);
+    }
+
     @PostMapping("/api")
     @ResponseBody
     public Garantia crear(@RequestBody GarantiaDTO dto) {
@@ -136,6 +146,14 @@ public class GarantiaController {
             @PathVariable Long id,
             @RequestBody GarantiaDTO dto) {
         return garantiaService.actualizar(id, dto);
+    }
+
+    @PostMapping("/api/{id}/actualizaciones")
+    @ResponseBody
+    public Garantia actualizarProceso(
+            @PathVariable Long id,
+            @RequestBody GarantiaActualizacionDTO dto) {
+        return garantiaService.actualizarProceso(id, dto);
     }
 
     @DeleteMapping("/api/{id}")
@@ -153,6 +171,12 @@ public class GarantiaController {
 
     private String fechaComprobante(LocalDate fecha) {
         return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private Sort.Direction direccionTicket(String ordenTicket) {
+        return "desc".equalsIgnoreCase(ordenTicket)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
     }
 
     private String formatoComprobante(String formato) {

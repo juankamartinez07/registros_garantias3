@@ -128,8 +128,22 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         jdbcTemplate.execute(
                 """
                 update garantias
-                set estado_especifico = coalesce(estado_especifico, estado, 'En tramite')
+                set estado_especifico = coalesce(estado_especifico, estado, 'Pendiente de gestion')
                 where estado_especifico is null
+                """);
+
+        jdbcTemplate.execute(
+                """
+                update garantias
+                set estado_especifico = 'Pendiente de gestion'
+                where estado_especifico in ('En tramite', 'EN_TRAMITE')
+                """);
+
+        jdbcTemplate.execute(
+                """
+                update garantias
+                set estado = 'Pendiente de gestion'
+                where estado in ('En tramite', 'EN_TRAMITE')
                 """);
 
         Integer existeIndiceTicket = jdbcTemplate.queryForObject(
@@ -145,6 +159,29 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         if (existeIndiceTicket == null || existeIndiceTicket == 0) {
             jdbcTemplate.execute("create unique index uk_garantias_numero_ticket on garantias (numero_ticket)");
         }
+
+        jdbcTemplate.execute(
+                """
+                create table if not exists garantia_historial (
+                    id bigint not null auto_increment,
+                    garantia_id bigint not null,
+                    fecha_hora datetime null,
+                    usuario varchar(255) null,
+                    estado_general_anterior varchar(20) null,
+                    estado_general_nuevo varchar(20) null,
+                    estado_especifico_anterior varchar(80) null,
+                    estado_especifico_nuevo varchar(80) null,
+                    numero_caso_proveedor varchar(255) null,
+                    observacion text null,
+                    tipo_evento varchar(40) null,
+                    primary key (id),
+                    index idx_garantia_historial_garantia (garantia_id),
+                    constraint fk_garantia_historial_garantia
+                        foreign key (garantia_id)
+                        references garantias (id)
+                        on delete cascade
+                )
+                """);
 
         jdbcTemplate.execute(
                 """
@@ -202,6 +239,26 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         if (existeIndiceServicioTicket == null || existeIndiceServicioTicket == 0) {
             jdbcTemplate.execute("create unique index uk_servicio_tecnico_ticket on servicio_tecnico (ticket)");
         }
+
+        jdbcTemplate.execute(
+                """
+                create table if not exists servicio_tecnico_historial (
+                    id bigint not null auto_increment,
+                    servicio_tecnico_id bigint not null,
+                    fecha_hora datetime null,
+                    usuario varchar(255) null,
+                    estado_anterior varchar(80) null,
+                    estado_nuevo varchar(80) null,
+                    observacion text null,
+                    tipo_evento varchar(40) null,
+                    primary key (id),
+                    index idx_servicio_tecnico_historial_servicio (servicio_tecnico_id),
+                    constraint fk_servicio_tecnico_historial_servicio
+                        foreign key (servicio_tecnico_id)
+                        references servicio_tecnico (id)
+                        on delete cascade
+                )
+                """);
     }
 
     private void agregarColumnaSiFalta(String tabla, String columna, String sql) {

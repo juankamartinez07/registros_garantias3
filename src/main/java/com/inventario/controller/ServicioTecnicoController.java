@@ -1,6 +1,8 @@
 package com.inventario.controller;
 
 import com.inventario.dto.ServicioTecnicoDTO;
+import com.inventario.dto.ServicioTecnicoActualizacionDTO;
+import com.inventario.dto.ServicioTecnicoHistorialDTO;
 import com.inventario.model.ServicioTecnico;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.ServicioTecnicoService;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Controller
 @RequestMapping("/servicio-tecnico")
@@ -91,13 +94,14 @@ public class ServicioTecnicoController {
     public Page<ServicioTecnico> listar(
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) String estadoServicio,
+            @RequestParam(defaultValue = "asc") String ordenTicket,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 10), 50),
-                Sort.by(Sort.Direction.DESC, "fechaActualizacion"));
+                Sort.by(direccionTicket(ordenTicket), "ticket"));
 
         return servicioTecnicoService.listar(busqueda, estadoServicio, pageable);
     }
@@ -106,6 +110,12 @@ public class ServicioTecnicoController {
     @ResponseBody
     public ServicioTecnico obtener(@PathVariable Long id) {
         return servicioTecnicoService.obtener(id);
+    }
+
+    @GetMapping("/api/{id}/historial")
+    @ResponseBody
+    public List<ServicioTecnicoHistorialDTO> historial(@PathVariable Long id) {
+        return servicioTecnicoService.historial(id);
     }
 
     @PostMapping("/api")
@@ -120,6 +130,14 @@ public class ServicioTecnicoController {
             @PathVariable Long id,
             @RequestBody ServicioTecnicoDTO dto) {
         return servicioTecnicoService.actualizar(id, dto);
+    }
+
+    @PostMapping("/api/{id}/actualizaciones")
+    @ResponseBody
+    public ServicioTecnico actualizarProceso(
+            @PathVariable Long id,
+            @RequestBody ServicioTecnicoActualizacionDTO dto) {
+        return servicioTecnicoService.actualizarProceso(id, dto);
     }
 
     @DeleteMapping("/api/{id}")
@@ -137,6 +155,12 @@ public class ServicioTecnicoController {
 
     private String fechaComprobante(LocalDate fecha) {
         return fecha == null ? "No registrado" : fecha.format(FORMATO_FECHA_COMPROBANTE);
+    }
+
+    private Sort.Direction direccionTicket(String ordenTicket) {
+        return "desc".equalsIgnoreCase(ordenTicket)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
     }
 
     private String formatoComprobante(String formato) {

@@ -1,5 +1,6 @@
 package com.inventario.model;
 
+import com.inventario.config.TiempoColombiaConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,7 +25,7 @@ public class ConfiguracionDemo {
     private Boolean demoActiva = true;
 
     @Column(name = "fecha_inicio_demo", nullable = false)
-    private LocalDate fechaInicioDemo = LocalDate.now();
+    private LocalDate fechaInicioDemo = TiempoColombiaConfig.hoy();
 
     @Column(name = "dias_demo", nullable = false)
     private Integer diasDemo = 10;
@@ -37,14 +38,14 @@ public class ConfiguracionDemo {
 
     @PrePersist
     public void prePersist() {
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = TiempoColombiaConfig.ahora();
         fechaCreacion = ahora;
         fechaActualizacion = ahora;
     }
 
     @PreUpdate
     public void preUpdate() {
-        fechaActualizacion = LocalDateTime.now();
+        fechaActualizacion = TiempoColombiaConfig.ahora();
     }
 
     public Long getId() {

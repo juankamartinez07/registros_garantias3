@@ -1,5 +1,6 @@
 package com.inventario.service;
 
+import com.inventario.config.TiempoColombiaConfig;
 import com.inventario.model.ConfiguracionDemo;
 import com.inventario.model.Usuario;
 import com.inventario.repository.ConfiguracionDemoRepository;
@@ -32,7 +33,7 @@ public class DemoService {
 
     private DemoEstado construirEstado(ConfiguracionDemo configuracion, Usuario usuario) {
         LocalDate fechaInicio = configuracion.getFechaInicioDemo() == null
-                ? LocalDate.now()
+                ? TiempoColombiaConfig.hoy()
                 : configuracion.getFechaInicioDemo();
         int diasDemo = configuracion.getDiasDemo() == null || configuracion.getDiasDemo() < 1
                 ? 10
@@ -44,7 +45,7 @@ public class DemoService {
 
         if (activa && !superAdmin && usuario != null && Boolean.TRUE.equals(usuario.getDemoIndividualActiva())) {
             fechaInicio = usuario.getFechaInicioDemoIndividual() == null
-                    ? LocalDate.now()
+                    ? TiempoColombiaConfig.hoy()
                     : usuario.getFechaInicioDemoIndividual();
             diasDemo = usuario.getDiasDemoIndividual() == null || usuario.getDiasDemoIndividual() < 1
                     ? 10
@@ -54,7 +55,7 @@ public class DemoService {
         }
 
         LocalDate fechaFinalizacion = fechaInicio.plusDays(diasDemo);
-        long diasRestantes = ChronoUnit.DAYS.between(LocalDate.now(), fechaFinalizacion);
+        long diasRestantes = ChronoUnit.DAYS.between(TiempoColombiaConfig.hoy(), fechaFinalizacion);
         boolean expirada = activa && diasRestantes <= 0;
         String estado = !activa ? "desactivada" : expirada ? "expirada" : "activa";
 
@@ -106,7 +107,7 @@ public class DemoService {
     }
 
     public DemoEstado reiniciar() {
-        return guardar(new DemoSolicitud(true, LocalDate.now(), null));
+        return guardar(new DemoSolicitud(true, TiempoColombiaConfig.hoy(), null));
     }
 
     public ConfiguracionDemo obtenerConfiguracion() {
@@ -116,7 +117,7 @@ public class DemoService {
                 .orElseGet(() -> {
                     ConfiguracionDemo configuracion = new ConfiguracionDemo();
                     configuracion.setDemoActiva(true);
-                    configuracion.setFechaInicioDemo(LocalDate.now());
+                    configuracion.setFechaInicioDemo(TiempoColombiaConfig.hoy());
                     configuracion.setDiasDemo(10);
                     return repository.save(configuracion);
                 });
