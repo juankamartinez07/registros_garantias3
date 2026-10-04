@@ -94,6 +94,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     numero_caso_proveedor varchar(255) null,
                     motivo_no_aplica_garantia text null,
                     observaciones text null,
+                    enlace_evidencias varchar(1000) null,
                     usuario_creacion varchar(255) null,
                     fecha_creacion datetime null,
                     fecha_actualizacion datetime null,
@@ -112,7 +113,8 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         agregarColumnaSiFalta("garantias", "estado_general", "alter table garantias add column estado_general varchar(20) null after numero_ticket");
         agregarColumnaSiFalta("garantias", "estado_especifico", "alter table garantias add column estado_especifico varchar(80) null after estado_general");
         agregarColumnaSiFalta("garantias", "observaciones", "alter table garantias add column observaciones text null after motivo_no_aplica_garantia");
-        agregarColumnaSiFalta("garantias", "usuario_creacion", "alter table garantias add column usuario_creacion varchar(255) null after observaciones");
+        agregarColumnaSiFalta("garantias", "enlace_evidencias", "alter table garantias add column enlace_evidencias varchar(1000) null after observaciones");
+        agregarColumnaSiFalta("garantias", "usuario_creacion", "alter table garantias add column usuario_creacion varchar(255) null after enlace_evidencias");
 
         jdbcTemplate.execute(
                 """
@@ -173,6 +175,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     estado_especifico_nuevo varchar(80) null,
                     numero_caso_proveedor varchar(255) null,
                     observacion text null,
+                    enlace_evidencia varchar(1000) null,
                     tipo_evento varchar(40) null,
                     primary key (id),
                     index idx_garantia_historial_garantia (garantia_id),
@@ -182,6 +185,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                         on delete cascade
                 )
                 """);
+        agregarColumnaSiFalta("garantia_historial", "enlace_evidencia", "alter table garantia_historial add column enlace_evidencia varchar(1000) null after observacion");
 
         jdbcTemplate.execute(
                 """
@@ -198,6 +202,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     motivo_revision text not null,
                     estado_fisico text not null,
                     observaciones text null,
+                    enlace_evidencias varchar(1000) null,
                     usuario_recibe varchar(255) null,
                     estado_servicio varchar(80) not null,
                     fecha_creacion datetime null,
@@ -221,7 +226,8 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         agregarColumnaSiFalta("servicio_tecnico", "motivo_revision", "alter table servicio_tecnico add column motivo_revision text not null after marca");
         agregarColumnaSiFalta("servicio_tecnico", "estado_fisico", "alter table servicio_tecnico add column estado_fisico text not null after motivo_revision");
         agregarColumnaSiFalta("servicio_tecnico", "observaciones", "alter table servicio_tecnico add column observaciones text null after estado_fisico");
-        agregarColumnaSiFalta("servicio_tecnico", "usuario_recibe", "alter table servicio_tecnico add column usuario_recibe varchar(255) null after observaciones");
+        agregarColumnaSiFalta("servicio_tecnico", "enlace_evidencias", "alter table servicio_tecnico add column enlace_evidencias varchar(1000) null after observaciones");
+        agregarColumnaSiFalta("servicio_tecnico", "usuario_recibe", "alter table servicio_tecnico add column usuario_recibe varchar(255) null after enlace_evidencias");
         agregarColumnaSiFalta("servicio_tecnico", "estado_servicio", "alter table servicio_tecnico add column estado_servicio varchar(80) not null after usuario_recibe");
         agregarColumnaSiFalta("servicio_tecnico", "fecha_creacion", "alter table servicio_tecnico add column fecha_creacion datetime null after estado_servicio");
         agregarColumnaSiFalta("servicio_tecnico", "fecha_actualizacion", "alter table servicio_tecnico add column fecha_actualizacion datetime null after fecha_creacion");
@@ -250,6 +256,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     estado_anterior varchar(80) null,
                     estado_nuevo varchar(80) null,
                     observacion text null,
+                    enlace_evidencia varchar(1000) null,
                     tipo_evento varchar(40) null,
                     primary key (id),
                     index idx_servicio_tecnico_historial_servicio (servicio_tecnico_id),
@@ -259,6 +266,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                         on delete cascade
                 )
                 """);
+        agregarColumnaSiFalta("servicio_tecnico_historial", "enlace_evidencia", "alter table servicio_tecnico_historial add column enlace_evidencia varchar(1000) null after observacion");
     }
 
     private void agregarColumnaSiFalta(String tabla, String columna, String sql) {

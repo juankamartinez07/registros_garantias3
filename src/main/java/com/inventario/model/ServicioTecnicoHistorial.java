@@ -39,6 +39,9 @@ public class ServicioTecnicoHistorial {
     @Column(columnDefinition = "TEXT")
     private String observacion;
 
+    @Column(name = "enlace_evidencia", length = 1000)
+    private String enlaceEvidencia;
+
     @Column(name = "tipo_evento")
     private String tipoEvento;
 
@@ -103,6 +106,14 @@ public class ServicioTecnicoHistorial {
 
     public void setObservacion(String observacion) {
         this.observacion = observacion;
+    }
+
+    public String getEnlaceEvidencia() {
+        return enlaceEvidencia;
+    }
+
+    public void setEnlaceEvidencia(String enlaceEvidencia) {
+        this.enlaceEvidencia = enlaceEvidencia;
     }
 
     public String getTipoEvento() {

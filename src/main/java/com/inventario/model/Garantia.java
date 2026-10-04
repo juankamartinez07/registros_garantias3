@@ -68,6 +68,9 @@ public class Garantia {
     @Column(columnDefinition = "TEXT")
     private String observaciones;
 
+    @Column(name = "enlace_evidencias", length = 1000)
+    private String enlaceEvidencias;
+
     @Column(name = "usuario_creacion")
     private String usuarioCreacion;
 
@@ -223,6 +226,14 @@ public class Garantia {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
+    }
+
+    public String getEnlaceEvidencias() {
+        return enlaceEvidencias;
+    }
+
+    public void setEnlaceEvidencias(String enlaceEvidencias) {
+        this.enlaceEvidencias = enlaceEvidencias;
     }
 
     public String getUsuarioCreacion() {

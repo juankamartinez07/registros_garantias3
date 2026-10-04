@@ -21,6 +21,7 @@ public class GarantiaDTO {
     private String numeroCasoProveedor;
     private String motivoNoAplicaGarantia;
     private String observaciones;
+    private String enlaceEvidencias;
 
     public Long getId() {
         return id;
@@ -156,5 +157,13 @@ public class GarantiaDTO {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
+    }
+
+    public String getEnlaceEvidencias() {
+        return enlaceEvidencias;
+    }
+
+    public void setEnlaceEvidencias(String enlaceEvidencias) {
+        this.enlaceEvidencias = enlaceEvidencias;
     }
 }

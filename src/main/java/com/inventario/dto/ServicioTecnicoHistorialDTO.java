@@ -11,6 +11,7 @@ public class ServicioTecnicoHistorialDTO {
     private String estadoNuevo;
     private String observacion;
     private String tipoEvento;
+    private String enlaceEvidencia;
 
     public Long getId() {
         return id;
@@ -66,5 +67,13 @@ public class ServicioTecnicoHistorialDTO {
 
     public void setTipoEvento(String tipoEvento) {
         this.tipoEvento = tipoEvento;
+    }
+
+    public String getEnlaceEvidencia() {
+        return enlaceEvidencia;
+    }
+
+    public void setEnlaceEvidencia(String enlaceEvidencia) {
+        this.enlaceEvidencia = enlaceEvidencia;
     }
 }

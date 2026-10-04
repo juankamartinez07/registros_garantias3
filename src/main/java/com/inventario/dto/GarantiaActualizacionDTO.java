@@ -7,6 +7,7 @@ public class GarantiaActualizacionDTO {
     private String numeroCasoProveedor;
     private String observacion;
     private String motivoNoAplicaGarantia;
+    private String enlaceEvidencia;
 
     public String getEstadoGeneral() {
         return estadoGeneral;
@@ -46,5 +47,13 @@ public class GarantiaActualizacionDTO {
 
     public void setMotivoNoAplicaGarantia(String motivoNoAplicaGarantia) {
         this.motivoNoAplicaGarantia = motivoNoAplicaGarantia;
+    }
+
+    public String getEnlaceEvidencia() {
+        return enlaceEvidencia;
+    }
+
+    public void setEnlaceEvidencia(String enlaceEvidencia) {
+        this.enlaceEvidencia = enlaceEvidencia;
     }
 }

@@ -14,6 +14,7 @@ public class ServicioTecnicoDTO {
     private String estadoFisico;
     private String observaciones;
     private String estadoServicio;
+    private String enlaceEvidencias;
 
     public LocalDate getFechaIngreso() {
         return fechaIngreso;
@@ -93,5 +94,13 @@ public class ServicioTecnicoDTO {
 
     public void setEstadoServicio(String estadoServicio) {
         this.estadoServicio = estadoServicio;
+    }
+
+    public String getEnlaceEvidencias() {
+        return enlaceEvidencias;
+    }
+
+    public void setEnlaceEvidencias(String enlaceEvidencias) {
+        this.enlaceEvidencias = enlaceEvidencias;
     }
 }

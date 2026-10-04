@@ -49,6 +49,9 @@ public class ServicioTecnico {
     @Column(columnDefinition = "TEXT")
     private String observaciones;
 
+    @Column(name = "enlace_evidencias", length = 1000)
+    private String enlaceEvidencias;
+
     @Column(name = "usuario_recibe")
     private String usuarioRecibe;
 
@@ -167,6 +170,14 @@ public class ServicioTecnico {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
+    }
+
+    public String getEnlaceEvidencias() {
+        return enlaceEvidencias;
+    }
+
+    public void setEnlaceEvidencias(String enlaceEvidencias) {
+        this.enlaceEvidencias = enlaceEvidencias;
     }
 
     public String getUsuarioRecibe() {

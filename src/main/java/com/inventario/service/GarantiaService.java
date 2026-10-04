@@ -11,6 +11,7 @@ import com.inventario.model.GarantiaHistorial;
 import com.inventario.repository.EquipoRepository;
 import com.inventario.repository.GarantiaHistorialRepository;
 import com.inventario.repository.GarantiaRepository;
+import com.inventario.util.EvidenciaUrlUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -180,6 +181,7 @@ public class GarantiaService {
                 guardada.getEstadoEspecifico(),
                 guardada.getNumeroCasoProveedor(),
                 "Ticket creado.",
+                null,
                 "CREACION");
         return guardada;
     }
@@ -246,6 +248,7 @@ public class GarantiaService {
                 estadoEspecificoNuevo,
                 guardada.getNumeroCasoProveedor(),
                 mayuscula(dto.getObservacion()),
+                EvidenciaUrlUtil.normalizarYValidar(dto.getEnlaceEvidencia()),
                 ESTADO_GENERAL_CERRADO.equals(estadoGeneralNuevo) ? "CIERRE" : "ACTUALIZACION");
         return guardada;
     }
@@ -340,6 +343,7 @@ public class GarantiaService {
         garantia.setNumeroCasoProveedor(mayuscula(dto.getNumeroCasoProveedor()));
         garantia.setMotivoNoAplicaGarantia(motivoNoAplica);
         garantia.setObservaciones(mayuscula(dto.getObservaciones()));
+        garantia.setEnlaceEvidencias(EvidenciaUrlUtil.normalizarYValidar(dto.getEnlaceEvidencias()));
         garantia.setEstadoGeneral(estadoGeneral);
         garantia.setEstadoEspecifico(estadoEspecifico);
         garantia.setEstado(estadoEspecifico);
@@ -566,6 +570,7 @@ public class GarantiaService {
             String estadoEspecificoNuevo,
             String numeroCasoProveedor,
             String observacion,
+            String enlaceEvidencia,
             String tipoEvento) {
 
         GarantiaHistorial historial = new GarantiaHistorial();
@@ -577,6 +582,7 @@ public class GarantiaService {
         historial.setEstadoEspecificoNuevo(estadoEspecificoNuevo);
         historial.setNumeroCasoProveedor(numeroCasoProveedor);
         historial.setObservacion(observacion);
+        historial.setEnlaceEvidencia(enlaceEvidencia);
         historial.setTipoEvento(tipoEvento);
         garantiaHistorialRepository.save(historial);
     }
@@ -592,6 +598,7 @@ public class GarantiaService {
         dto.setEstadoEspecificoNuevo(historial.getEstadoEspecificoNuevo());
         dto.setNumeroCasoProveedor(historial.getNumeroCasoProveedor());
         dto.setObservacion(historial.getObservacion());
+        dto.setEnlaceEvidencia(historial.getEnlaceEvidencia());
         dto.setTipoEvento(historial.getTipoEvento());
         return dto;
     }

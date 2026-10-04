@@ -8,6 +8,7 @@ import com.inventario.model.ServicioTecnico;
 import com.inventario.model.ServicioTecnicoHistorial;
 import com.inventario.repository.ServicioTecnicoHistorialRepository;
 import com.inventario.repository.ServicioTecnicoRepository;
+import com.inventario.util.EvidenciaUrlUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -94,6 +95,7 @@ public class ServicioTecnicoService {
                 null,
                 guardado.getEstadoServicio(),
                 "Ingreso de servicio tecnico creado.",
+                null,
                 "CREACION");
         return guardado;
     }
@@ -125,6 +127,7 @@ public class ServicioTecnicoService {
                 estadoAnterior,
                 estadoNuevo,
                 mayuscula(dto.getObservacion()),
+                EvidenciaUrlUtil.normalizarYValidar(dto.getEnlaceEvidencia()),
                 tipoEvento(estadoNuevo));
         return guardado;
     }
@@ -186,6 +189,7 @@ public class ServicioTecnicoService {
         servicio.setMotivoRevision(motivo);
         servicio.setEstadoFisico(estadoFisico);
         servicio.setObservaciones(mayuscula(dto.getObservaciones()));
+        servicio.setEnlaceEvidencias(EvidenciaUrlUtil.normalizarYValidar(dto.getEnlaceEvidencias()));
         servicio.setEstadoServicio(estadoServicio);
     }
 
@@ -301,6 +305,7 @@ public class ServicioTecnicoService {
             String estadoAnterior,
             String estadoNuevo,
             String observacion,
+            String enlaceEvidencia,
             String tipoEvento) {
 
         ServicioTecnicoHistorial historial = new ServicioTecnicoHistorial();
@@ -309,6 +314,7 @@ public class ServicioTecnicoService {
         historial.setEstadoAnterior(estadoAnterior);
         historial.setEstadoNuevo(estadoNuevo);
         historial.setObservacion(observacion);
+        historial.setEnlaceEvidencia(enlaceEvidencia);
         historial.setTipoEvento(tipoEvento);
         servicioTecnicoHistorialRepository.save(historial);
     }
@@ -321,6 +327,7 @@ public class ServicioTecnicoService {
         dto.setEstadoAnterior(historial.getEstadoAnterior());
         dto.setEstadoNuevo(historial.getEstadoNuevo());
         dto.setObservacion(historial.getObservacion());
+        dto.setEnlaceEvidencia(historial.getEnlaceEvidencia());
         dto.setTipoEvento(historial.getTipoEvento());
         return dto;
     }

@@ -4,6 +4,7 @@ public class ServicioTecnicoActualizacionDTO {
 
     private String estadoServicio;
     private String observacion;
+    private String enlaceEvidencia;
 
     public String getEstadoServicio() {
         return estadoServicio;
@@ -19,5 +20,13 @@ public class ServicioTecnicoActualizacionDTO {
 
     public void setObservacion(String observacion) {
         this.observacion = observacion;
+    }
+
+    public String getEnlaceEvidencia() {
+        return enlaceEvidencia;
+    }
+
+    public void setEnlaceEvidencia(String enlaceEvidencia) {
+        this.enlaceEvidencia = enlaceEvidencia;
     }
 }

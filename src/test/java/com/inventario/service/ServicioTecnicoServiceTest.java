@@ -50,6 +50,7 @@ class ServicioTecnicoServiceTest {
         ServicioTecnicoActualizacionDTO solicitud = new ServicioTecnicoActualizacionDTO();
         solicitud.setEstadoServicio("En revision");
         solicitud.setObservacion("Se inicia diagnostico.");
+        solicitud.setEnlaceEvidencia("https://drive.google.com/file/d/ACTUALIZACION_01/view");
 
         when(servicioTecnicoRepository.findById(15L)).thenReturn(Optional.of(servicio));
         when(servicioTecnicoRepository.save(servicio)).thenReturn(servicio);
@@ -67,6 +68,7 @@ class ServicioTecnicoServiceTest {
         assertEquals("ACTUALIZACION", captor.getValue().getTipoEvento());
         assertEquals("tecnico.armenia", captor.getValue().getUsuario());
         assertEquals("SE INICIA DIAGNOSTICO.", captor.getValue().getObservacion());
+        assertEquals("https://drive.google.com/file/d/ACTUALIZACION_01/view", captor.getValue().getEnlaceEvidencia());
     }
 
     @Test
@@ -80,6 +82,7 @@ class ServicioTecnicoServiceTest {
         solicitud.setMotivoRevision("Revision inicial");
         solicitud.setEstadoFisico("Sin novedades");
         solicitud.setEstadoServicio("Recibido");
+        solicitud.setEnlaceEvidencias("https://drive.google.com/drive/folders/EVIDENCIAS_01");
 
         when(servicioTecnicoRepository.maxTicketCorto()).thenReturn(null);
         when(servicioTecnicoRepository.existsByTicket("00001")).thenReturn(false);
@@ -93,6 +96,7 @@ class ServicioTecnicoServiceTest {
 
         assertEquals("00001", creado.getTicket());
         assertEquals("Armenia", creado.getSede());
+        assertEquals("https://drive.google.com/drive/folders/EVIDENCIAS_01", creado.getEnlaceEvidencias());
         ArgumentCaptor<ServicioTecnicoHistorial> captor = ArgumentCaptor.forClass(ServicioTecnicoHistorial.class);
         verify(historialRepository).save(captor.capture());
         assertEquals("CREACION", captor.getValue().getTipoEvento());

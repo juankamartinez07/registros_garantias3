@@ -8,6 +8,7 @@
     <title>Servicio tecnico</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="/js/sistema-ui.js" defer></script>
+    <script src="/js/evidencias.js"></script>
 
     <style>
         body{
@@ -291,6 +292,13 @@
                     <label class="form-label">Observaciones</label>
                     <textarea id="observaciones" class="form-control" rows="3"></textarea>
                 </div>
+
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Enlace de evidencias</label>
+                    <input id="enlaceEvidencias" type="url" class="form-control" maxlength="1000" data-no-uppercase="true"
+                           placeholder="https://drive.google.com/...">
+                    <div class="form-text">Puede usar un enlace HTTPS de Google Drive o de otra fuente confiable.</div>
+                </div>
             </div>
 
             <div class="d-flex justify-content-end gap-2 flex-wrap">
@@ -419,6 +427,11 @@
                     <label class="form-label">Observacion de actualizacion</label>
                     <textarea id="actualizacionObservacion" class="form-control" rows="4" placeholder="Describa el avance del servicio."></textarea>
                 </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label">Enlace de evidencia</label>
+                    <input id="actualizacionEnlaceEvidencia" type="url" class="form-control" maxlength="1000" data-no-uppercase="true"
+                           placeholder="https://drive.google.com/...">
+                </div>
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-outline-secondary" onclick="cerrarActualizacionServicio()">Cancelar</button>
@@ -481,6 +494,7 @@ function datosFormulario(){
         motivoRevision:document.getElementById("motivoRevision").value,
         estadoFisico:document.getElementById("estadoFisico").value,
         observaciones:document.getElementById("observaciones").value,
+        enlaceEvidencias:document.getElementById("enlaceEvidencias").value,
         estadoServicio:document.getElementById("estadoServicio").value
     };
 }
@@ -648,6 +662,7 @@ function editarServicioTecnico(id){
             document.getElementById("motivoRevision").value = servicio.motivoRevision || "";
             document.getElementById("estadoFisico").value = servicio.estadoFisico || "";
             document.getElementById("observaciones").value = servicio.observaciones || "";
+            document.getElementById("enlaceEvidencias").value = servicio.enlaceEvidencias || "";
             document.getElementById("estadoServicio").value = servicio.estadoServicio || "Recibido";
             document.getElementById("formServicioTecnico").scrollIntoView({behavior:"smooth", block:"start"});
         })
@@ -698,6 +713,10 @@ function mostrarDetalles(id){
                     ${detalleItem("Fecha actualizacion", formatearFechaHoraColombia(servicio.fechaActualizacion))}
                 </div>
                 <div class="mt-4">
+                    <h4 class="h6 mb-2">Evidencias</h4>
+                    ${Evidencias.renderizar(servicio.enlaceEvidencias, "Ver evidencia")}
+                </div>
+                <div class="mt-4">
                     <h4 class="h6 mb-2">Bitacora</h4>
                     ${historialServicioTecnico(historial)}
                 </div>
@@ -724,6 +743,7 @@ function historialServicioTecnico(historial){
                             <small>Estado anterior: ${escaparHtml(item.estadoAnterior || "Sin estado anterior")}</small>
                             <small>Estado nuevo: ${escaparHtml(item.estadoNuevo || "Sin estado nuevo")}</small>
                             <p class="mt-2 mb-0">${escaparHtml(item.observacion || "Sin observacion")}</p>
+                            ${Evidencias.renderizar(item.enlaceEvidencia, "Ver evidencia", false)}
                         </div>
                     </div>
                 `;
@@ -749,6 +769,7 @@ function abrirActualizacionServicio(id){
             document.getElementById("actualizacionEstadoActual").value = servicio.estadoServicio || "";
             document.getElementById("actualizacionEstadoNuevo").value = servicio.estadoServicio || "Recibido";
             document.getElementById("actualizacionObservacion").value = "";
+            document.getElementById("actualizacionEnlaceEvidencia").value = "";
             cerrarDetalles();
             document.getElementById("modalActualizacionServicio").classList.add("visible");
         })
@@ -760,7 +781,8 @@ function guardarActualizacionServicio(event){
     const id = document.getElementById("actualizacionServicioId").value;
     const datos = {
         estadoServicio: document.getElementById("actualizacionEstadoNuevo").value,
-        observacion: document.getElementById("actualizacionObservacion").value
+        observacion: document.getElementById("actualizacionObservacion").value,
+        enlaceEvidencia: document.getElementById("actualizacionEnlaceEvidencia").value
     };
 
     fetch(`/servicio-tecnico/api/${id}/actualizaciones`, {
