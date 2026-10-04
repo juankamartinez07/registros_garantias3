@@ -18,7 +18,7 @@ import java.util.Set;
 public class UsuarioController {
 
     private static final Set<String> ROLES_VALIDOS =
-            Set.of("SUPER_ADMIN", "ADMIN", "USER");
+            Set.of("SUPER_ADMIN", "ADMIN", "USER", "SOPORTE_TECNICO");
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -163,6 +163,14 @@ public class UsuarioController {
         if ("USUARIO".equals(rolLimpio)) {
 
             return "USER";
+
+        }
+
+        if ("TECNICO".equals(rolLimpio) ||
+                "SOPORTE TECNICO".equals(rolLimpio) ||
+                "SOPORTE_TECNICO".equals(rolLimpio)) {
+
+            return "SOPORTE_TECNICO";
 
         }
 

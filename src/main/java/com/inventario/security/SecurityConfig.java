@@ -76,6 +76,16 @@ public class SecurityConfig {
                 .hasRole("SUPER_ADMIN")
 
                 .requestMatchers(
+                        "/garantias-en-tramite/**",
+                        "/garantias-en-tramites/**",
+                        "/garantias-tramite/**",
+                        "/garantias-tramites/**",
+                        "/garantias/**",
+                        "/servicio-tecnico/**",
+                        "/servicio_tecnico/**")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN", "SOPORTE_TECNICO")
+
+                .requestMatchers(
                         "/configuracion/**",
                         "/proveedores/**",
                         "/tipos/**")
