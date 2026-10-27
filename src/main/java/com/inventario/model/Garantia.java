@@ -38,6 +38,9 @@ public class Garantia {
 
     private String sede;
 
+    @Column(name = "sede_correspondiente")
+    private String sedeCorrespondiente;
+
     @Column(name = "referencia_producto")
     private String referenciaProducto;
 
@@ -138,6 +141,14 @@ public class Garantia {
 
     public void setSede(String sede) {
         this.sede = sede;
+    }
+
+    public String getSedeCorrespondiente() {
+        return sedeCorrespondiente;
+    }
+
+    public void setSedeCorrespondiente(String sedeCorrespondiente) {
+        this.sedeCorrespondiente = sedeCorrespondiente;
     }
 
     public String getReferenciaProducto() {

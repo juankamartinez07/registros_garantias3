@@ -283,6 +283,61 @@
         textarea{
             resize:vertical;
         }
+
+        .filtro-estados-multiple{
+            position:relative;
+            min-width:240px;
+        }
+
+        .filtro-estados-multiple summary{
+            min-height:38px;
+            padding:7px 34px 7px 12px;
+            border:1px solid #ced4da;
+            border-radius:6px;
+            background:#fff;
+            color:#212529;
+            cursor:pointer;
+            list-style:none;
+        }
+
+        .filtro-estados-multiple summary::-webkit-details-marker{
+            display:none;
+        }
+
+        .filtro-estados-multiple summary::after{
+            content:"v";
+            position:absolute;
+            right:12px;
+            top:7px;
+            color:#475569;
+        }
+
+        .filtro-estados-multiple[open] summary::after{
+            content:"^";
+        }
+
+        .filtro-estados-opciones{
+            position:absolute;
+            top:calc(100% + 5px);
+            left:0;
+            z-index:20;
+            width:min(340px, calc(100vw - 48px));
+            max-height:280px;
+            overflow:auto;
+            padding:12px;
+            border:1px solid #ced4da;
+            border-radius:6px;
+            background:#fff;
+            box-shadow:0 14px 28px rgba(15,23,42,.16);
+        }
+
+        .filtro-estados-opciones label{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            margin:0 0 8px;
+            cursor:pointer;
+        }
     </style>
 </head>
 
@@ -337,6 +392,13 @@
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Sede que gestiona</label>
                     <input id="sede" class="form-control" readonly>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Sede que corresponde la garantia</label>
+                    <select id="sedeCorrespondiente" class="form-select" required>
+                        <option value="">Seleccione una sede</option>
+                    </select>
                 </div>
 
                 <div class="col-md-4 mb-3">
@@ -496,18 +558,23 @@
 
             <div class="d-flex gap-2 flex-wrap">
                 <input id="filtroSerial" class="form-control" style="max-width:220px;" placeholder="Buscar serial o ticket">
-                <select id="filtroEstado" class="form-select" style="max-width:240px;">
-                    <option value="">Todos los estados</option>
-                    <option>Abierto</option>
-                    <option>Cerrado</option>
-                    <option>Pendiente de gestion</option>
-                    <option>En revision interna</option>
-                    <option>Enviado a proveedor</option>
-                    <option>Reparado</option>
-                    <option>No aplico garantia</option>
-                    <option>Cambio por equipo nuevo</option>
-                    <option>Nota credito</option>
+                <select id="filtroSedeCorrespondiente" class="form-select" style="max-width:240px;">
+                    <option value="">Todas las sedes</option>
                 </select>
+                <details class="filtro-estados-multiple">
+                    <summary id="resumenFiltroEstados">Todos los estados</summary>
+                    <div class="filtro-estados-opciones">
+                        <label><input type="checkbox" name="filtroEstado" value="Abierto" onchange="actualizarResumenEstados()"> Abierto</label>
+                        <label><input type="checkbox" name="filtroEstado" value="Cerrado" onchange="actualizarResumenEstados()"> Cerrado</label>
+                        <label><input type="checkbox" name="filtroEstado" value="Pendiente de gestion" onchange="actualizarResumenEstados()"> Pendiente de gestion</label>
+                        <label><input type="checkbox" name="filtroEstado" value="En revision interna" onchange="actualizarResumenEstados()"> En revision interna</label>
+                        <label><input type="checkbox" name="filtroEstado" value="Enviado a proveedor" onchange="actualizarResumenEstados()"> Enviado a proveedor</label>
+                        <label><input type="checkbox" name="filtroEstado" value="Reparado" onchange="actualizarResumenEstados()"> Reparado</label>
+                        <label><input type="checkbox" name="filtroEstado" value="No aplico garantia" onchange="actualizarResumenEstados()"> No aplico garantia</label>
+                        <label><input type="checkbox" name="filtroEstado" value="Cambio por equipo nuevo" onchange="actualizarResumenEstados()"> Cambio por equipo nuevo</label>
+                        <label><input type="checkbox" name="filtroEstado" value="Nota credito" onchange="actualizarResumenEstados()"> Nota credito</label>
+                    </div>
+                </details>
                 <select id="ordenTicket" class="form-select" style="max-width:220px;" onchange="filtrarGarantias()">
                     <option value="asc">Ticket: ascendente</option>
                     <option value="desc">Ticket: descendente</option>
@@ -525,7 +592,8 @@
                         <th>Ticket</th>
                         <th>Serial</th>
                         <th>Producto / referencia</th>
-                        <th>Sede</th>
+                        <th>Sede que gestiona</th>
+                        <th>Sede correspondiente</th>
                         <th>Proveedor</th>
                         <th>Fecha ingreso garantia</th>
                         <th>Estado general</th>
@@ -708,9 +776,10 @@ let filtroDashboard = {
 };
 let garantiaImpresionId = null;
 
-window.onload = function(){
+window.onload = async function(){
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
     actualizarEstadosEspecificos("Pendiente de gestion");
+    await cargarSedesGarantia();
 
     const params = new URLSearchParams(window.location.search);
     const serial = params.get("serial");
@@ -753,6 +822,53 @@ function puedeEditarGarantias(){
     return document.getElementById("permisoEditarGarantias") !== null;
 }
 
+async function cargarSedesGarantia(){
+    try{
+        const response = await fetch("/garantias/api/sedes");
+        if(!response.ok){
+            throw new Error();
+        }
+
+        const sedes = await response.json();
+        const opciones = sedes
+            .map(sede => `<option value="${escaparHtml(sede)}">${escaparHtml(sede)}</option>`)
+            .join("");
+
+        document.getElementById("sedeCorrespondiente").innerHTML =
+            `<option value="">Seleccione una sede</option>${opciones}`;
+        document.getElementById("filtroSedeCorrespondiente").innerHTML =
+            `<option value="">Todas las sedes</option>${opciones}`;
+    }catch(_){
+        mostrarToast("No se pudieron cargar las sedes para garantias.", "warning");
+    }
+}
+
+function estadosSeleccionados(){
+    return Array.from(document.querySelectorAll('input[name="filtroEstado"]:checked'))
+        .map(estado => estado.value);
+}
+
+function limpiarEstadosSeleccionados(){
+    document.querySelectorAll('input[name="filtroEstado"]:checked')
+        .forEach(estado => estado.checked = false);
+    actualizarResumenEstados();
+}
+
+function actualizarResumenEstados(){
+    const estados = estadosSeleccionados();
+    document.getElementById("resumenFiltroEstados").innerText = estados.length === 0
+        ? "Todos los estados"
+        : `Estados: ${estados.join(", ")}`;
+}
+
+function seleccionarSedeCorrespondiente(valor){
+    const select = document.getElementById("sedeCorrespondiente");
+    const valorNormalizado = String(valor || "").trim().toLowerCase();
+    const opcion = Array.from(select.options)
+        .find(item => item.value.toLowerCase() === valorNormalizado);
+    select.value = opcion ? opcion.value : "";
+}
+
 function cargarDashboardGarantiasModulo(){
     fetch("/garantias/api/dashboard")
         .then(response => response.json())
@@ -789,7 +905,7 @@ function aplicarFiltrosDesdeUrl(params){
 
 function aplicarFiltroDashboard(tipo, valor = null){
     paginaActual = 0;
-    document.getElementById("filtroEstado").value = "";
+    limpiarEstadosSeleccionados();
 
     filtroDashboard = {
         estadoGeneral:null,
@@ -818,7 +934,7 @@ function limpiarFiltroDashboard(){
         filtro:null
     };
     paginaActual = 0;
-    document.getElementById("filtroEstado").value = "";
+    limpiarEstadosSeleccionados();
     history.pushState({}, "", "/garantias");
     actualizarFiltroActivo();
     listarGarantias();
@@ -975,6 +1091,7 @@ function llenarFormulario(data){
     document.getElementById("equipoId").value = data.equipoId || data.equipo?.id_equipo || "";
     document.getElementById("numeroTicket").value = data.numeroTicket || "";
     document.getElementById("sede").value = data.sede || "";
+    seleccionarSedeCorrespondiente(data.sedeCorrespondiente || data.sede || "");
     document.getElementById("referenciaProducto").value = data.referenciaProducto || "";
     document.getElementById("serial").value = data.serial || "";
     document.getElementById("estadoGeneral").value = estadoGeneral;
@@ -998,6 +1115,7 @@ function datosFormulario(){
         equipoId: document.getElementById("equipoId").value || null,
         numeroTicket: document.getElementById("numeroTicket").value || null,
         sede: document.getElementById("sede").value,
+        sedeCorrespondiente: document.getElementById("sedeCorrespondiente").value,
         referenciaProducto: document.getElementById("referenciaProducto").value,
         serial: document.getElementById("serial").value,
         estadoGeneral: document.getElementById("estadoGeneral").value,
@@ -1088,7 +1206,8 @@ function mostrarDetalles(id){
             document.getElementById("contenidoDetalles").innerHTML = `
                 <div class="detalle-grid">
                     ${detalleItem("Numero de ticket", g.numeroTicket)}
-                    ${detalleItem("Sede", g.sede)}
+                    ${detalleItem("Sede que gestiona", g.sede)}
+                    ${detalleItem("Sede que corresponde la garantia", g.sedeCorrespondiente || "No registrada")}
                     ${detalleItem("Referencia / producto", g.referenciaProducto)}
                     ${detalleItem("Serial", g.serial)}
                     ${detalleItem("Proveedor", g.proveedor)}
@@ -1351,15 +1470,18 @@ function listarGarantias(){
     });
 
     const serial = document.getElementById("filtroSerial").value.trim();
-    const estado = document.getElementById("filtroEstado").value;
+    const estados = estadosSeleccionados();
+    const sedeCorrespondiente = document.getElementById("filtroSedeCorrespondiente").value;
     const ordenTicket = document.getElementById("ordenTicket").value;
 
     if(serial !== ""){
         params.append("serial", serial);
     }
 
-    if(estado !== ""){
-        params.append("estado", ESTADOS_API[estado] || estado);
+    estados.forEach(estado => params.append("estados", ESTADOS_API[estado] || estado));
+
+    if(sedeCorrespondiente !== ""){
+        params.append("sedeCorrespondiente", sedeCorrespondiente);
     }
 
     params.append("ordenTicket", ordenTicket);
@@ -1399,6 +1521,7 @@ function listarGarantias(){
                             <td>${escaparHtml(g.serial)}</td>
                             <td>${escaparHtml(g.referenciaProducto)}</td>
                             <td>${escaparHtml(g.sede)}</td>
+                            <td>${escaparHtml(g.sedeCorrespondiente || "No registrada")}</td>
                             <td>${escaparHtml(g.proveedor)}</td>
                             <td>${escaparHtml(g.fechaIngresoGarantia || "")}</td>
                             <td><span class="estado-pill ${estadoGeneral === "Cerrado" ? "cerrado" : ""}">${escaparHtml(estadoGeneral)}</span></td>
@@ -1462,6 +1585,7 @@ function limpiarFormulario(){
     document.getElementById("garantiaId").value = "";
     document.getElementById("equipoId").value = "";
     document.getElementById("numeroTicket").value = "";
+    seleccionarSedeCorrespondiente("");
     document.getElementById("fechaIngresoGarantia").value = new Date().toISOString().slice(0, 10);
     document.getElementById("estadoGeneral").value = "Abierto";
     actualizarEstadosEspecificos("Pendiente de gestion");

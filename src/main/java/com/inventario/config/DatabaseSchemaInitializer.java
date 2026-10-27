@@ -83,6 +83,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
                     estado_general varchar(20) null,
                     estado_especifico varchar(80) null,
                     sede varchar(255) null,
+                    sede_correspondiente varchar(255) null,
                     referencia_producto varchar(255) null,
                     serial varchar(255) not null,
                     estado varchar(80) not null,
@@ -112,6 +113,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         agregarColumnaSiFalta("garantias", "numero_ticket", "alter table garantias add column numero_ticket varchar(5) null after equipo_id");
         agregarColumnaSiFalta("garantias", "estado_general", "alter table garantias add column estado_general varchar(20) null after numero_ticket");
         agregarColumnaSiFalta("garantias", "estado_especifico", "alter table garantias add column estado_especifico varchar(80) null after estado_general");
+        agregarColumnaSiFalta("garantias", "sede_correspondiente", "alter table garantias add column sede_correspondiente varchar(255) null after sede");
         agregarColumnaSiFalta("garantias", "observaciones", "alter table garantias add column observaciones text null after motivo_no_aplica_garantia");
         agregarColumnaSiFalta("garantias", "enlace_evidencias", "alter table garantias add column enlace_evidencias varchar(1000) null after observaciones");
         agregarColumnaSiFalta("garantias", "usuario_creacion", "alter table garantias add column usuario_creacion varchar(255) null after enlace_evidencias");

@@ -10,6 +10,7 @@ public class GarantiaDTO {
     private String estadoGeneral;
     private String estadoEspecifico;
     private String sede;
+    private String sedeCorrespondiente;
     private String referenciaProducto;
     private String serial;
     private String estado;
@@ -69,6 +70,14 @@ public class GarantiaDTO {
 
     public void setSede(String sede) {
         this.sede = sede;
+    }
+
+    public String getSedeCorrespondiente() {
+        return sedeCorrespondiente;
+    }
+
+    public void setSedeCorrespondiente(String sedeCorrespondiente) {
+        this.sedeCorrespondiente = sedeCorrespondiente;
     }
 
     public String getReferenciaProducto() {

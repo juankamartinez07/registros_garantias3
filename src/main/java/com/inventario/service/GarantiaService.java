@@ -73,10 +73,11 @@ public class GarantiaService {
 
     public Page<Garantia> listar(
             String serial,
-            String estado,
+            List<String> estados,
             String estadoGeneral,
             String estadoEspecifico,
             String filtro,
+            String sedeCorrespondiente,
             Pageable pageable) {
 
         LocalDate hoy = TiempoColombiaConfig.hoy();
@@ -85,6 +86,7 @@ public class GarantiaService {
         LocalDate fechaLimite10Dias = hoy.minusDays(10);
         String filtroLimpio = limpiar(filtro);
         String sedeNombre = sedeVisible();
+        List<String> estadosNormalizados = normalizarEstados(estados);
 
         if (!usuarioContextService.esSuperUsuario() && sedeNombre == null) {
             return Page.empty(pageable);
@@ -92,7 +94,8 @@ public class GarantiaService {
 
         return garantiaRepository.buscar(
                 limpiar(serial),
-                normalizarEstadoLibre(estado),
+                estadosNormalizados.isEmpty() ? List.of("") : estadosNormalizados,
+                estadosNormalizados.isEmpty(),
                 normalizarEstadoGeneral(estadoGeneral),
                 normalizarEstadoEspecifico(estadoEspecifico),
                 "ingresadasMesActual".equalsIgnoreCase(filtroLimpio),
@@ -102,6 +105,7 @@ public class GarantiaService {
                 inicioMes,
                 finMes,
                 fechaLimite10Dias,
+                limpiar(sedeCorrespondiente),
                 sedeNombre,
                 pageable);
     }
@@ -333,6 +337,9 @@ public class GarantiaService {
         }
 
         garantia.setSede(valorBase(dto.getSede(), equipo == null || equipo.getSede() == null ? null : equipo.getSede().getNombre()));
+        garantia.setSedeCorrespondiente(valorBase(
+                dto.getSedeCorrespondiente(),
+                equipo == null || equipo.getSede() == null ? null : equipo.getSede().getNombre()));
         garantia.setReferenciaProducto(valorBase(dto.getReferenciaProducto(), equipo == null || equipo.getProducto() == null ? null : equipo.getProducto().getNombre()));
         garantia.setSerial(valorBase(dto.getSerial(), equipo == null ? null : equipo.getSerial()));
         garantia.setProveedor(valorBase(dto.getProveedor(), equipo == null || equipo.getProveedor() == null ? null : equipo.getProveedor().getNombre()));
@@ -354,6 +361,7 @@ public class GarantiaService {
         dto.setEquipoId(equipo.getId_equipo());
         dto.setNumeroTicket("");
         dto.setSede(obtenerSedeGestionActual());
+        dto.setSedeCorrespondiente(equipo.getSede() == null ? "" : equipo.getSede().getNombre());
         dto.setReferenciaProducto(equipo.getProducto() == null ? "" : equipo.getProducto().getNombre());
         dto.setSerial(equipo.getSerial());
         dto.setEstadoGeneral(ESTADO_GENERAL_ABIERTO);
@@ -527,6 +535,18 @@ public class GarantiaService {
             return general;
         }
         return normalizarEstadoEspecifico(limpio);
+    }
+
+    private List<String> normalizarEstados(List<String> estados) {
+        if (estados == null) {
+            return List.of();
+        }
+
+        return estados.stream()
+                .map(this::normalizarEstadoLibre)
+                .filter(estado -> estado != null)
+                .distinct()
+                .toList();
     }
 
     private void validarPuedeGestionarGarantias() {

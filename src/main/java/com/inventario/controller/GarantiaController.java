@@ -5,6 +5,7 @@ import com.inventario.dto.GarantiaActualizacionDTO;
 import com.inventario.dto.GarantiaDTO;
 import com.inventario.dto.GarantiaHistorialDTO;
 import com.inventario.model.Garantia;
+import com.inventario.repository.SedeRepository;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.GarantiaService;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Controller
@@ -44,12 +47,15 @@ public class GarantiaController {
 
     private final GarantiaService garantiaService;
     private final ComprobantePdfService comprobantePdfService;
+    private final SedeRepository sedeRepository;
 
     public GarantiaController(
             GarantiaService garantiaService,
-            ComprobantePdfService comprobantePdfService) {
+            ComprobantePdfService comprobantePdfService,
+            SedeRepository sedeRepository) {
         this.garantiaService = garantiaService;
         this.comprobantePdfService = comprobantePdfService;
+        this.sedeRepository = sedeRepository;
     }
 
     @GetMapping
@@ -95,9 +101,11 @@ public class GarantiaController {
     public Page<Garantia> listar(
             @RequestParam(required = false) String serial,
             @RequestParam(required = false) String estado,
+            @RequestParam(required = false) List<String> estados,
             @RequestParam(required = false) String estadoGeneral,
             @RequestParam(required = false) String estadoEspecifico,
             @RequestParam(required = false) String filtro,
+            @RequestParam(required = false) String sedeCorrespondiente,
             @RequestParam(defaultValue = "asc") String ordenTicket,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -107,7 +115,33 @@ public class GarantiaController {
                 Math.min(Math.max(size, 10), 50),
                 Sort.by(direccionTicket(ordenTicket), "numeroTicket"));
 
-        return garantiaService.listar(serial, estado, estadoGeneral, estadoEspecifico, filtro, pageable);
+        List<String> estadosSolicitados = new ArrayList<>();
+        if (estado != null && !estado.isBlank()) {
+            estadosSolicitados.add(estado);
+        }
+        if (estados != null) {
+            estadosSolicitados.addAll(estados);
+        }
+
+        return garantiaService.listar(
+                serial,
+                estadosSolicitados,
+                estadoGeneral,
+                estadoEspecifico,
+                filtro,
+                sedeCorrespondiente,
+                pageable);
+    }
+
+    @GetMapping("/api/sedes")
+    @ResponseBody
+    public List<String> sedesDisponibles() {
+        return sedeRepository.findAll()
+                .stream()
+                .map(sede -> sede.getNombre())
+                .filter(nombre -> nombre != null && !nombre.isBlank())
+                .sorted(Comparator.comparing(String::toLowerCase))
+                .toList();
     }
 
     @GetMapping("/api/dashboard")

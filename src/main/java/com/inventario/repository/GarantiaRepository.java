@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
 
@@ -24,18 +25,20 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
             where (:serial is null
                 or lower(g.serial) like lower(concat('%', :serial, '%'))
                 or lower(g.numeroTicket) like lower(concat('%', :serial, '%')))
-              and (:estado is null or g.estadoGeneral = :estado or g.estadoEspecifico = :estado)
+              and (:sinEstados = true or g.estadoGeneral in :estados or g.estadoEspecifico in :estados)
               and (:estadoGeneral is null or g.estadoGeneral = :estadoGeneral)
               and (:estadoEspecifico is null or g.estadoEspecifico = :estadoEspecifico)
               and (:ingresadasMesActual = false or g.fechaIngresoGarantia between :inicioMes and :finMes)
               and (:sinCasoProveedor = false or (g.estadoGeneral = 'Abierto' and (g.numeroCasoProveedor is null or trim(g.numeroCasoProveedor) = '')))
               and (:abiertas10Dias = false or (g.estadoGeneral = 'Abierto' and g.fechaIngresoGarantia <= :fechaLimite10Dias))
               and (:tiempoAbiertas = false or g.estadoGeneral = 'Abierto')
+              and (:sedeCorrespondiente is null or g.sedeCorrespondiente = :sedeCorrespondiente)
               and (:sedeNombre is null or g.sede = :sedeNombre)
             """)
     Page<Garantia> buscar(
             @Param("serial") String serial,
-            @Param("estado") String estado,
+            @Param("estados") List<String> estados,
+            @Param("sinEstados") boolean sinEstados,
             @Param("estadoGeneral") String estadoGeneral,
             @Param("estadoEspecifico") String estadoEspecifico,
             @Param("ingresadasMesActual") boolean ingresadasMesActual,
@@ -45,6 +48,7 @@ public interface GarantiaRepository extends JpaRepository<Garantia, Long> {
             @Param("inicioMes") LocalDate inicioMes,
             @Param("finMes") LocalDate finMes,
             @Param("fechaLimite10Dias") LocalDate fechaLimite10Dias,
+            @Param("sedeCorrespondiente") String sedeCorrespondiente,
             @Param("sedeNombre") String sedeNombre,
             Pageable pageable);
 
