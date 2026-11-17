@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 85">
+  <g fill="none" stroke-linecap="round">
+    <path d="M0 4 Q55 2 115 32" stroke="#214d2d" stroke-width="5"/>
+    <path d="M4 3l8 20M12 4l12 24M20 5l15 25M28 7l18 26M36 9l20 25M45 12l21 24M53 15l22 23M62 18l22 22M71 21l21 21M81 25l20 20M91 28l19 19" stroke="#2d783d" stroke-width="3"/>
+    <path d="M3 3l18 12M14 4l20 13M25 6l21 13M37 9l21 13M49 12l21 13M61 16l21 13M73 20l20 13M85 24l20 13" stroke="#59a44b" stroke-width="2"/>
+    <path d="M6 16 Q55 62 145 27" stroke="#af7a2c" stroke-width="1.5"/>
+    <g fill="#ffdc78" stroke="#c78b24" stroke-width="1"><circle cx="22" cy="29" r="3"/><circle cx="45" cy="42" r="3"/><circle cx="70" cy="47" r="3"/><circle cx="96" cy="45" r="3"/><circle cx="121" cy="38" r="3"/></g>
+    <path d="M12 22v25" stroke="#d6ac55" stroke-width="1"/>
+    <circle cx="12" cy="57" r="10" fill="#bc1725" stroke="#e95a62" stroke-width="2"/>
+    <circle cx="9" cy="53" r="2" fill="#fff" stroke="none"/>
+    <path d="M75 26c-20-18-22 10-4 7l7-3m1-4c19-18 22 10 4 7l-7-3m0 0l-7 13m7-13l9 13" fill="#b81426" stroke="#ed4250" stroke-width="2"/>
+  </g>
+</svg>
