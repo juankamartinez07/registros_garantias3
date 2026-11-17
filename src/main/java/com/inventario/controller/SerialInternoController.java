@@ -46,6 +46,23 @@ public class SerialInternoController {
                 PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)), Sort.by("id").descending()));
     }
 
+    @GetMapping("/contadores")
+    public ConsultaSerialInternoService.Contadores contadores() {
+        return consulta.contadores();
+    }
+
+    @GetMapping("/lotes")
+    public Page<ConsultaSerialInternoService.LoteDTO> lotes(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return consulta.lotes(PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)), Sort.by("id").descending()));
+    }
+
+    @GetMapping("/{id}/historial")
+    public Page<ConsultaSerialInternoService.HistorialDTO> historial(@PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "25") int size) {
+        return consulta.historial(id, PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)), Sort.by("fechaHora").descending()));
+    }
+
     @PostMapping("/{id}/anular")
     public Map<String, Integer> anular(@PathVariable Long id, @Valid @RequestBody AnulacionIndividual solicitud) {
         return Map.of("anulados", administracion.anular(new AnulacionSerialRequest(List.of(id), solicitud.motivo(), solicitud.observacion())));

@@ -40,4 +40,10 @@ public interface SerialInternoRepository extends JpaRepository<SerialInterno, Lo
     Page<SerialInterno> consultar(@Param("sedeId") Long sedeId, @Param("estado") EstadoSerialInterno estado,
             @Param("lote") String lote, @Param("referencia") String referencia,
             @Param("vencidos") boolean vencidos, @Param("hoy") LocalDate hoy, Pageable pageable);
+
+    @Query("select count(s) from SerialInterno s where (:sedeId is null or s.lote.sede.id = :sedeId) and (:estado is null or s.estado = :estado)")
+    long contarPorSedeYEstado(@Param("sedeId") Long sedeId, @Param("estado") EstadoSerialInterno estado);
+
+    @Query("select count(s) from SerialInterno s where (:sedeId is null or s.lote.sede.id = :sedeId) and s.estado = com.inventario.model.EstadoSerialInterno.PENDIENTE_ACTIVACION and s.fechaLimite < :hoy")
+    long contarVencidos(@Param("sedeId") Long sedeId, @Param("hoy") LocalDate hoy);
 }
