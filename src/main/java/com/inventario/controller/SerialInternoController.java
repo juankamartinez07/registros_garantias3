@@ -9,6 +9,12 @@ import com.inventario.dto.ActivacionSerialRespuesta;
 import com.inventario.dto.AnulacionSerialRequest;
 import com.inventario.dto.ProrrogaSerialRequest;
 import com.inventario.service.AdministracionSerialInternoService;
+import com.inventario.service.ConsultaSerialInternoService;
+import com.inventario.dto.SerialInternoConsultaDTO;
+import com.inventario.model.EstadoSerialInterno;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import java.util.List;
 import java.util.Map;
 import jakarta.validation.Valid;
@@ -21,12 +27,23 @@ public class SerialInternoController {
     private final LoteSerialInternoService servicio;
     private final ActivacionSerialInternoService activacion;
     private final AdministracionSerialInternoService administracion;
+    private final ConsultaSerialInternoService consulta;
 
     public SerialInternoController(LoteSerialInternoService servicio, ActivacionSerialInternoService activacion,
-            AdministracionSerialInternoService administracion) {
+            AdministracionSerialInternoService administracion, ConsultaSerialInternoService consulta) {
         this.servicio = servicio;
         this.activacion = activacion;
         this.administracion = administracion;
+        this.consulta = consulta;
+    }
+
+    @GetMapping
+    public Page<SerialInternoConsultaDTO> consultar(@RequestParam(required = false) EstadoSerialInterno estado,
+            @RequestParam(required = false) String lote, @RequestParam(required = false) String referencia,
+            @RequestParam(defaultValue = "false") boolean vencidos, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return consulta.consultar(estado, lote, referencia, vencidos,
+                PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)), Sort.by("id").descending()));
     }
 
     @PostMapping("/{id}/anular")
