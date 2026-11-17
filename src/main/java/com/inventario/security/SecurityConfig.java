@@ -61,6 +61,9 @@ public class SecurityConfig {
                         "/configuracion/demo")
                 .hasRole("SUPER_ADMIN")
 
+                .requestMatchers(HttpMethod.POST, "/seriales-internos/activar")
+                .hasAnyRole("SUPER_ADMIN", "ADMIN", "TECNICO")
+
                 .requestMatchers(
                         "/usuarios/**",
                         "/sedes/**")
