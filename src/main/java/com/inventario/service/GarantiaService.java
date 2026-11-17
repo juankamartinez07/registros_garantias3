@@ -11,6 +11,8 @@ import com.inventario.model.GarantiaHistorial;
 import com.inventario.repository.EquipoRepository;
 import com.inventario.repository.GarantiaHistorialRepository;
 import com.inventario.repository.GarantiaRepository;
+import com.inventario.repository.SerialInternoRepository;
+import com.inventario.model.EstadoSerialInterno;
 import com.inventario.util.EvidenciaUrlUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
@@ -59,16 +61,19 @@ public class GarantiaService {
     private final GarantiaHistorialRepository garantiaHistorialRepository;
     private final EquipoRepository equipoRepository;
     private final UsuarioContextService usuarioContextService;
+    private final SerialInternoRepository serialesInternos;
 
     public GarantiaService(
             GarantiaRepository garantiaRepository,
             GarantiaHistorialRepository garantiaHistorialRepository,
             EquipoRepository equipoRepository,
-            UsuarioContextService usuarioContextService) {
+            UsuarioContextService usuarioContextService,
+            SerialInternoRepository serialesInternos) {
         this.garantiaRepository = garantiaRepository;
         this.garantiaHistorialRepository = garantiaHistorialRepository;
         this.equipoRepository = equipoRepository;
         this.usuarioContextService = usuarioContextService;
+        this.serialesInternos = serialesInternos;
     }
 
     public Page<Garantia> listar(
@@ -292,6 +297,15 @@ public class GarantiaService {
 
         Equipo equipo = equipoRepository.findBySerialIgnoreCase(serialLimpio)
                 .orElseThrow(() -> new RuntimeException("No se puede tramitar garantia de un serial inexistente."));
+
+        serialesInternos.findByEquipoIdEquipo(equipo.getId_equipo()).ifPresent(interno -> {
+            if (interno.getEstado() == EstadoSerialInterno.PENDIENTE_ACTIVACION) {
+                throw new RuntimeException("Este serial interno todavia no ha sido activado. Debe realizarse su activacion antes de iniciar una garantia.");
+            }
+            if (interno.getEstado() == EstadoSerialInterno.ANULADO) {
+                throw new RuntimeException("Este serial interno fue anulado y no puede utilizarse para tramitar garantias.");
+            }
+        });
 
         if (!estaEnGarantia(equipo)) {
             throw new RuntimeException("No se puede tramitar garantia porque el serial esta fuera del periodo de garantia.");

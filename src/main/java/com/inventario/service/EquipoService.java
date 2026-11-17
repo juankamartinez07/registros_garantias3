@@ -14,6 +14,7 @@ import com.inventario.repository.ProveedorRepository;
 import com.inventario.repository.SedeRepository;
 import com.inventario.repository.TipoProductoRepository;
 import com.inventario.repository.UsuarioRepository;
+import com.inventario.repository.SerialInternoRepository;
 import jakarta.transaction.Transactional;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -67,6 +68,7 @@ public class EquipoService {
     private final UsuarioRepository usuarioRepository;
     private final SedeRepository sedeRepository;
     private final UsuarioContextService usuarioContextService;
+    private final SerialInternoRepository serialesInternos;
 
     public EquipoService(
             EquipoRepository equipoRepository,
@@ -75,7 +77,8 @@ public class EquipoService {
             TipoProductoRepository tipoProductoRepository,
             UsuarioRepository usuarioRepository,
             SedeRepository sedeRepository,
-            UsuarioContextService usuarioContextService
+            UsuarioContextService usuarioContextService,
+            SerialInternoRepository serialesInternos
     ) {
         this.equipoRepository = equipoRepository;
         this.productoRepository = productoRepository;
@@ -84,6 +87,7 @@ public class EquipoService {
         this.usuarioRepository = usuarioRepository;
         this.sedeRepository = sedeRepository;
         this.usuarioContextService = usuarioContextService;
+        this.serialesInternos = serialesInternos;
     }
 
     public List<Equipo> listar() {
@@ -267,6 +271,9 @@ public class EquipoService {
         Equipo equipo = equipoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
         usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
+        if (serialesInternos.findByEquipoIdEquipo(id).isPresent()) {
+            throw new RuntimeException("Este serial fue generado internamente. Utilice las opciones administrativas del modulo de seriales internos.");
+        }
         TipoProducto tipo = obtenerTipo(dto.getTipo());
         Proveedor proveedor = obtenerProveedor(dto.getProveedor());
         Producto producto = obtenerOCrearProducto(dto.getProducto(), tipo);
@@ -298,6 +305,9 @@ public class EquipoService {
         Equipo equipo = equipoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
         usuarioContextService.validarMismaSede(equipo.getSede() == null ? null : equipo.getSede().getId());
+        if (serialesInternos.findByEquipoIdEquipo(id).isPresent()) {
+            throw new RuntimeException("Este serial fue generado internamente y no puede eliminarse. Utilice las opciones administrativas del modulo de seriales internos.");
+        }
         equipoRepository.deleteById(id);
     }
 
