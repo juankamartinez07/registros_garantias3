@@ -8,6 +8,7 @@ import com.inventario.dto.ActivacionSerialRequest;
 import com.inventario.dto.ActivacionSerialRespuesta;
 import com.inventario.dto.AnulacionSerialRequest;
 import com.inventario.dto.ProrrogaSerialRequest;
+import com.inventario.dto.EdicionSerialInternoRequest;
 import com.inventario.service.AdministracionSerialInternoService;
 import com.inventario.service.ConsultaSerialInternoService;
 import com.inventario.dto.SerialInternoConsultaDTO;
@@ -77,6 +78,19 @@ public class SerialInternoController {
     public Map<String, Integer> prorrogar(@PathVariable Long id, @Valid @RequestBody ProrrogaSerialRequest solicitud) {
         return Map.of("prorrogados", administracion.prorrogar(id, solicitud));
     }
+
+    @PostMapping("/{id}/editar")
+    public Map<String, Integer> editar(@PathVariable Long id, @RequestBody CamposEdicion solicitud) {
+        return Map.of("modificados", administracion.editar(new EdicionSerialInternoRequest(List.of(id),
+                solicitud.producto(), solicitud.tipo(), solicitud.proveedor(), solicitud.factura(), solicitud.fecha())));
+    }
+
+    @PostMapping("/editar-seleccion")
+    public Map<String, Integer> editarSeleccion(@RequestBody EdicionSerialInternoRequest solicitud) {
+        return Map.of("modificados", administracion.editar(solicitud));
+    }
+
+    public record CamposEdicion(String producto, String tipo, String proveedor, String factura, java.time.LocalDate fecha) { }
 
     public record AnulacionIndividual(@jakarta.validation.constraints.NotBlank String motivo,
             @jakarta.validation.constraints.NotBlank String observacion) { }
