@@ -8,6 +8,7 @@ import com.inventario.model.Garantia;
 import com.inventario.repository.SedeRepository;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.GarantiaService;
+import com.inventario.service.ExportacionExcelService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,14 +49,17 @@ public class GarantiaController {
     private final GarantiaService garantiaService;
     private final ComprobantePdfService comprobantePdfService;
     private final SedeRepository sedeRepository;
+    private final ExportacionExcelService exportacionExcelService;
 
     public GarantiaController(
             GarantiaService garantiaService,
             ComprobantePdfService comprobantePdfService,
-            SedeRepository sedeRepository) {
+            SedeRepository sedeRepository,
+            ExportacionExcelService exportacionExcelService) {
         this.garantiaService = garantiaService;
         this.comprobantePdfService = comprobantePdfService;
         this.sedeRepository = sedeRepository;
+        this.exportacionExcelService = exportacionExcelService;
     }
 
     @GetMapping
@@ -142,6 +146,21 @@ public class GarantiaController {
                 .filter(nombre -> nombre != null && !nombre.isBlank())
                 .sorted(Comparator.comparing(String::toLowerCase))
                 .toList();
+    }
+
+    @GetMapping("/excel")
+    public ResponseEntity<byte[]> excel(@RequestParam(required = false) String serial,
+            @RequestParam(required = false) List<String> estados,
+            @RequestParam(required = false) String estadoGeneral,
+            @RequestParam(required = false) String estadoEspecifico,
+            @RequestParam(required = false) String filtro,
+            @RequestParam(required = false) String sedeCorrespondiente,
+            @RequestParam(defaultValue = "asc") String ordenTicket) {
+        byte[] archivo = exportacionExcelService.garantias(serial, estados, estadoGeneral, estadoEspecifico, filtro, sedeCorrespondiente, ordenTicket);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=garantias.xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo);
     }
 
     @GetMapping("/api/dashboard")

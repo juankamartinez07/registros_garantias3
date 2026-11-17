@@ -317,6 +317,9 @@
             </div>
         </div>
 
+        <div class="mb-3">
+            <button type="button" class="btn btn-success" onclick="exportarServicioTecnico()">Descargar Excel</button>
+        </div>
         <div class="row g-2 mb-3">
             <div class="col-md-4">
                 <input
@@ -564,10 +567,8 @@ function cambiarPagina(delta){
     listarServicioTecnico();
 }
 
-function listarServicioTecnico(){
+function parametrosServicioTecnico(){
     const params = new URLSearchParams();
-    params.set("page", paginaActual);
-    params.set("size", 10);
 
     const busqueda = document.getElementById("busqueda").value.trim();
     const estado = document.getElementById("filtroEstado").value;
@@ -580,6 +581,18 @@ function listarServicioTecnico(){
         params.set("estadoServicio", estado);
     }
     params.set("ordenTicket", ordenTicket);
+
+    return params;
+}
+
+function exportarServicioTecnico(){
+    window.location.href = `/servicio-tecnico/excel?${parametrosServicioTecnico().toString()}`;
+}
+
+function listarServicioTecnico(){
+    const params = parametrosServicioTecnico();
+    params.set("page", paginaActual);
+    params.set("size", 10);
 
     fetch(`/servicio-tecnico/api?${params.toString()}`)
         .then(response => {

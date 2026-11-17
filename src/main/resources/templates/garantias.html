@@ -580,6 +580,7 @@
                     <option value="desc">Ticket: descendente</option>
                 </select>
                 <button class="btn btn-primary" onclick="filtrarGarantias()">Buscar</button>
+                <button type="button" class="btn btn-success" onclick="exportarGarantias()">Descargar Excel</button>
             </div>
         </div>
 
@@ -1463,11 +1464,8 @@ function eliminarGarantia(id){
         .catch(error => mostrarToast(error.message, "danger"));
 }
 
-function listarGarantias(){
-    const params = new URLSearchParams({
-        page: paginaActual,
-        size: 10
-    });
+function parametrosGarantias(){
+    const params = new URLSearchParams();
 
     const serial = document.getElementById("filtroSerial").value.trim();
     const estados = estadosSeleccionados();
@@ -1497,6 +1495,18 @@ function listarGarantias(){
     if(filtroDashboard.filtro){
         params.append("filtro", filtroDashboard.filtro);
     }
+
+    return params;
+}
+
+function exportarGarantias(){
+    window.location.href = `/garantias/excel?${parametrosGarantias().toString()}`;
+}
+
+function listarGarantias(){
+    const params = parametrosGarantias();
+    params.set("page", paginaActual);
+    params.set("size", 10);
 
     fetch(`/garantias/api?${params.toString()}`)
         .then(response => response.json())

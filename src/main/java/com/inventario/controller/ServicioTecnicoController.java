@@ -6,6 +6,7 @@ import com.inventario.dto.ServicioTecnicoHistorialDTO;
 import com.inventario.model.ServicioTecnico;
 import com.inventario.service.ComprobantePdfService;
 import com.inventario.service.ServicioTecnicoService;
+import com.inventario.service.ExportacionExcelService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,12 +44,15 @@ public class ServicioTecnicoController {
 
     private final ServicioTecnicoService servicioTecnicoService;
     private final ComprobantePdfService comprobantePdfService;
+    private final ExportacionExcelService exportacionExcelService;
 
     public ServicioTecnicoController(
             ServicioTecnicoService servicioTecnicoService,
-            ComprobantePdfService comprobantePdfService) {
+            ComprobantePdfService comprobantePdfService,
+            ExportacionExcelService exportacionExcelService) {
         this.servicioTecnicoService = servicioTecnicoService;
         this.comprobantePdfService = comprobantePdfService;
+        this.exportacionExcelService = exportacionExcelService;
     }
 
     @GetMapping
@@ -104,6 +108,17 @@ public class ServicioTecnicoController {
                 Sort.by(direccionTicket(ordenTicket), "ticket"));
 
         return servicioTecnicoService.listar(busqueda, estadoServicio, pageable);
+    }
+
+    @GetMapping("/excel")
+    public ResponseEntity<byte[]> excel(@RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) String estadoServicio,
+            @RequestParam(defaultValue = "asc") String ordenTicket) {
+        byte[] archivo = exportacionExcelService.servicios(busqueda, estadoServicio, ordenTicket);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=servicio-tecnico.xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo);
     }
 
     @GetMapping("/api/{id}")
